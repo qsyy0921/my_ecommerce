@@ -113,6 +113,7 @@
 
 - 容量验证：新增 Docker 三实例编排和本机三进程压测脚本，能重复验证秒杀查询、秒杀锁单、拼团锁单。
 - 自动校验：新增压测后库存不变量和拼团队伍统计不变量校验脚本。
+- 资源水位：新增 `scripts/pressure/collect-resource-watermark.ps1` 和 `scripts/pressure/run-local-pressure-with-watermark.ps1`，本机压测可同步采集 JVM、Docker、Redis、MySQL、RabbitMQ 和 Actuator 水位。
 - 完整状态机：补齐秒杀订单状态值对象，并沉淀拼团队伍、拼团明细、秒杀订单状态图。
 - 库存流水审计：秒杀已有 `seckill_stock_flow`，拼团新增 `group_buy_stock_flow`，锁单和退单都会记录 RESERVE / ROLLBACK。
 - 专业 MQ 演进：保留 Redis Stream 作为当前轻量削峰方案，同时明确选择 RocketMQ 作为生产订单消息演进目标，并补充 RocketMQ 本地编排与 `seckill_order_outbox` 表。
@@ -121,7 +122,7 @@
 
 - 本机 Windows + Docker Desktop 只能证明链路和趋势，不能作为生产容量上限。
 - 需要在 Linux 上按固定 CPU、内存、JDK 8、独立压测机重新执行。
-- 需要补 Grafana 截图、CPU/内存/GC/DB/Redis/RabbitMQ 水位曲线，形成可归档压测报告。
+- 本机已有资源水位联动脚本；生产仍需补 Grafana 截图、Prometheus 原始指标归档和多节点水位曲线，形成可审计压测报告。
 - Redis Stream 当前适合课程项目规模；如果订单流量继续上升，应演进到 RocketMQ 这类有队列分区、副本、重试、DLQ 和成熟堆积治理能力的专业消息队列。
 
 ## 复测命令

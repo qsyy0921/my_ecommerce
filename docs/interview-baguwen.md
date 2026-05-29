@@ -665,7 +665,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 可以从“容量、数据、消息、观测、代码质量”五个角度回答：
 
-- 容量：本机压测只能证明趋势，不能代表生产容量；还需要独立 Linux 压测机、多实例服务、独立 Redis/MySQL/RabbitMQ 和资源水位曲线。
+- 容量：本机压测只能证明趋势，不能代表生产容量；当前已经有本机资源水位联动脚本，但生产仍需要独立 Linux 压测机、多实例服务、独立 Redis/MySQL/RabbitMQ 和 Grafana/Prometheus 水位归档。
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
 - 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
@@ -673,7 +673,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、结构化日志、Jaeger Trace、压测脚本我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做资源水位压测报告、秒杀退款库存闭环、Trace 采样和日志指标跳转，以及把大 Repository 继续拆成更细的端口适配器。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、结构化日志、Jaeger Trace、压测脚本和资源水位联动报告我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、秒杀退款库存闭环、Trace 采样和日志指标跳转，以及把大 Repository 继续拆成更细的端口适配器。
 
 ## 六、当前已修复的问题
 
@@ -708,6 +708,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 拼团试算、拼团锁单、秒杀、支付回调压测脚本。
 - 秒杀 100/500/1000 并发阶梯压测和压测后库存不变量自动校验。
 - 拼团队伍统计不变量自动校验。
+- 压测资源水位联动报告：JVM、Docker、Redis、MySQL、RabbitMQ、Actuator。
 - 秒杀分片订单表下的库存同步口径修复。
 - 核心交易入口结构化 JSON 业务日志：秒杀锁单、拼团锁单、拼团结算、拼团退单、支付创建、支付回调、模拟支付、成团通知。
 - 补偿/对账定时任务 MySQL 分布式锁和 `job_execution_record` 执行审计，支持 success/fail/skipped 追踪。
@@ -721,11 +722,11 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 - 本地 Windows + Docker Desktop 压测只能看趋势，不能代表生产容量。
 - 生产容量必须在独立 Linux 压测环境、多服务多实例、独立 Redis/MySQL/RabbitMQ、独立压测机下重测。
-- 当前压测已经有秒杀和拼团不变量校验，但缺 CPU、内存、GC、Redis、MySQL、RabbitMQ 水位曲线联动报告。
+- 当前压测已经有秒杀和拼团不变量校验，也有本机资源水位联动脚本；但生产还缺固定资源规格下的 Grafana 截图、Prometheus 原始指标归档和多节点水位曲线。
 
 面试表达：
 
-> 我不会把本机 QPS 包装成生产 QPS。本机压测只能证明链路有效、削峰机制有效、库存不变量没破。生产容量要固定机器规格、压测机和服务机器分离，并把 CPU、GC、连接池、慢 SQL、Redis 命令耗时、MQ 堆积一起纳入报告。
+> 我不会把本机 QPS 包装成生产 QPS。本机压测只能证明链路有效、削峰机制有效、库存不变量没破，并通过资源水位脚本辅助定位瓶颈。生产容量要固定机器规格、压测机和服务机器分离，并把 CPU、GC、连接池、慢 SQL、Redis 命令耗时、MQ 堆积一起纳入 Grafana/Prometheus 报告。
 
 ### 2. 分库分表问题
 
@@ -824,7 +825,7 @@ MQ：
 >
 > 秒杀是项目里的高并发重点。入口通过本地缓存、售罄短路、限流和活动并发闸门挡无效请求，再用 Redis Lua 原子扣库存和防重复。抢到资格后写 Redis Stream 分片，后台 consumer group 批量消费和批量落库。pending-list 用于消费者宕机后的自动接管，失败超过阈值后进入人工补偿 Stream，秒杀补偿台可以查询并按消息 ID 重放。消费幂等靠 MySQL 唯一索引、insert ignore 和库存流水。支付回调用 `payment_flow` 记录独立幂等流水，只有订单状态首次更新成功才发 MQ 或触发营销结算。跨服务一致性靠本地事务、幂等接口、MQ、通知任务、对账任务和差错单台账。
 >
-> 目前这套架构已经能在本机完成运行、压测、不变量校验、故障补偿、结构化日志和 Jaeger Trace，但我不会把它包装成生产满分。真实生产还需要独立 Linux 环境和多实例压测，补资源水位曲线、Trace 采样和存储策略、审批型补偿后台、正式支付宝账单下载，以及更完整的秒杀退款库存闭环。
+> 目前这套架构已经能在本机完成运行、压测、不变量校验、资源水位联动、故障补偿、结构化日志和 Jaeger Trace，但我不会把它包装成生产满分。真实生产还需要独立 Linux 环境和多实例压测，固化 Grafana/Prometheus 压测归档、Trace 采样和存储策略、审批型补偿后台、正式支付宝账单下载，以及更完整的秒杀退款库存闭环。
 
 ## 十、回答模板
 
@@ -857,6 +858,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-30：重新梳理当前架构成熟度和剩余问题，补充“当前架构分析”“现在这套架构还有什么问题”与两分钟面试稿边界说明。
+- 2026-05-30：补齐压测资源水位联动脚本，新增 `scripts/pressure/collect-resource-watermark.ps1`、`scripts/pressure/run-local-pressure-with-watermark.ps1` 和 SDD 记录 `docs/sdd/2026-05-30-pressure-resource-watermark.md`，可输出 JVM、Docker、Redis、MySQL、RabbitMQ、Actuator 水位报告。
 - 2026-05-30：补齐本地 OpenTelemetry Java agent + Jaeger 链路追踪启动方案，新增 `docs/dev-ops/docker-compose-tracing.yml`、`scripts/observability/*` 和 SDD 记录 `docs/sdd/2026-05-30-local-opentelemetry-jaeger.md`。
 - 2026-05-30：补齐核心交易入口结构化 JSON 日志和补偿/对账 Job 执行审计，新增 SDD 记录 `docs/sdd/2026-05-30-structured-logs-job-audit.md`。
 - 2026-05-30：补齐拼团锁单强幂等和用户维度 Redis 占位，新增请求幂等锁、锁单结果缓存、队伍用户占位 Key、DB 唯一索引迁移和 SDD 文档 `docs/sdd/2026-05-30-group-buy-lock-idempotency.md`。
