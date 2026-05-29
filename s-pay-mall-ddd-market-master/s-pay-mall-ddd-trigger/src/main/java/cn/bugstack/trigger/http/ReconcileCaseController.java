@@ -2,7 +2,7 @@ package cn.bugstack.trigger.http;
 
 import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
-import cn.bugstack.domain.order.service.IOrderService;
+import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.types.common.Constants;
 import com.alibaba.fastjson.JSON;
 import lombok.Data;
@@ -26,7 +26,7 @@ import java.util.List;
 public class ReconcileCaseController {
 
     @Resource
-    private IOrderService orderService;
+    private IOrderReconcileService orderReconcileService;
 
     @Value("${reconcile.admin-token:local-admin-token}")
     private String adminToken;
@@ -38,7 +38,7 @@ public class ReconcileCaseController {
             return noLogin();
         }
         try {
-            int count = orderService.scanReconcileCases();
+            int count = orderReconcileService.scanReconcileCases();
             audit(operator, "SCAN", "ALL", null, "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
@@ -65,7 +65,7 @@ public class ReconcileCaseController {
             return noLogin();
         }
         try {
-            List<ReconcileCaseEntity> caseList = orderService.queryReconcileCaseList(caseStatus, caseType, lastId, pageSize);
+            List<ReconcileCaseEntity> caseList = orderReconcileService.queryReconcileCaseList(caseStatus, caseType, lastId, pageSize);
             audit(operator, "QUERY", caseType, "caseStatus=" + caseStatus + ", lastId=" + lastId + ", pageSize=" + pageSize, "count=" + caseList.size());
             return Response.<List<ReconcileCaseEntity>>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
@@ -90,7 +90,7 @@ public class ReconcileCaseController {
         }
         try {
             String handler = resolveOperator(operator, request.getHandler());
-            boolean result = orderService.handleReconcileCase(
+            boolean result = orderReconcileService.handleReconcileCase(
                     request.getCaseNo(),
                     null == request.getCaseStatus() ? 1 : request.getCaseStatus(),
                     handler,
@@ -122,7 +122,7 @@ public class ReconcileCaseController {
             int count = 0;
             if (null != request.getCaseNoList()) {
                 for (String caseNo : request.getCaseNoList()) {
-                    boolean result = orderService.handleReconcileCase(
+                    boolean result = orderReconcileService.handleReconcileCase(
                             caseNo,
                             null == request.getCaseStatus() ? 1 : request.getCaseStatus(),
                             handler,
@@ -156,7 +156,7 @@ public class ReconcileCaseController {
         }
         try {
             String handler = resolveOperator(operator, request.getOperator());
-            boolean result = orderService.replayReconcileCase(request.getCaseNo(), handler);
+            boolean result = orderReconcileService.replayReconcileCase(request.getCaseNo(), handler);
             audit(handler, "REPLAY", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
             return Response.<Boolean>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
@@ -184,7 +184,7 @@ public class ReconcileCaseController {
             int count = 0;
             if (null != request.getCaseNoList()) {
                 for (String caseNo : request.getCaseNoList()) {
-                    if (orderService.replayReconcileCase(caseNo, handler)) {
+                    if (orderReconcileService.replayReconcileCase(caseNo, handler)) {
                         count++;
                     }
                 }
@@ -212,7 +212,7 @@ public class ReconcileCaseController {
             return noLogin();
         }
         try {
-            int count = orderService.importThirdPartyBillCsv(csvText);
+            int count = orderReconcileService.importThirdPartyBillCsv(csvText);
             audit(operator, "IMPORT_BILL", "THIRD_PARTY_BILL", null == csvText ? null : csvText.substring(0, Math.min(csvText.length(), 1024)), "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
@@ -257,7 +257,7 @@ public class ReconcileCaseController {
 
     private void audit(String operator, String operationType, String bizId, String requestBody, String result) {
         try {
-            orderService.recordReconcileOperation(resolveOperator(operator, null), operationType, bizId, requestBody, result);
+            orderReconcileService.recordReconcileOperation(resolveOperator(operator, null), operationType, bizId, requestBody, result);
         } catch (Exception e) {
             log.warn("record reconcile operation failed operationType:{} bizId:{}", operationType, bizId, e);
         }

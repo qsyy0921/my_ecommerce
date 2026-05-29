@@ -1,6 +1,6 @@
 package cn.bugstack.trigger.job;
 
-import cn.bugstack.domain.order.service.IOrderService;
+import cn.bugstack.domain.order.service.IOrderReconcileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ import javax.annotation.Resource;
 public class OrderReconciliationJob {
 
     @Resource
-    private IOrderService orderService;
+    private IOrderReconcileService orderReconcileService;
     @Resource
     private JobExecutionRecorder jobExecutionRecorder;
 
@@ -26,7 +26,7 @@ public class OrderReconciliationJob {
             return;
         }
         try {
-            int successCount = orderService.reconcileMarketSettlementOrders();
+            int successCount = orderReconcileService.reconcileMarketSettlementOrders();
             if (successCount > 0) {
                 log.warn("order reconciliation repaired market settlement orders count:{}", successCount);
             }

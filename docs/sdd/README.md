@@ -15,6 +15,7 @@
 - `2026-05-30-ddd-boundary-audit.md`：记录本次 AI 辅助开发的 DDD 边界治理、SDD 输入文档、审核结论和验证命令。
 - `2026-05-30-ddd-architecture-test-guard.md`：记录 DDD 架构测试、domain 纯净化测试和核心状态机单测。
 - `2026-05-30-domain-task-executor-port.md`：记录把 `ThreadPoolExecutor` 从 domain 层抽到 `IDomainTaskExecutor` 端口的治理。
+- `2026-05-30-mall-order-reconcile-service-split.md`：记录商城 `OrderService` 与 `OrderReconcileService` 职责拆分。
 - `2026-05-30-trade-repository-split.md`：记录 `TradeRepository` 通知任务、库存流水职责拆分方案和验收标准。
 - `2026-05-30-group-buy-lock-idempotency.md`：记录拼团锁单请求幂等、结果缓存和用户维度 Redis 占位方案。
 - `2026-05-30-payment-callback-idempotency.md`：记录支付回调流水幂等和重复回调后续动作拦截方案。

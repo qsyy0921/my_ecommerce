@@ -2,7 +2,6 @@ package cn.bugstack.domain.order.service;
 
 import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.PayOrderEntity;
-import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
 import cn.bugstack.domain.order.model.entity.ShopCartEntity;
 
 import java.util.Date;
@@ -35,19 +34,5 @@ public interface IOrderService {
      * 接收拼团退单消息
      */
     boolean refundPayOrder(String userId, String orderId);
-
-    int reconcileMarketSettlementOrders();
-
-    int scanReconcileCases();
-
-    List<ReconcileCaseEntity> queryReconcileCaseList(Integer caseStatus, String caseType, Long lastId, Integer pageSize);
-
-    boolean handleReconcileCase(String caseNo, Integer caseStatus, String handler, String handleNote);
-
-    boolean replayReconcileCase(String caseNo, String operator);
-
-    void recordReconcileOperation(String operator, String operationType, String bizId, String requestBody, String result);
-
-    int importThirdPartyBillCsv(String csvText);
 
 }

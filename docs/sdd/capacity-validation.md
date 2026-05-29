@@ -11,7 +11,7 @@
 - 构建结果：`mvn -q -DskipTests package` 通过。
 - SQL 迁移：`docs/sql/2026-05-29-group-buy-seckill-production-hardening.sql` 已执行。
 
-> 说明：Docker Hub 拉取 `eclipse-temurin:8-jre-jammy` 时出现 EOF，所以本次用本机 JVM 多进程跑营销服务，Docker 跑 MySQL / Redis / RabbitMQ / Nginx。项目仍按 Java 8 bytecode 编译；生产容量必须在固定 Linux 资源、JDK 8 运行时、独立压测机上复测。
+> 说明：Docker Hub 拉取 `eclipse-temurin:8-jre-jammy` 时出现 EOF，所以本次用本机 JVM 多进程跑营销服务，Docker 跑 MySQL / Redis / RabbitMQ / Nginx。项目仍按 JDK 1.8 / Java 8 bytecode 编译；生产容量必须在固定 Linux 资源、JDK 1.8 / Java 8 运行时、独立压测机上复测。
 
 ## 验证链路
 
@@ -121,7 +121,7 @@
 ## 仍需生产复测
 
 - 本机 Windows + Docker Desktop 只能证明链路和趋势，不能作为生产容量上限。
-- 需要在 Linux 上按固定 CPU、内存、JDK 8、独立压测机重新执行。
+- 需要在 Linux 上按固定 CPU、内存、JDK 1.8 / Java 8、独立压测机重新执行。
 - 本机已有资源水位联动脚本；生产仍需补 Grafana 截图、Prometheus 原始指标归档和多节点水位曲线，形成可审计压测报告。
 - Redis Stream 当前适合课程项目规模；如果订单流量继续上升，应演进到 RocketMQ 这类有队列分区、副本、重试、DLQ 和成熟堆积治理能力的专业消息队列。
 

@@ -723,6 +723,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - RabbitMQ 生产者 confirm 失败台账和定时重试补偿。
 - MQ 消费幂等表。
 - 对账中心、差错单、操作审计。
+- 商城订单服务与对账服务拆分：`OrderService` 专注订单/支付/退款，`OrderReconcileService` 承接对账扫描、差错单、重放和三方账单导入。
 - 支付流水、退款流水、三方账单导入。
 - Prometheus、Grafana、Alertmanager 示例。
 - 秒杀锁单耗时、库存不足、重复请求、Stream lag、pending、DLQ 指标。
@@ -791,7 +792,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
 - 现在已新增 `DomainPurityTest` 和 `OrderStateMachineTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring 或状态机被绕过。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 但还需要补更多领域单元测试、契约测试和仓储职责拆分，尤其是大 Repository 的长期演进。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，但还需要补更多领域单元测试、契约测试和营销侧大 Repository 的长期演进。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -888,6 +889,7 @@ MQ：
 
 - 2026-05-30：重新梳理当前架构成熟度和剩余问题，补充“当前架构分析”“现在这套架构还有什么问题”与两分钟面试稿边界说明。
 - 2026-05-30：补充领域异步执行端口，商城/营销 domain 通过 `IDomainTaskExecutor` 提交异步任务，app 层适配 `ThreadPoolExecutor`，并新增 SDD 记录 `docs/sdd/2026-05-30-domain-task-executor-port.md`。
+- 2026-05-30：拆分商城订单服务与对账服务，新增 `IOrderReconcileService` / `OrderReconcileService`，Controller/Job 改注入对账服务，顺手修复秒杀营销结算差错重放路由，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-order-reconcile-service-split.md`。
 - 2026-05-30：补充 DDD 拆分建议，明确“全系统统一 DDD 方法论、每个服务独立 DDD 分层”，并新增 `DomainPurityTest`、`OrderStateMachineTest` 和 SDD 记录 `docs/sdd/2026-05-30-ddd-architecture-test-guard.md`。
 - 2026-05-30：补齐秒杀支付结算和退款库存闭环，新增秒杀结算/退款接口，商城按 `marketType` 路由拼团和秒杀，秒杀订单支持 `CREATE -> COMPLETE -> REFUND` 和 `ROLLBACK_CANCEL/ROLLBACK_REFUND` 库存流水，并记录 SDD 文档 `docs/sdd/2026-05-30-seckill-refund-stock-closure.md`。
 - 2026-05-30：补齐压测资源水位联动脚本，新增 `scripts/pressure/collect-resource-watermark.ps1`、`scripts/pressure/run-local-pressure-with-watermark.ps1` 和 SDD 记录 `docs/sdd/2026-05-30-pressure-resource-watermark.md`，可输出 JVM、Docker、Redis、MySQL、RabbitMQ、Actuator 水位报告。

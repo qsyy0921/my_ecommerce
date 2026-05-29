@@ -1,6 +1,6 @@
 package cn.bugstack.trigger.job;
 
-import cn.bugstack.domain.order.service.IOrderService;
+import cn.bugstack.domain.order.service.IOrderReconcileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import javax.annotation.Resource;
 public class ReconcileCaseScanJob {
 
     @Resource
-    private IOrderService orderService;
+    private IOrderReconcileService orderReconcileService;
     @Resource
     private JobExecutionRecorder jobExecutionRecorder;
 
@@ -23,7 +23,7 @@ public class ReconcileCaseScanJob {
             return;
         }
         try {
-            int count = orderService.scanReconcileCases();
+            int count = orderReconcileService.scanReconcileCases();
             if (count > 0) {
                 log.warn("reconcile case scan found or refreshed cases count:{}", count);
             }

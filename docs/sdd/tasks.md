@@ -67,6 +67,7 @@
 ## T7 对账和补偿
 
 - [x] 商城订单、营销订单、支付渠道三方对账任务。
+- [x] 商城 `OrderService` 与 `OrderReconcileService` 拆分，订单主链路和对账差错处理分离。
 - [x] 超时未支付退单补偿。
 - [x] 秒杀已支付退款恢复库存和未支付取消释放资格。
 - [x] 已支付未成团退款补偿。
@@ -92,4 +93,4 @@
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
 - [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍的合法/非法状态迁移。
 - [x] 抽象 `IDomainTaskExecutor`，domain 不再直接依赖 `ThreadPoolExecutor`。
-- [~] 继续拆分大 Repository 和补偿编排，补更多领域用例测试。
+- [~] 继续拆分大 Repository、补偿编排和更多领域用例测试。

@@ -13,8 +13,10 @@ import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IProductPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
+import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.domain.order.service.OrderService;
+import cn.bugstack.domain.order.service.OrderReconcileService;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import com.google.common.cache.Cache;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,6 +33,13 @@ public class DomainServiceConfig {
                                       IPayPort payPort,
                                       IDomainTaskExecutor domainTaskExecutor) {
         return new OrderService(orderRepository, productPort, payPort, domainTaskExecutor);
+    }
+
+    @Bean
+    public IOrderReconcileService orderReconcileService(IOrderRepository orderRepository,
+                                                        IProductPort productPort,
+                                                        IOrderService orderService) {
+        return new OrderReconcileService(orderRepository, productPort, orderService);
     }
 
     @Bean
