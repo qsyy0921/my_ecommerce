@@ -3,6 +3,7 @@ package cn.bugstack.config;
 import cn.bugstack.domain.message.adapter.repository.IMessageRecordRepository;
 import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import cn.bugstack.domain.seckill.service.SeckillService;
@@ -46,8 +47,9 @@ public class DomainServiceConfig {
 
     @Bean
     public ISeckillService seckillService(ISeckillRepository seckillRepository,
+                                          ISeckillMaintenancePort seckillMaintenancePort,
                                           @Value("${app.seckill.lock.max-concurrent-per-activity:200}") Integer maxConcurrentPerActivity) {
-        return new SeckillService(seckillRepository, maxConcurrentPerActivity);
+        return new SeckillService(seckillRepository, seckillMaintenancePort, maxConcurrentPerActivity);
     }
 
     @Bean

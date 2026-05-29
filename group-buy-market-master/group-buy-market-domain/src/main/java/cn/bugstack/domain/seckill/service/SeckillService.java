@@ -1,5 +1,6 @@
 package cn.bugstack.domain.seckill.service;
 
+import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
@@ -21,10 +22,14 @@ import java.util.concurrent.Semaphore;
 public class SeckillService implements ISeckillService {
 
     private final ISeckillRepository seckillRepository;
+    private final ISeckillMaintenancePort seckillMaintenancePort;
     private final Integer maxConcurrentPerActivity;
 
-    public SeckillService(ISeckillRepository seckillRepository, Integer maxConcurrentPerActivity) {
+    public SeckillService(ISeckillRepository seckillRepository,
+                          ISeckillMaintenancePort seckillMaintenancePort,
+                          Integer maxConcurrentPerActivity) {
         this.seckillRepository = seckillRepository;
+        this.seckillMaintenancePort = seckillMaintenancePort;
         this.maxConcurrentPerActivity = maxConcurrentPerActivity;
     }
 
@@ -126,17 +131,17 @@ public class SeckillService implements ISeckillService {
 
     @Override
     public void syncSeckillActivityStock() {
-        seckillRepository.syncSeckillActivityStock();
+        seckillMaintenancePort.syncSeckillActivityStock();
     }
 
     @Override
     public int releaseTimeoutUnpaidOrders() {
-        return seckillRepository.releaseTimeoutUnpaidOrders();
+        return seckillMaintenancePort.releaseTimeoutUnpaidOrders();
     }
 
     @Override
     public int prewarmUpcomingActivities(Integer beforeMinutes, Integer limit) {
-        return seckillRepository.prewarmUpcomingActivities(beforeMinutes, limit);
+        return seckillMaintenancePort.prewarmUpcomingActivities(beforeMinutes, limit);
     }
 
 }

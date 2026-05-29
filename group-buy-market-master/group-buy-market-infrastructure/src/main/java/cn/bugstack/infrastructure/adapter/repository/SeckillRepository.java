@@ -1,5 +1,6 @@
 package cn.bugstack.infrastructure.adapter.repository;
 
+import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
@@ -45,7 +46,7 @@ import java.util.zip.CRC32;
  */
 @Slf4j
 @Repository
-public class SeckillRepository implements ISeckillRepository {
+public class SeckillRepository implements ISeckillRepository, ISeckillMaintenancePort {
 
     private static final String SECKILL_STOCK_KEY = "seckill:stock:";
     private static final String SECKILL_STOCK_INIT_LOCK_KEY = "seckill:stock:init:";

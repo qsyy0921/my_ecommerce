@@ -28,10 +28,4 @@ public interface ISeckillRepository {
 
     SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason);
 
-    void syncSeckillActivityStock();
-
-    int releaseTimeoutUnpaidOrders();
-
-    int prewarmUpcomingActivities(Integer beforeMinutes, Integer limit);
-
 }

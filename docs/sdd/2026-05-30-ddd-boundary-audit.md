@@ -72,4 +72,4 @@ flowchart LR
 
 ## 后续治理
 
-本次先把状态流水的技术细节从 Repository 中移走，后续又把通知任务、库存流水构建、队伍库存占位、锁单请求锁和结果缓存拆到端口适配器，并让 `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort`，避免通知任务扫描能力继续污染 `ITradeRepository`。后续如果继续收敛代码，需要把 `TradeRepository` 中的退单状态更新编排继续拆成更小的领域服务或基础设施适配器，避免一个仓储类同时承担太多流程编排职责。
+本次先把状态流水的技术细节从 Repository 中移走，后续又把通知任务、库存流水构建、队伍库存占位、锁单请求锁和结果缓存拆到端口适配器，并让 `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort`，避免通知任务扫描能力继续污染 `ITradeRepository`。秒杀侧也已把库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，避免 Job 维护方法污染 `ISeckillRepository`。后续如果继续收敛代码，需要把 `TradeRepository` 中的退单状态更新编排、`SeckillRepository` 中的 Redis 库存和结果缓存继续拆成更小的领域服务或基础设施适配器，避免一个仓储类同时承担太多流程编排职责。

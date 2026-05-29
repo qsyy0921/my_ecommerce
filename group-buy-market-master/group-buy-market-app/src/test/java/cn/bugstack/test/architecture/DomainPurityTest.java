@@ -77,6 +77,28 @@ public class DomainPurityTest {
         Assert.assertTrue("ITradeRepository must keep notify task, team stock and lock request operations behind dedicated ports: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void seckillRepositoryShouldNotExposeMaintenanceJobMethods() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
+        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenMethods = Arrays.asList(
+                "syncSeckillActivityStock",
+                "releaseTimeoutUnpaidOrders",
+                "prewarmUpcomingActivities"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String method : forbiddenMethods) {
+            if (source.contains(method)) {
+                violations.add(method);
+            }
+        }
+
+        Assert.assertTrue("ISeckillRepository must keep maintenance job operations behind ISeckillMaintenancePort: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);
