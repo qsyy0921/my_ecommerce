@@ -21,14 +21,6 @@ public interface ITradeRepository {
 
     MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo);
 
-    MarketPayOrderEntity queryLockMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo);
-
-    boolean tryAcquireLockRequest(String userId, String outTradeNo, Integer validTime);
-
-    void releaseLockRequest(String userId, String outTradeNo);
-
-    void cacheLockResult(String userId, String outTradeNo, MarketPayOrderEntity marketPayOrderEntity, Integer validTime);
-
     MarketPayOrderEntity lockMarketPayOrder(GroupBuyOrderAggregate groupBuyOrderAggregate);
 
     GroupBuyProgressVO queryGroupBuyProgress(String teamId);

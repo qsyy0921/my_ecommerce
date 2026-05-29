@@ -10,6 +10,7 @@ import cn.bugstack.domain.trade.model.valobj.*;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.shared.model.entity.OrderStateTransitionEntity;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyStockFlowPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.infrastructure.dao.IGroupBuyActivityDao;
 import cn.bugstack.infrastructure.dao.IGroupBuyOrderDao;
@@ -18,13 +19,11 @@ import cn.bugstack.infrastructure.dao.po.GroupBuyActivity;
 import cn.bugstack.infrastructure.dao.po.GroupBuyOrder;
 import cn.bugstack.infrastructure.dao.po.GroupBuyOrderList;
 import cn.bugstack.infrastructure.dcc.DCCService;
-import cn.bugstack.infrastructure.redis.IRedisService;
 import cn.bugstack.types.common.Constants;
 import cn.bugstack.types.enums.ActivityStatusEnumVO;
 import cn.bugstack.types.enums.GroupBuyOrderEnumVO;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,11 +34,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -50,11 +45,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Repository
 public class TradeRepository implements ITradeRepository {
-
-    private static final String LOCKING_KEY_PREFIX = "group_buy_market_locking_key_";
-    private static final String LOCK_RESULT_KEY_PREFIX = "group_buy_market_lock_result_key_";
-    private static final long DEFAULT_LOCKING_TTL_MILLIS = TimeUnit.SECONDS.toMillis(30);
-    private static final long DEFAULT_LOCK_RESULT_TTL_MILLIS = TimeUnit.HOURS.toMillis(24);
 
     @Resource
     private IGroupBuyActivityDao groupBuyActivityDao;
@@ -69,6 +59,8 @@ public class TradeRepository implements ITradeRepository {
     @Resource
     private IGroupBuyStockFlowPort groupBuyStockFlowPort;
     @Resource
+    private ITradeLockRequestPort tradeLockRequestPort;
+    @Resource
     private DCCService dccService;
 
     @Value("${spring.rabbitmq.config.producer.topic_team_success.routing_key}")
@@ -76,9 +68,6 @@ public class TradeRepository implements ITradeRepository {
 
     @Value("${spring.rabbitmq.config.producer.topic_team_refund.routing_key}")
     private String topic_team_refund;
-
-    @Resource
-    private IRedisService redisService;
 
     @Override
     public MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo) {
@@ -96,46 +85,6 @@ public class TradeRepository implements ITradeRepository {
                 .payPrice(groupBuyOrderListRes.getPayPrice())
                 .tradeOrderStatusEnumVO(TradeOrderStatusEnumVO.valueOf(groupBuyOrderListRes.getStatus()))
                 .build();
-    }
-
-    @Override
-    public MarketPayOrderEntity queryLockMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo) {
-        String lockResultKey = lockResultKey(userId, outTradeNo);
-        try {
-            String result = redisService.getValue(lockResultKey);
-            if (StringUtils.isNotBlank(result)) {
-                return JSON.parseObject(result, MarketPayOrderEntity.class);
-            }
-        } catch (Exception e) {
-            log.warn("query group-buy lock result cache failed userId:{} outTradeNo:{}", userId, outTradeNo, e);
-        }
-
-        MarketPayOrderEntity marketPayOrderEntity = queryMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
-        if (null != marketPayOrderEntity) {
-            cacheLockResult(userId, outTradeNo, marketPayOrderEntity, null);
-        }
-        return marketPayOrderEntity;
-    }
-
-    @Override
-    public boolean tryAcquireLockRequest(String userId, String outTradeNo, Integer validTime) {
-        Boolean locked = redisService.setNx(lockingKey(userId, outTradeNo), lockRequestTtlMillis(validTime), TimeUnit.MILLISECONDS);
-        return Boolean.TRUE.equals(locked);
-    }
-
-    @Override
-    public void releaseLockRequest(String userId, String outTradeNo) {
-        redisService.remove(lockingKey(userId, outTradeNo));
-    }
-
-    @Override
-    public void cacheLockResult(String userId, String outTradeNo, MarketPayOrderEntity marketPayOrderEntity, Integer validTime) {
-        if (null == marketPayOrderEntity) return;
-        try {
-            redisService.setValue(lockResultKey(userId, outTradeNo), JSON.toJSONString(marketPayOrderEntity), lockResultTtlMillis(validTime));
-        } catch (Exception e) {
-            log.warn("cache group-buy lock result failed userId:{} outTradeNo:{}", userId, outTradeNo, e);
-        }
     }
 
     @Transactional(timeout = 500)
@@ -327,7 +276,7 @@ public class TradeRepository implements ITradeRepository {
                 null,
                 userEntity.getUserId(),
                 MDC.get("trace-id")));
-        removeLockResult(userEntity.getUserId(), tradePaySuccessEntity.getOutTradeNo());
+        tradeLockRequestPort.removeLockResult(userEntity.getUserId(), tradePaySuccessEntity.getOutTradeNo());
 
         // 2. 更新拼团达成数量
         int updateAddCount = groupBuyOrderDao.updateAddCompleteCount(groupBuyTeamEntity.getTeamId());
@@ -382,7 +331,7 @@ public class TradeRepository implements ITradeRepository {
                 tradeRefundOrderEntity.getOrderId(),
                 tradeRefundOrderEntity.getUserId(),
                 MDC.get("trace-id")));
-        removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
+        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
 
         GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
         groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
@@ -433,7 +382,7 @@ public class TradeRepository implements ITradeRepository {
                 tradeRefundOrderEntity.getUserId(),
                 MDC.get("trace-id"),
                 "paid unformed group buy order refunded"));
-        removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
+        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
 
         GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
         groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
@@ -486,7 +435,7 @@ public class TradeRepository implements ITradeRepository {
                 tradeRefundOrderEntity.getUserId(),
                 MDC.get("trace-id"),
                 "paid formed group buy order refunded"));
-        removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
+        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
 
         GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
         groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
@@ -575,37 +524,6 @@ public class TradeRepository implements ITradeRepository {
         }
         
         return userGroupBuyOrderDetailEntities;
-    }
-
-    private String lockingKey(String userId, String outTradeNo) {
-        return LOCKING_KEY_PREFIX + userId + Constants.UNDERLINE + outTradeNo;
-    }
-
-    private String lockResultKey(String userId, String outTradeNo) {
-        return LOCK_RESULT_KEY_PREFIX + userId + Constants.UNDERLINE + outTradeNo;
-    }
-
-    private void removeLockResult(String userId, String outTradeNo) {
-        if (StringUtils.isBlank(userId) || StringUtils.isBlank(outTradeNo)) return;
-        try {
-            redisService.remove(lockResultKey(userId, outTradeNo));
-        } catch (Exception e) {
-            log.warn("remove group-buy lock result cache failed userId:{} outTradeNo:{}", userId, outTradeNo, e);
-        }
-    }
-
-    private long lockRequestTtlMillis(Integer validTime) {
-        if (null == validTime || validTime <= 0) {
-            return DEFAULT_LOCKING_TTL_MILLIS;
-        }
-        return Math.max(DEFAULT_LOCKING_TTL_MILLIS, TimeUnit.MINUTES.toMillis(validTime + 1L));
-    }
-
-    private long lockResultTtlMillis(Integer validTime) {
-        if (null == validTime || validTime <= 0) {
-            return DEFAULT_LOCK_RESULT_TTL_MILLIS;
-        }
-        return Math.max(DEFAULT_LOCK_RESULT_TTL_MILLIS, TimeUnit.MINUTES.toMillis(validTime + 60L));
     }
 
 }

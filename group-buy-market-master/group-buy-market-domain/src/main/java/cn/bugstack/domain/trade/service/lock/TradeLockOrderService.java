@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.lock;
 
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
@@ -22,20 +23,23 @@ public class TradeLockOrderService implements ITradeLockOrderService {
 
     private final ITradeRepository repository;
     private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
+    private final ITradeLockRequestPort tradeLockRequestPort;
     private final BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter;
 
     public TradeLockOrderService(ITradeRepository repository,
                                  IGroupBuyTeamStockPort groupBuyTeamStockPort,
+                                 ITradeLockRequestPort tradeLockRequestPort,
                                  BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
         this.repository = repository;
         this.groupBuyTeamStockPort = groupBuyTeamStockPort;
+        this.tradeLockRequestPort = tradeLockRequestPort;
         this.tradeRuleFilter = tradeRuleFilter;
     }
 
     @Override
     public MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo) {
         log.info("拼团交易-查询未支付营销订单:{} outTradeNo:{}", userId, outTradeNo);
-        return repository.queryLockMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
+        return queryIdempotentLockResult(userId, outTradeNo, null);
     }
 
     @Override
@@ -48,7 +52,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
     public MarketPayOrderEntity lockMarketPayOrder(UserEntity userEntity, PayActivityEntity payActivityEntity, PayDiscountEntity payDiscountEntity) throws Exception {
         log.info("拼团交易-锁定营销优惠支付订单:{} activityId:{} goodsId:{}", userEntity.getUserId(), payActivityEntity.getActivityId(), payDiscountEntity.getGoodsId());
 
-        boolean requestLock = repository.tryAcquireLockRequest(userEntity.getUserId(), payDiscountEntity.getOutTradeNo(), payActivityEntity.getValidTime());
+        boolean requestLock = tradeLockRequestPort.tryAcquireLockRequest(userEntity.getUserId(), payDiscountEntity.getOutTradeNo(), payActivityEntity.getValidTime());
         if (!requestLock) {
             MarketPayOrderEntity marketPayOrderEntity = waitLockResult(userEntity.getUserId(), payDiscountEntity.getOutTradeNo());
             if (null != marketPayOrderEntity) {
@@ -81,7 +85,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
 
             // 锁定聚合订单 - 这会用户只是下单还没有支付。后续会有2个流程；支付成功、超时未支付（回退）
             MarketPayOrderEntity marketPayOrderEntity = repository.lockMarketPayOrder(groupBuyOrderAggregate);
-            repository.cacheLockResult(userEntity.getUserId(), payDiscountEntity.getOutTradeNo(), marketPayOrderEntity, payActivityEntity.getValidTime());
+            tradeLockRequestPort.cacheLockResult(userEntity.getUserId(), payDiscountEntity.getOutTradeNo(), marketPayOrderEntity, payActivityEntity.getValidTime());
             return marketPayOrderEntity;
         } catch (Exception e) {
             // 记录失败恢复量
@@ -91,7 +95,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
             }
             throw e;
         } finally {
-            repository.releaseLockRequest(userEntity.getUserId(), payDiscountEntity.getOutTradeNo());
+            tradeLockRequestPort.releaseLockRequest(userEntity.getUserId(), payDiscountEntity.getOutTradeNo());
         }
 
     }
@@ -99,12 +103,25 @@ public class TradeLockOrderService implements ITradeLockOrderService {
     private MarketPayOrderEntity waitLockResult(String userId, String outTradeNo) throws InterruptedException {
         for (int i = 0; i < 5; i++) {
             Thread.sleep(50L);
-            MarketPayOrderEntity marketPayOrderEntity = repository.queryLockMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
+            MarketPayOrderEntity marketPayOrderEntity = queryIdempotentLockResult(userId, outTradeNo, null);
             if (null != marketPayOrderEntity) {
                 return marketPayOrderEntity;
             }
         }
         return null;
+    }
+
+    private MarketPayOrderEntity queryIdempotentLockResult(String userId, String outTradeNo, Integer validTime) {
+        MarketPayOrderEntity cached = tradeLockRequestPort.queryLockResult(userId, outTradeNo);
+        if (null != cached) {
+            return cached;
+        }
+
+        MarketPayOrderEntity marketPayOrderEntity = repository.queryMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
+        if (null != marketPayOrderEntity) {
+            tradeLockRequestPort.cacheLockResult(userId, outTradeNo, marketPayOrderEntity, validTime);
+        }
+        return marketPayOrderEntity;
     }
 
 }

@@ -60,7 +60,11 @@ public class DomainPurityTest {
                 "occupyTeamStock",
                 "recoveryTeamStock",
                 "releaseUserTeamOccupy",
-                "refund2AddRecovery"
+                "refund2AddRecovery",
+                "queryLockMarketPayOrderEntityByOutTradeNo",
+                "tryAcquireLockRequest",
+                "releaseLockRequest",
+                "cacheLockResult"
         );
 
         List<String> violations = new ArrayList<>();
@@ -70,7 +74,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("ITradeRepository must keep notify task and team stock operations behind dedicated ports: " + violations, violations.isEmpty());
+        Assert.assertTrue("ITradeRepository must keep notify task, team stock and lock request operations behind dedicated ports: " + violations, violations.isEmpty());
     }
 
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {

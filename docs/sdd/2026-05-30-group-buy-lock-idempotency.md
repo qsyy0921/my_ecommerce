@@ -21,30 +21,34 @@ sequenceDiagram
     participant C as Client
     participant Api as MarketTradeController
     participant S as TradeLockOrderService
+    participant P as ITradeLockRequestPort
+    participant Stock as IGroupBuyTeamStockPort
     participant R as TradeRepository
     participant Redis as Redis
     participant DB as MySQL
 
     C->>Api: lock_market_pay_order(userId,outTradeNo,teamId)
     Api->>S: query lock result
-    S->>R: queryLockMarketPayOrderEntityByOutTradeNo
-    R->>Redis: get group_buy_market_lock_result_key:{user}:{outTradeNo}
+    S->>P: queryLockResult
+    P->>Redis: get group_buy_market_lock_result_key:{user}:{outTradeNo}
     alt 命中结果
-        R-->>Api: 返回已有订单
+        P-->>Api: 返回已有订单
     else 未命中
-        S->>R: tryAcquireLockRequest
-        R->>Redis: setnx group_buy_market_locking_key:{user}:{outTradeNo}
+        S->>R: queryMarketPayOrderEntityByOutTradeNo
+        R->>DB: 查询已有订单明细
+        S->>P: tryAcquireLockRequest
+        P->>Redis: setnx group_buy_market_locking_key:{user}:{outTradeNo}
         alt 重复处理中
-            S->>R: 短轮询查询结果
-            R-->>Api: 已提交则返回，否则返回处理中错误
+            S->>P: 短轮询查询结果缓存
+            P-->>Api: 已提交则返回，否则返回处理中错误
         else 获取成功
-            S->>R: reserve team slot
-            R->>Redis: Lua 检查队伍容量 + 用户占位
+            S->>Stock: reserve team slot
+            Stock->>Redis: Lua 检查队伍容量 + 用户占位
             S->>R: lockMarketPayOrder
             R->>DB: 插入队伍/明细/库存流水/状态流水
-            S->>R: cacheLockResult
-            R->>Redis: set result cache
-            S->>R: release request lock
+            S->>P: cacheLockResult
+            P->>Redis: set result cache
+            S->>P: release request lock
             R-->>Api: 新锁单结果
         end
     end
@@ -63,6 +67,7 @@ sequenceDiagram
 - 新开团没有现有 `teamId`，不走队伍名额占位；首单由 DB 插入新队伍表达。
 - 用户维度占位约束的是“同一用户同一队伍”，不是全活动全局禁入；全活动参与次数仍由用户参与次数规则和 DB 约束兜底。
 - 结果缓存只用于锁单入口幂等查询，结算和退单继续查 DB，避免缓存状态滞后影响状态机判断。
+- 锁单请求锁和锁单结果缓存已经拆成 `ITradeLockRequestPort` / `TradeLockRequestPort`；`ITradeRepository` 只保留订单查询和订单写入能力。
 
 ## 验收记录
 
@@ -71,6 +76,7 @@ sequenceDiagram
 - `scripts/check-domain-purity.ps1`：通过。
 - SQL 迁移 `docs/sql/2026-05-30-group-buy-lock-idempotency.sql` 已执行到本地 Docker MySQL。
 - 本地三实例 8091 / 8092 / 8093 + Nginx 8080 健康检查：`UP`。
+- 2026-05-30 追加治理：`ITradeRepository` 移除请求锁、结果缓存、缓存清理方法，Redis 幂等设施收敛到 `ITradeLockRequestPort`。
 
 冒烟结果：
 
