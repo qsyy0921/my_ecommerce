@@ -4,8 +4,12 @@ import cn.bugstack.api.ISeckillMarketService;
 import cn.bugstack.api.dto.LockSeckillOrderRequestDTO;
 import cn.bugstack.api.dto.LockSeckillOrderResponseDTO;
 import cn.bugstack.api.dto.QuerySeckillOrderResultRequestDTO;
+import cn.bugstack.api.dto.RefundSeckillOrderRequestDTO;
+import cn.bugstack.api.dto.RefundSeckillOrderResponseDTO;
 import cn.bugstack.api.dto.SeckillMarketRequestDTO;
 import cn.bugstack.api.dto.SeckillMarketResponseDTO;
+import cn.bugstack.api.dto.SettlementSeckillOrderRequestDTO;
+import cn.bugstack.api.dto.SettlementSeckillOrderResponseDTO;
 import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillRateLimitPort;
@@ -287,6 +291,138 @@ public class SeckillMarketController implements ISeckillMarketService {
         } catch (Exception e) {
             log.error("query seckill order result error requestDTO:{}", JSON.toJSONString(requestDTO), e);
             return Response.<LockSeckillOrderResponseDTO>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
+    @RequestMapping(value = "settlement_seckill_order", method = RequestMethod.POST)
+    @Override
+    public Response<SettlementSeckillOrderResponseDTO> settlementSeckillOrder(@RequestBody SettlementSeckillOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
+        try {
+            if (null == requestDTO
+                    || StringUtils.isBlank(requestDTO.getUserId())
+                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+                businessLogger.warn("seckill_settlement", "illegal_parameter", businessLogger.fields(
+                        "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                        "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                        "costMs", System.currentTimeMillis() - startMillis));
+                return Response.<SettlementSeckillOrderResponseDTO>builder()
+                        .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                        .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                        .build();
+            }
+
+            SeckillOrderEntity entity = seckillService.settlementSeckillOrder(requestDTO.getUserId(), requestDTO.getOutTradeNo());
+            businessLogger.info("seckill_settlement", "success", businessLogger.fields(
+                    "userId", requestDTO.getUserId(),
+                    "activityId", entity.getActivityId(),
+                    "orderId", entity.getOrderId(),
+                    "outTradeNo", requestDTO.getOutTradeNo(),
+                    "status", entity.getStatus(),
+                    "costMs", System.currentTimeMillis() - startMillis));
+            return Response.<SettlementSeckillOrderResponseDTO>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(SettlementSeckillOrderResponseDTO.builder()
+                            .userId(entity.getUserId())
+                            .activityId(entity.getActivityId())
+                            .orderId(entity.getOrderId())
+                            .outTradeNo(entity.getOutTradeNo())
+                            .status(entity.getStatus())
+                            .build())
+                    .build();
+        } catch (AppException e) {
+            businessLogger.warn("seckill_settlement", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
+            return Response.<SettlementSeckillOrderResponseDTO>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .build();
+        } catch (Exception e) {
+            log.error("settlement seckill order error requestDTO:{}", JSON.toJSONString(requestDTO), e);
+            businessLogger.error("seckill_settlement", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
+            return Response.<SettlementSeckillOrderResponseDTO>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
+    @RequestMapping(value = "refund_seckill_order", method = RequestMethod.POST)
+    @Override
+    public Response<RefundSeckillOrderResponseDTO> refundSeckillOrder(@RequestBody RefundSeckillOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
+        try {
+            if (null == requestDTO
+                    || StringUtils.isBlank(requestDTO.getUserId())
+                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+                businessLogger.warn("seckill_refund", "illegal_parameter", businessLogger.fields(
+                        "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                        "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                        "costMs", System.currentTimeMillis() - startMillis));
+                return Response.<RefundSeckillOrderResponseDTO>builder()
+                        .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                        .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                        .build();
+            }
+
+            SeckillOrderEntity before = seckillService.querySeckillOrderByOutTradeNo(requestDTO.getUserId(), requestDTO.getOutTradeNo());
+            SeckillOrderEntity entity = seckillService.refundSeckillOrder(
+                    requestDTO.getUserId(),
+                    requestDTO.getOutTradeNo(),
+                    requestDTO.getRefundReason());
+            boolean stockReleased = null != before && null != entity
+                    && null != before.getStatus()
+                    && !before.getStatus().equals(entity.getStatus());
+            businessLogger.info("seckill_refund", "success", businessLogger.fields(
+                    "userId", requestDTO.getUserId(),
+                    "activityId", entity.getActivityId(),
+                    "orderId", entity.getOrderId(),
+                    "outTradeNo", requestDTO.getOutTradeNo(),
+                    "fromStatus", null == before ? null : before.getStatus(),
+                    "toStatus", entity.getStatus(),
+                    "stockReleased", stockReleased,
+                    "costMs", System.currentTimeMillis() - startMillis));
+            return Response.<RefundSeckillOrderResponseDTO>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(RefundSeckillOrderResponseDTO.builder()
+                            .userId(entity.getUserId())
+                            .activityId(entity.getActivityId())
+                            .orderId(entity.getOrderId())
+                            .outTradeNo(entity.getOutTradeNo())
+                            .status(entity.getStatus())
+                            .stockReleased(stockReleased)
+                            .build())
+                    .build();
+        } catch (AppException e) {
+            businessLogger.warn("seckill_refund", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
+            return Response.<RefundSeckillOrderResponseDTO>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .build();
+        } catch (Exception e) {
+            log.error("refund seckill order error requestDTO:{}", JSON.toJSONString(requestDTO), e);
+            businessLogger.error("seckill_refund", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
+            return Response.<RefundSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();

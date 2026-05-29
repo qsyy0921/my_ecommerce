@@ -155,6 +155,32 @@ public class ProductPort implements IProductPort {
     }
 
     @Override
+    public void settlementSeckillPayOrder(String userId, String orderId, Date orderTime) {
+        SettlementSeckillOrderRequestDTO requestDTO = SettlementSeckillOrderRequestDTO.builder()
+                .source(source)
+                .channel(chanel)
+                .userId(userId)
+                .outTradeNo(orderId)
+                .outTradeTime(orderTime)
+                .build();
+
+        try {
+            Call<Response<SettlementSeckillOrderResponseDTO>> call = groupBuyMarketService.settlementSeckillOrder(requestDTO);
+            Response<SettlementSeckillOrderResponseDTO> response = call.execute().body();
+            log.info("秒杀结算{} requestDTO:{} responseDTO:{}", userId, JSON.toJSONString(requestDTO), JSON.toJSONString(response));
+            if (null == response) {
+                throw new IllegalStateException("秒杀结算响应为空");
+            }
+            if (!"0000".equals(response.getCode())) {
+                throw new AppException(response.getCode(), response.getInfo());
+            }
+        } catch (Exception e) {
+            log.error("秒杀结算失败{}", userId, e);
+            throw new IllegalStateException("秒杀结算失败 userId:" + userId + " orderId:" + orderId, e);
+        }
+    }
+
+    @Override
     public void refundMarketPayOrder(String userId, String orderId) {
         RefundMarketPayOrderRequestDTO requestDTO = new RefundMarketPayOrderRequestDTO();
         requestDTO.setSource(source);
@@ -180,6 +206,32 @@ public class ProductPort implements IProductPort {
         } catch (Exception e) {
             log.error("营销退单失败{}", userId, e);
             throw new IllegalStateException("营销退单失败 userId:" + userId + " orderId:" + orderId, e);
+        }
+    }
+
+    @Override
+    public void refundSeckillPayOrder(String userId, String orderId) {
+        RefundSeckillOrderRequestDTO requestDTO = RefundSeckillOrderRequestDTO.builder()
+                .source(source)
+                .channel(chanel)
+                .userId(userId)
+                .outTradeNo(orderId)
+                .refundReason("mall refund order")
+                .build();
+
+        try {
+            Call<Response<RefundSeckillOrderResponseDTO>> call = groupBuyMarketService.refundSeckillOrder(requestDTO);
+            Response<RefundSeckillOrderResponseDTO> response = call.execute().body();
+            log.info("秒杀退单{} requestDTO:{} responseDTO:{}", userId, JSON.toJSONString(requestDTO), JSON.toJSONString(response));
+            if (null == response) {
+                throw new IllegalStateException("秒杀退单响应为空");
+            }
+            if (!"0000".equals(response.getCode())) {
+                throw new AppException(response.getCode(), response.getInfo());
+            }
+        } catch (Exception e) {
+            log.error("秒杀退单失败{}", userId, e);
+            throw new IllegalStateException("秒杀退单失败 userId:" + userId + " orderId:" + orderId, e);
         }
     }
 

@@ -66,6 +66,32 @@ public class OrderStateTransitionEntity {
                 null, "timeout unpaid released");
     }
 
+    public static OrderStateTransitionEntity seckillUnpaidCanceled(String outTradeNo, String orderId,
+                                                                   String operatorId, String traceId,
+                                                                   String message) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_CREATE, OrderStateMachine.STATE_CLOSE,
+                OrderStateMachine.EVENT_TIMEOUT_RELEASE, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity seckillOrderPaid(String outTradeNo, String orderId,
+                                                              String operatorId, String traceId) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_CREATE, OrderStateMachine.STATE_COMPLETE,
+                OrderStateMachine.EVENT_PAY_SUCCESS, operatorId, traceId,
+                null, "seckill order paid");
+    }
+
+    public static OrderStateTransitionEntity seckillOrderRefunded(String outTradeNo, String orderId,
+                                                                  String operatorId, String traceId,
+                                                                  String message) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_COMPLETE, OrderStateMachine.STATE_REFUND,
+                OrderStateMachine.EVENT_REFUND_SUCCESS, operatorId, traceId,
+                null, message);
+    }
+
     public static OrderStateTransitionEntity groupBuyTeamOpened(String teamId, String operatorId, String traceId) {
         return of(OrderStateMachine.BIZ_GROUP_BUY_TEAM, teamId, null,
                 OrderStateMachine.STATE_INIT, OrderStateMachine.STATE_PROGRESS,

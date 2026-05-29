@@ -34,6 +34,9 @@ public interface IGroupBuyMarketService {
     @POST("api/v1/gbm/trade/settlement_market_pay_order")
     Call<Response<SettlementMarketPayOrderResponseDTO>> settlementMarketPayOrder(@Body SettlementMarketPayOrderRequestDTO requestDTO);
 
+    @POST("api/v1/gbm/seckill/settlement_seckill_order")
+    Call<Response<SettlementSeckillOrderResponseDTO>> settlementSeckillOrder(@Body SettlementSeckillOrderRequestDTO requestDTO);
+
     /**
      * 营销拼团退单
      *
@@ -42,5 +45,8 @@ public interface IGroupBuyMarketService {
      */
     @POST("api/v1/gbm/trade/refund_market_pay_order")
     Call<Response<RefundMarketPayOrderResponseDTO>> refundMarketPayOrder(@Body RefundMarketPayOrderRequestDTO requestDTO);
+
+    @POST("api/v1/gbm/seckill/refund_seckill_order")
+    Call<Response<RefundSeckillOrderResponseDTO>> refundSeckillOrder(@Body RefundSeckillOrderRequestDTO requestDTO);
 
 }

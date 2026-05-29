@@ -31,6 +31,12 @@ if (-not (Test-Path $resolvedOtelConfig)) {
     throw "OpenTelemetry agent config not found: $resolvedOtelConfig"
 }
 
+if (-not $KeepExisting) {
+    Get-CimInstance Win32_Process -Filter "name = 'java.exe'" |
+            Where-Object { $_.CommandLine -like '*group-buy-market-app.jar*' -or $_.CommandLine -like '*s-pay-mall-ddd-app.jar*' } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+}
+
 if (-not $SkipBuild) {
     $env:JAVA_HOME = Split-Path (Split-Path $JavaExe -Parent) -Parent
     $env:Path = "$env:JAVA_HOME\bin;$(Split-Path $MavenExe -Parent);$env:Path"
@@ -40,12 +46,6 @@ if (-not $SkipBuild) {
     Push-Location (Join-Path $root "s-pay-mall-ddd-market-master")
     & $MavenExe -q -DskipTests package
     Pop-Location
-}
-
-if (-not $KeepExisting) {
-    Get-CimInstance Win32_Process -Filter "name = 'java.exe'" |
-            Where-Object { $_.CommandLine -like '*group-buy-market-app.jar*' -or $_.CommandLine -like '*s-pay-mall-ddd-app.jar*' } |
-            ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 }
 
 function Start-OtelService([string]$ServiceName, [string]$JarPath, [int]$Port, [string[]]$ExtraArgs) {

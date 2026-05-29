@@ -115,6 +115,16 @@ public class SeckillService implements ISeckillService {
     }
 
     @Override
+    public SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo) {
+        return seckillRepository.settlementSeckillOrder(userId, outTradeNo);
+    }
+
+    @Override
+    public SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason) {
+        return seckillRepository.refundSeckillOrder(userId, outTradeNo, refundReason);
+    }
+
+    @Override
     public void syncSeckillActivityStock() {
         seckillRepository.syncSeckillActivityStock();
     }

@@ -128,7 +128,7 @@
                market_deduction_amount, pay_amount, create_time, update_time
         from pay_order
         where status = 'PAY_SUCCESS'
-          and market_type = 1
+          and market_type in (1, 2)
           and update_time &lt; date_sub(now(), interval 5 minute)
         order by id asc
         limit 50

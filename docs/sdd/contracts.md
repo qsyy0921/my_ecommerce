@@ -109,6 +109,44 @@
 - `E0203` 库存不足。
 - `E0204` 重复参与。
 - `E0205` 库存初始化失败。
+- `E0206` 秒杀订单不存在。
+- `E0207` 秒杀订单状态不允许当前操作。
+
+### 秒杀支付结算
+
+`POST /api/v1/gbm/seckill/settlement_seckill_order`
+
+入参：
+
+- `userId`
+- `outTradeNo`
+- `source`
+- `channel`
+- `outTradeTime`
+
+行为：
+
+- `CREATE -> COMPLETE`。
+- 重复结算命中 `COMPLETE` 时按幂等成功返回。
+- `CLOSE/REFUND` 等终态不允许结算，返回稳定业务错误。
+
+### 秒杀退单退款
+
+`POST /api/v1/gbm/seckill/refund_seckill_order`
+
+入参：
+
+- `userId`
+- `outTradeNo`
+- `source`
+- `channel`
+- `refundReason`
+
+行为：
+
+- `CREATE -> CLOSE`：未支付取消，释放 Redis 用户占位，恢复库存桶，写 `ROLLBACK_CANCEL` 流水。
+- `COMPLETE -> REFUND`：已支付退款，释放 Redis 用户占位，恢复库存桶，写 `ROLLBACK_REFUND` 流水。
+- `CLOSE/REFUND`：幂等成功，不重复恢复库存。
 
 ## 前端到商城
 

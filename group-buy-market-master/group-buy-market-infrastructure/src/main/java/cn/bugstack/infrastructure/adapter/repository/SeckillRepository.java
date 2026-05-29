@@ -4,6 +4,7 @@ import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
+import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.shared.model.entity.OrderStateTransitionEntity;
 import cn.bugstack.infrastructure.dao.ISeckillActivityDao;
@@ -53,6 +54,8 @@ public class SeckillRepository implements ISeckillRepository {
     private static final String STOCK_FLOW_RESERVE = "RESERVE";
     private static final String STOCK_FLOW_ROLLBACK = "ROLLBACK";
     private static final String STOCK_FLOW_ROLLBACK_TIMEOUT = "ROLLBACK_TIMEOUT";
+    private static final String STOCK_FLOW_ROLLBACK_CANCEL = "ROLLBACK_CANCEL";
+    private static final String STOCK_FLOW_ROLLBACK_REFUND = "ROLLBACK_REFUND";
     private static final long SECKILL_USER_LOCK_TTL_HOURS = 24;
     private static final long SECKILL_RESULT_TTL_HOURS = 24;
 
@@ -434,6 +437,103 @@ public class SeckillRepository implements ISeckillRepository {
         }
     }
 
+    @Transactional(timeout = 5)
+    @Override
+    public SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo) {
+        SeckillOrder seckillOrder = querySeckillOrderPo(userId, outTradeNo);
+        if (null == seckillOrder) {
+            throw new AppException(ResponseCode.E0206);
+        }
+
+        SeckillOrderStatusEnumVO status = SeckillOrderStatusEnumVO.valueOf(seckillOrder.getStatus());
+        if (SeckillOrderStatusEnumVO.COMPLETE.equals(status)) {
+            SeckillOrderEntity entity = buildSeckillOrderEntity(seckillOrder);
+            cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
+            return entity;
+        }
+        if (!status.canPay()) {
+            throw new AppException(ResponseCode.E0207);
+        }
+
+        int updated = useOrderSharding()
+                ? seckillOrderDao.paySuccessOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+                : seckillOrderDao.paySuccessOrder(seckillOrder.getOrderId());
+        if (updated <= 0) {
+            SeckillOrder latest = querySeckillOrderPo(userId, outTradeNo);
+            if (null != latest && SeckillOrderStatusEnumVO.COMPLETE.equals(SeckillOrderStatusEnumVO.valueOf(latest.getStatus()))) {
+                SeckillOrderEntity entity = buildSeckillOrderEntity(latest);
+                cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
+                return entity;
+            }
+            throw new AppException(ResponseCode.UPDATE_ZERO);
+        }
+
+        orderStateFlowPort.record(OrderStateTransitionEntity.seckillOrderPaid(
+                seckillOrder.getOutTradeNo(),
+                seckillOrder.getOrderId(),
+                seckillOrder.getUserId(),
+                MDC.get("trace-id")));
+        SeckillOrder updatedOrder = querySeckillOrderPo(userId, outTradeNo);
+        SeckillOrderEntity entity = buildSeckillOrderEntity(updatedOrder);
+        cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order paid");
+        return entity;
+    }
+
+    @Transactional(timeout = 5)
+    @Override
+    public SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason) {
+        SeckillOrder seckillOrder = querySeckillOrderPo(userId, outTradeNo);
+        if (null == seckillOrder) {
+            throw new AppException(ResponseCode.E0206);
+        }
+
+        SeckillOrderStatusEnumVO status = SeckillOrderStatusEnumVO.valueOf(seckillOrder.getStatus());
+        if (SeckillOrderStatusEnumVO.REFUND.equals(status) || SeckillOrderStatusEnumVO.CLOSE.equals(status)) {
+            SeckillOrderEntity entity = buildSeckillOrderEntity(seckillOrder);
+            cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund already handled");
+            return entity;
+        }
+
+        if (SeckillOrderStatusEnumVO.CREATE.equals(status)) {
+            int updated = useOrderSharding()
+                    ? seckillOrderDao.closeUnpaidOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+                    : seckillOrderDao.closeUnpaidOrder(seckillOrder.getOrderId());
+            if (updated <= 0) {
+                throw new AppException(ResponseCode.UPDATE_ZERO);
+            }
+            String message = null == refundReason ? "unpaid seckill order canceled" : refundReason;
+            releaseSeckillStock(seckillOrder, STOCK_FLOW_ROLLBACK_CANCEL, 1, message);
+            orderStateFlowPort.record(OrderStateTransitionEntity.seckillUnpaidCanceled(
+                    seckillOrder.getOutTradeNo(),
+                    seckillOrder.getOrderId(),
+                    seckillOrder.getUserId(),
+                    MDC.get("trace-id"),
+                    message));
+        } else if (SeckillOrderStatusEnumVO.COMPLETE.equals(status)) {
+            int updated = useOrderSharding()
+                    ? seckillOrderDao.refundPaidOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+                    : seckillOrderDao.refundPaidOrder(seckillOrder.getOrderId());
+            if (updated <= 0) {
+                throw new AppException(ResponseCode.UPDATE_ZERO);
+            }
+            String message = null == refundReason ? "paid seckill order refunded" : refundReason;
+            releaseSeckillStock(seckillOrder, STOCK_FLOW_ROLLBACK_REFUND, 1, message);
+            orderStateFlowPort.record(OrderStateTransitionEntity.seckillOrderRefunded(
+                    seckillOrder.getOutTradeNo(),
+                    seckillOrder.getOrderId(),
+                    seckillOrder.getUserId(),
+                    MDC.get("trace-id"),
+                    message));
+        } else {
+            throw new AppException(ResponseCode.E0207);
+        }
+
+        SeckillOrder updatedOrder = querySeckillOrderPo(userId, outTradeNo);
+        SeckillOrderEntity entity = buildSeckillOrderEntity(updatedOrder);
+        cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund handled");
+        return entity;
+    }
+
     @Override
     public void syncSeckillActivityStock() {
         List<Long> activityIds = seckillActivityDao.queryStockSyncActivityIds();
@@ -529,6 +629,41 @@ public class SeckillRepository implements ISeckillRepository {
             count++;
         }
         return count;
+    }
+
+    private SeckillOrder querySeckillOrderPo(String userId, String outTradeNo) {
+        SeckillOrder seckillOrderReq = SeckillOrder.builder()
+                .userId(userId)
+                .outTradeNo(outTradeNo)
+                .build();
+        if (useOrderSharding()) {
+            return seckillOrderDao.querySeckillOrderByOutTradeNoFromTable(orderTableName(userId, outTradeNo), seckillOrderReq);
+        }
+        return seckillOrderDao.querySeckillOrderByOutTradeNo(seckillOrderReq);
+    }
+
+    private void releaseSeckillStock(SeckillOrder order, String changeType, int changeCount, String message) {
+        seckillActivityDao.updateReleaseStock(order.getActivityId());
+        SeckillOrderEntity entity = buildSeckillOrderEntity(order);
+        entity.setTraceId(MDC.get("trace-id"));
+        entity.setStockBucket(bucketOf(order.getUserId(), order.getOutTradeNo()));
+        long stockAfter = redisService.incr(stockBucketKey(order.getActivityId(), entity.getStockBucket()));
+        entity.setStockBefore((int) stockAfter - changeCount);
+        entity.setStockAfter((int) stockAfter);
+        redisService.remove(userLockKey(order.getActivityId(), order.getUserId()));
+        seckillStockFlowDao.insertIgnore(buildStockFlow(entity, changeType, changeCount, message));
+        clearLocalSoldOut(order.getActivityId());
+    }
+
+    private void cacheResult(SeckillOrderEntity entity, String resultStatus, String message) {
+        if (null == entity) {
+            return;
+        }
+        setResult(entity, resultStatus, message);
+        redisService.setValue(
+                resultKey(entity.getActivityId(), entity.getUserId(), entity.getOutTradeNo()),
+                JSON.toJSONString(entity),
+                TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
     }
 
     private SeckillOrderEntity buildSeckillOrderEntity(SeckillOrder seckillOrder) {

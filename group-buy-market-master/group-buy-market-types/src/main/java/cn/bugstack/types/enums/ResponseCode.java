@@ -33,6 +33,8 @@ public enum ResponseCode {
     E0203("E0203", "seckill stock not enough"),
     E0204("E0204", "seckill duplicate order"),
     E0205("E0205", "seckill stock init failed"),
+    E0206("E0206", "seckill order not found"),
+    E0207("E0207", "seckill order status invalid"),
 
     E0101("E0101", "拼团活动未生效"),
     E0102("E0102", "不在拼团活动有效时间内"),

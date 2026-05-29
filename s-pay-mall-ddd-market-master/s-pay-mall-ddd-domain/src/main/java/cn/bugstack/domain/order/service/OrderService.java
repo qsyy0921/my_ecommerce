@@ -13,6 +13,7 @@ import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -88,6 +89,13 @@ public class OrderService extends AbstractOrderService {
             } else {
                 log.info("payment callback idempotent hit, skip market settlement orderId:{}", orderId);
             }
+        } else if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
+            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
+            if (changed) {
+                asyncSettlementSeckillPayOrder(orderEntity, payTime);
+            } else {
+                log.info("payment callback idempotent hit, skip seckill settlement orderId:{}", orderId);
+            }
         } else {
             repository.changeOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
         }
@@ -100,6 +108,18 @@ public class OrderService extends AbstractOrderService {
                 port.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
             } catch (Exception e) {
                 log.error("async market settlement failed, wait reconciliation job userId:{} orderId:{}",
+                        orderEntity.getUserId(), orderEntity.getOrderId(), e);
+            }
+        });
+    }
+
+    private void asyncSettlementSeckillPayOrder(OrderEntity orderEntity, Date payTime) {
+        threadPoolExecutor.execute(() -> {
+            try {
+                port.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                repository.changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
+            } catch (Exception e) {
+                log.error("async seckill settlement failed, wait reconciliation job userId:{} orderId:{}",
                         orderEntity.getUserId(), orderEntity.getOrderId(), e);
             }
         });
@@ -141,12 +161,25 @@ public class OrderService extends AbstractOrderService {
             return false;
         }
 
-        // 3. 对于营销类型的单子，调用拼团执行组队退单
-        port.refundMarketPayOrder(userId, orderId);
+        MarketTypeVO marketTypeVO = MarketTypeVO.valueOf(null == orderEntity.getMarketType() ? MarketTypeVO.NO_MARKET.getCode() : orderEntity.getMarketType());
+
+        // 3. 对于营销类型的单子，先调用营销侧恢复对应库存和订单状态
+        if (MarketTypeVO.GROUP_BUY_MARKET.equals(marketTypeVO)) {
+            port.refundMarketPayOrder(userId, orderId);
+        } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
+            port.refundSeckillPayOrder(userId, orderId);
+        }
 
         // 4. 执行退单操作；CREATE 新创建订单，不需要退款
         if (OrderStatusVO.CREATE.getCode().equals(status) || OrderStatusVO.PAY_WAIT.getCode().equals(status)) {
             return repository.refundOrder(userId, orderId);
+        } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
+            boolean applied = OrderStatusVO.WAIT_REFUND.getCode().equals(status) || repository.refundMarketOrder(userId, orderId);
+            if (!applied) {
+                log.warn("秒杀退单申请失败 userId:{} orderId:{}", userId, orderId);
+                return false;
+            }
+            return refundPayOrder(userId, orderId);
         } else {
             boolean result = repository.refundMarketOrder(userId, orderId);
             if (result) {
@@ -191,7 +224,12 @@ public class OrderService extends AbstractOrderService {
         for (OrderEntity orderEntity : orderEntities) {
             try {
                 Date payTime = null == orderEntity.getPayTime() ? new Date() : orderEntity.getPayTime();
-                port.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
+                    port.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                    repository.changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
+                } else {
+                    port.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                }
                 successCount++;
             } catch (Exception e) {
                 log.error("market settlement reconcile failed userId:{} orderId:{}", orderEntity.getUserId(), orderEntity.getOrderId(), e);

@@ -24,6 +24,10 @@ public interface ISeckillRepository {
 
     void createSeckillOrders(List<SeckillOrderEntity> seckillOrderEntities);
 
+    SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo);
+
+    SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason);
+
     void syncSeckillActivityStock();
 
     int releaseTimeoutUnpaidOrders();

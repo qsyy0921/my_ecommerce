@@ -36,4 +36,16 @@ public interface ISeckillOrderDao {
 
     int closeTimeoutUnpaidOrderFromTable(@Param("tableName") String tableName, @Param("orderId") String orderId);
 
+    int paySuccessOrder(@Param("orderId") String orderId);
+
+    int paySuccessOrderFromTable(@Param("tableName") String tableName, @Param("orderId") String orderId);
+
+    int refundPaidOrder(@Param("orderId") String orderId);
+
+    int refundPaidOrderFromTable(@Param("tableName") String tableName, @Param("orderId") String orderId);
+
+    int closeUnpaidOrder(@Param("orderId") String orderId);
+
+    int closeUnpaidOrderFromTable(@Param("tableName") String tableName, @Param("orderId") String orderId);
+
 }

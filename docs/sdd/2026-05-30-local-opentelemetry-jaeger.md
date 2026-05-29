@@ -10,7 +10,7 @@
 - `docs/observability/otel-javaagent.properties`：统一配置 Java agent，只导出 traces，关闭 metrics/logs，避免与已有 Micrometer/日志体系重复。
 - `scripts/observability/download-otel-javaagent.ps1`：下载 OpenTelemetry Java agent 到 `.tools/otel/opentelemetry-javaagent.jar`。
 - `scripts/observability/start-local-tracing.ps1`：启动并等待 Jaeger 就绪。
-- `scripts/observability/start-services-with-otel.ps1`：用 JDK 1.8、`-javaagent` 和各自 `otel.service.name` 启动营销服务和商城服务。
+- `scripts/observability/start-services-with-otel.ps1`：用 JDK 1.8、`-javaagent` 和各自 `otel.service.name` 启动营销服务和商城服务；Windows 下会先停旧 Java 进程再 package，避免旧 jar 被占用导致 Spring Boot repackage 失败。
 - `scripts/observability/query-jaeger-services.ps1`：查询 Jaeger 当前已接收的服务列表。
 
 ## 启动命令

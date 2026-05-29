@@ -15,6 +15,10 @@ public interface IProductPort {
 
     void settlementMarketPayOrder(String userId, String orderId, Date orderTime);
 
+    void settlementSeckillPayOrder(String userId, String orderId, Date orderTime);
+
     void refundMarketPayOrder(String userId, String orderId);
+
+    void refundSeckillPayOrder(String userId, String orderId);
 
 }

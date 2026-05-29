@@ -148,4 +148,52 @@
           and status = 0
     </update>
 
+    <update id="paySuccessOrder">
+        update seckill_order
+        set status = 1,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
+    <update id="paySuccessOrderFromTable">
+        update ${tableName}
+        set status = 1,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
+    <update id="refundPaidOrder">
+        update seckill_order
+        set status = 3,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 1
+    </update>
+
+    <update id="refundPaidOrderFromTable">
+        update ${tableName}
+        set status = 3,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 1
+    </update>
+
+    <update id="closeUnpaidOrder">
+        update seckill_order
+        set status = 2,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
+    <update id="closeUnpaidOrderFromTable">
+        update ${tableName}
+        set status = 2,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
 </mapper>
