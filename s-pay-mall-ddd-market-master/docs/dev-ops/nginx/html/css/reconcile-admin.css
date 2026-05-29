@@ -1,0 +1,95 @@
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: Arial, "Microsoft YaHei", sans-serif;
+    background: #f6f7f9;
+    color: #1f2937;
+}
+.shell {
+    width: min(1280px, calc(100vw - 32px));
+    margin: 24px auto 48px;
+}
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+h1 { margin: 0; font-size: 26px; }
+p { margin: 8px 0 0; color: #6b7280; }
+nav { display: flex; gap: 10px; }
+nav a, button {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #111827;
+    border-radius: 6px;
+    padding: 9px 13px;
+    text-decoration: none;
+    cursor: pointer;
+}
+button:hover, nav a:hover { border-color: #2563eb; color: #2563eb; }
+.row-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+.authbar, .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.authbar {
+    margin-bottom: 12px;
+}
+.toolbar {
+    margin-bottom: 14px;
+}
+select, input {
+    min-width: 150px;
+    height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    padding: 0 10px;
+}
+.panel, .bill-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+th, td {
+    border-bottom: 1px solid #eef0f3;
+    padding: 11px 10px;
+    font-size: 13px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+}
+th { background: #f9fafb; color: #4b5563; font-weight: 700; }
+th:first-child, td:first-child { width: 42px; }
+.empty { text-align: center; color: #6b7280; padding: 34px; }
+.critical { color: #b91c1c; font-weight: 700; }
+.warning { color: #b45309; font-weight: 700; }
+.bill-panel {
+    margin-top: 18px;
+    padding: 18px;
+}
+.bill-panel h2 { margin: 0 0 8px; font-size: 18px; }
+textarea {
+    width: 100%;
+    height: 140px;
+    margin: 14px 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 10px;
+    resize: vertical;
+}
+@media (max-width: 760px) {
+    .topbar, .authbar, .toolbar { align-items: stretch; flex-direction: column; }
+    nav { flex-wrap: wrap; }
+}

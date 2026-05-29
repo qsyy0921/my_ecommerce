@@ -1,0 +1,189 @@
+server:
+  port: 8091
+  # 1核2G内存，可默认配置 200；4核8G内存【accept-count=1000、max-threads=800、max-connections=10000】，线程数经验值800。线程池过大，cpu调度会消耗大量时间
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    max-connections: 5000 # 最大连接数
+    threads:
+      max: 400        # 秒杀入口以Redis和MQ削峰，业务线程池不能过小
+      min-spare: 50   # 初始化线程数,最小空闲线程数,默认是10
+    accept-count: 2000 # 等待队列长度
+
+# 线程池配置
+thread:
+  pool:
+    executor:
+      config:
+        core-pool-size: 20
+        max-pool-size: 50
+        keep-alive-time: 5000
+        block-queue-size: 5000
+        # 当线程池中的任务队列已满，并且没有空闲线程可以执行新任务时，CallerRunsPolicy 会将任务回退到调用者线程中运行。这种策略适用于不希望丢失任务且可以接受调用者线程被阻塞的场景。
+        policy: CallerRunsPolicy
+
+# 数据库配置；启动时配置数据库资源信息
+spring:
+  datasource:
+    username: root
+    password: 12345678
+    url: jdbc:mysql://127.0.0.1:3306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=true&sessionVariables=sql_mode='NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: Retail_HikariCP
+      minimum-idle: 15 #最小空闲连接数量
+      idle-timeout: 180000 #空闲连接存活最大时间，默认600000（10分钟）
+      maximum-pool-size: 25 #连接池最大连接数，默认是10
+      auto-commit: true  #此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      max-lifetime: 1800000 #此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+      connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
+      connection-test-query: SELECT 1
+  # RabbitMQ
+  rabbitmq:
+    addresses: 192.168.1.108
+    port: 15672
+    username: admin
+    password: admin
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 8
+        max-concurrency: 32
+        prefetch: 100 # 每次投递n个消息，消费完在投递n个
+    template:
+      mandatory: true
+      delivery-mode: persistent # 确保全局默认设置为持久化（可选）
+    # 消息配置
+    config:
+      # 生产者
+      producer:
+        # 绑定交换机，统一一套交换机
+        exchange: group_buy_market_exchange
+        # 消息主题配置；路由key、队列
+        topic_team_success:
+          # 消息主题
+          routing_key: topic.team_success
+          # 消费队列
+          queue: group_buy_market_queue_2_topic_team_success
+        topic_team_refund:
+          # 消息主题
+          routing_key: topic.team_refund
+          # 消费队列
+          queue: group_buy_market_queue_2_topic_team_refund
+        topic_seckill_order_create:
+          routing_key: topic.seckill_order_create
+          queue: group_buy_market_queue_2_topic_seckill_order_create
+      dlx:
+        exchange: group_buy_market_dlx_exchange
+        routing_key: group.buy.market.dlq
+        queue: group_buy_market_queue_dlq
+
+# MyBatis 配置【如需使用记得打开】
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/*.xml
+  config-location:  classpath:/mybatis/config/mybatis-config.xml
+
+# Redis
+redis:
+  sdk:
+    config:
+      host: 192.168.1.108
+      port: 16379
+      pool-size: 64
+      min-idle-size: 16
+      idle-timeout: 30000
+      connect-timeout: 5000
+      retry-attempts: 3
+      retry-interval: 1000
+      ping-interval: 60000
+      keep-alive: true
+
+app:
+  mq:
+    publish-retry:
+      enabled: true
+      fixed-delay-millis: 30000
+      batch-size: 50
+  seckill:
+    admin-token: ${SECKILL_ADMIN_TOKEN:change-me}
+    activity-cache-ttl-millis: 120000
+    sold-out-cache-ttl-millis: 5000
+    stock-init-lock-wait-millis: 200
+    stock-init-cache-ttl-millis: 120000
+    stock-bucket-count: 64
+    stock-bucket-try-count: 64
+    order-shard-count: 16
+    order-table-prefix: seckill_order
+    prewarm:
+      enabled: true
+      before-minutes: 30
+      fixed-delay-millis: 30000
+      limit: 100
+    rate-limit:
+      enabled: true
+      activity-window-seconds: 1
+      activity-max: 5000
+      user-window-seconds: 1
+      user-max: 5
+      ip-window-seconds: 1
+      ip-max: 1000
+    lock:
+      max-concurrent-per-activity: 1000
+    order-create-buffer:
+      mode: redis_stream
+      local-capacity: 50000
+      redis-queue-key: seckill:order:create:queue
+      stream-key: seckill:order:create:stream
+      stream-shard-count: 16
+      stream-group: seckill-order-create-group
+      stream-max-len: 0
+      pending-idle-millis: 10000
+      pending-max-retry: 5
+      dead-stream-key: seckill:order:create:manual
+      metrics-sample-interval-millis: 5000
+      worker-count: 32
+      batch-size: 100
+    fault-injection:
+      enabled: false
+      redis-jitter-rate: 0
+      redis-jitter-millis: 0
+      db-batch-failure-rate: 0
+      stream-ack-failure-rate: 0
+
+# 扳手工程；通用配置组件「配置中心、设计模式框架、限流服务」
+xfg:
+  wrench:
+    config:
+      system: group-buy-market
+      register:
+        host: 192.168.1.108
+        port: 16379
+
+# 日志；logstash部署的服务器IP
+logstash:
+  host: 127.0.0.1
+
+# 监控配置 Prometheus + Grafana
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 暴露所有端点，包括自定义端点
+  endpoint:
+    health:
+      show-details: always # 显示详细的健康检查信息
+  metrics:
+    export:
+      prometheus:
+        enabled: true # 启用Prometheus
+  prometheus:
+    enabled: true # 启用Prometheus端点
+
+# 日志
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml

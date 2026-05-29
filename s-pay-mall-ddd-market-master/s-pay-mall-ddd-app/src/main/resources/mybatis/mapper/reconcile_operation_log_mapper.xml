@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IReconcileOperationLogDao">
+
+    <insert id="insert" parameterType="cn.bugstack.infrastructure.dao.po.ReconcileOperationLog">
+        insert into reconcile_operation_log(
+            operator, operation_type, biz_id, request_body, result, create_time
+        ) values(
+            #{operator}, #{operationType}, #{bizId}, #{requestBody}, #{result}, now()
+        )
+    </insert>
+
+</mapper>

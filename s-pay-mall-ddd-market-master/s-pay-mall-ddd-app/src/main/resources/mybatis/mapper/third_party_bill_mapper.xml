@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IThirdPartyBillDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.ThirdPartyBill">
+        <id column="id" property="id"/>
+        <result column="bill_no" property="billNo"/>
+        <result column="order_id" property="orderId"/>
+        <result column="channel" property="channel"/>
+        <result column="channel_trade_no" property="channelTradeNo"/>
+        <result column="bill_type" property="billType"/>
+        <result column="amount" property="amount"/>
+        <result column="bill_status" property="billStatus"/>
+        <result column="bill_time" property="billTime"/>
+        <result column="raw_line" property="rawLine"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insertIgnoreBatch" parameterType="java.util.List">
+        insert ignore into third_party_bill(
+            bill_no, order_id, channel, channel_trade_no, bill_type,
+            amount, bill_status, bill_time, raw_line, create_time, update_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.billNo}, #{item.orderId}, #{item.channel}, #{item.channelTradeNo}, #{item.billType},
+                #{item.amount}, #{item.billStatus}, #{item.billTime}, #{item.rawLine}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+    <select id="countUnmatchedBill" resultType="int">
+        select count(1)
+        from third_party_bill tb
+        left join payment_flow pf on pf.order_id = tb.order_id and tb.bill_type = 'PAY'
+        left join refund_flow rf on rf.order_id = tb.order_id and tb.bill_type = 'REFUND'
+        where (tb.bill_type = 'PAY' and pf.id is null)
+           or (tb.bill_type = 'REFUND' and rf.id is null)
+    </select>
+
+    <select id="queryUnmatchedBillList" resultMap="dataMap">
+        select tb.id, tb.bill_no, tb.order_id, tb.channel, tb.channel_trade_no, tb.bill_type,
+               tb.amount, tb.bill_status, tb.bill_time, tb.raw_line, tb.create_time, tb.update_time
+        from third_party_bill tb
+        left join payment_flow pf on pf.order_id = tb.order_id and tb.bill_type = 'PAY'
+        left join refund_flow rf on rf.order_id = tb.order_id and tb.bill_type = 'REFUND'
+        where (tb.bill_type = 'PAY' and pf.id is null)
+           or (tb.bill_type = 'REFUND' and rf.id is null)
+        order by tb.bill_time asc
+        limit #{limit}
+    </select>
+
+</mapper>

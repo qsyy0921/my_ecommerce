@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.ISeckillActivityDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.SeckillActivity">
+        <id column="id" property="id"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="activity_name" property="activityName"/>
+        <result column="source" property="source"/>
+        <result column="channel" property="channel"/>
+        <result column="goods_id" property="goodsId"/>
+        <result column="seckill_price" property="seckillPrice"/>
+        <result column="total_count" property="totalCount"/>
+        <result column="available_count" property="availableCount"/>
+        <result column="lock_count" property="lockCount"/>
+        <result column="take_limit_count" property="takeLimitCount"/>
+        <result column="status" property="status"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="querySeckillActivity" parameterType="cn.bugstack.infrastructure.dao.po.SeckillActivity" resultMap="dataMap">
+        select id, activity_id, activity_name, source, channel, goods_id, seckill_price,
+               total_count, available_count, lock_count, take_limit_count, status,
+               start_time, end_time, create_time, update_time
+        from seckill_activity
+        where 1 = 1
+        <if test="activityId != null">
+            and activity_id = #{activityId}
+        </if>
+        <if test="source != null and source != ''">
+            and source = #{source}
+        </if>
+        <if test="channel != null and channel != ''">
+            and channel = #{channel}
+        </if>
+        <if test="goodsId != null and goodsId != ''">
+            and goods_id = #{goodsId}
+        </if>
+        limit 1
+    </select>
+
+    <update id="updateOccupyStock" parameterType="java.lang.Long">
+        update seckill_activity
+        set available_count = available_count - 1,
+            lock_count = lock_count + 1,
+            update_time = now()
+        where activity_id = #{activityId}
+          and status = 1
+          and available_count > 0
+          and now() between start_time and end_time
+    </update>
+
+    <update id="updateReleaseStock" parameterType="java.lang.Long">
+        update seckill_activity
+        set available_count = available_count + 1,
+            lock_count = lock_count - 1,
+            update_time = now()
+        where activity_id = #{activityId}
+          and lock_count > 0
+    </update>
+
+    <select id="queryStockSyncActivityIds" resultType="java.lang.Long">
+        select activity_id
+        from seckill_activity
+        where status = 1
+    </select>
+
+    <select id="queryPrewarmActivities" resultMap="dataMap">
+        select id, activity_id, activity_name, source, channel, goods_id, seckill_price,
+               total_count, available_count, lock_count, take_limit_count, status,
+               start_time, end_time, create_time, update_time
+        from seckill_activity
+        where status = 1
+          and start_time &lt;= date_add(now(), interval #{beforeMinutes} minute)
+          and end_time &gt; now()
+        order by start_time asc, activity_id asc
+        limit #{limit}
+    </select>
+
+    <update id="syncStockByOrderCount" parameterType="java.lang.Long">
+        update seckill_activity a
+        left join (
+            select activity_id, count(*) as order_count
+            from seckill_order
+            where activity_id = #{activityId}
+              and status in (0, 1)
+            group by activity_id
+        ) o on a.activity_id = o.activity_id
+        set a.lock_count = coalesce(o.order_count, 0),
+            a.available_count = greatest(a.total_count - coalesce(o.order_count, 0), 0),
+            a.update_time = now()
+        where a.activity_id = #{activityId}
+    </update>
+
+    <update id="syncStockByActiveCount">
+        update seckill_activity
+        set lock_count = #{activeCount},
+            available_count = greatest(total_count - #{activeCount}, 0),
+            update_time = now()
+        where activity_id = #{activityId}
+    </update>
+
+</mapper>

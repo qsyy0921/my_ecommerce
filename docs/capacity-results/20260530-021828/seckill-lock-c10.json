@@ -1,0 +1,27 @@
+﻿{
+  "warmup": true,
+  "httpStatus": 200,
+  "code": "0000",
+  "availableCount": 20000
+}
+{
+  "scenario": "seckill-lock",
+  "total": 20,
+  "concurrency": 10,
+  "elapsedSeconds": 0.219,
+  "throughput": 91.45,
+  "httpSuccess": 20,
+  "businessSuccess": 20,
+  "businessFailed": 0,
+  "avgMs": 92.6,
+  "p50Ms": 77.66,
+  "p95Ms": 135.83,
+  "p99Ms": 139.06,
+  "maxMs": 139.06,
+  "codeCounts": {
+    "0000": 20
+  },
+  "resultStatusCounts": {
+    "PROCESSING": 20
+  }
+}

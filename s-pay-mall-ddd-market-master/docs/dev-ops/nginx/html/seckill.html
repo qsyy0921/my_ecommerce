@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小傅哥 - 秒杀活动</title>
+    <link rel="stylesheet" href="css/index.css?v=20260524">
+</head>
+<body>
+<div class="shop-shell">
+    <div class="nav-tabs">
+        <a class="nav-tab" href="index.html">拼团</a>
+        <a class="nav-tab active" href="seckill.html">秒杀</a>
+        <a class="nav-tab" href="seckill-ops.html">秒杀运维</a>
+        <a class="nav-tab" href="order-list.html">订单</a>
+    </div>
+    <div class="pay-switch" aria-label="支付渠道">
+        <button type="button" data-pay-channel-option="mock">模拟支付</button>
+        <button type="button" data-pay-channel-option="alipay">支付宝</button>
+    </div>
+</div>
+
+<div class="swiper-container seckill-hero">
+    <div class="swiper-wrapper">
+        <div class="swiper-slide"><img src="./images/sku-13811216-01.png"></div>
+    </div>
+</div>
+
+<section class="product-info seckill-card">
+    <div class="seckill-label">限时秒杀</div>
+    <h1 id="seckillTitle" class="product-title">加载中...</h1>
+    <div class="seckill-price-row">
+        <span id="seckillPrice" class="discount-price">--</span>
+        <span id="originalPrice" class="original-price">--</span>
+    </div>
+    <div id="seckillMeta" class="promotion-text">正在查询秒杀库存</div>
+</section>
+
+<section class="group-list">
+    <div class="group-item">
+        <div>
+            <div class="user-info">秒杀库存</div>
+            <div id="stockText" class="group-status">--</div>
+        </div>
+        <div class="right">
+            <button id="seckillBtn" class="group-btn">立即秒杀</button>
+        </div>
+    </div>
+    <div id="seckillResult" class="seckill-result"></div>
+</section>
+
+<script src="js/common.js?v=20260524"></script>
+<script>
+let seckillActivity = null;
+
+function bindShellControls() {
+    AppUtils.setPayChannel(AppUtils.getPayChannel());
+    document.querySelectorAll('[data-pay-channel-option]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            AppUtils.setPayChannel(this.dataset.payChannelOption);
+        });
+    });
+}
+
+function formatMoney(value) {
+    return '￥' + Number(value || 0).toFixed(0);
+}
+
+function generateOutTradeNo() {
+    return String(Date.now()).slice(-10) + String(Math.floor(Math.random() * 90 + 10));
+}
+
+function renderResult(message, success) {
+    const result = document.getElementById('seckillResult');
+    result.className = success ? 'seckill-result success' : 'seckill-result error';
+    result.textContent = message;
+}
+
+function showSeckillPaymentConfirm(price) {
+    const overlay = document.createElement('div');
+    overlay.className = 'payment-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'payment-modal';
+    const isMockPay = !!document.querySelector('form[data-pay-channel="mock"]');
+    modal.innerHTML = isMockPay ? `
+        <h3>模拟支付确认</h3>
+        <p>秒杀金额：${formatMoney(price)}</p>
+        <p>当前为本地模拟支付渠道，不需要登录支付宝或输入支付密码。</p>
+        <div class="modal-buttons">
+            <button class="confirm-btn">确认模拟支付</button>
+            <button class="cancel-btn">取消支付</button>
+        </div>
+    ` : `
+        <h3>支付确认</h3>
+        <p>秒杀金额：${formatMoney(price)}</p>
+        <p>买家账号：<span class="copyable" data-copy="kvhmoj3832@sandbox.com">kvhmoj3832@sandbox.com</span></p>
+        <p>登录密码：111111</p>
+        <p>支付密码：111111</p>
+        <div class="modal-buttons">
+            <button class="confirm-btn">确认支付</button>
+            <button class="cancel-btn">取消支付</button>
+        </div>
+    `;
+
+    modal.querySelector('.confirm-btn').addEventListener('click', function() {
+        const form = document.querySelector('form');
+        if (form) form.submit();
+        overlay.remove();
+    });
+
+    modal.querySelector('.cancel-btn').addEventListener('click', function() {
+        document.querySelectorAll('form').forEach(form => form.remove());
+        overlay.remove();
+    });
+
+    const copyable = modal.querySelector('.copyable');
+    if (copyable) {
+        copyable.addEventListener('click', function() {
+            navigator.clipboard.writeText(this.getAttribute('data-copy'));
+        });
+    }
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
+
+function loadSeckill() {
+    const userId = AppUtils.getCurrentUserId();
+    if (!userId) return;
+
+    fetch(AppConfig.groupBuyMarketUrl + '/api/v1/gbm/seckill/query_seckill_market_config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            userId: userId,
+            source: 's01',
+            channel: 'c01',
+            goodsId: AppConfig.goodsId,
+            activityId: 900001
+        })
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.code !== '0000') {
+            renderResult(res.info || '秒杀活动查询失败', false);
+            return;
+        }
+        seckillActivity = res.data;
+        document.getElementById('seckillTitle').textContent = seckillActivity.goodsName || seckillActivity.activityName;
+        document.getElementById('seckillPrice').textContent = formatMoney(seckillActivity.seckillPrice);
+        document.getElementById('originalPrice').textContent = formatMoney(seckillActivity.originalPrice);
+        document.getElementById('seckillMeta').textContent = `${seckillActivity.activityName}，活动库存 ${seckillActivity.totalCount}`;
+        document.getElementById('stockText').textContent = `剩余 ${seckillActivity.availableCount}，已锁定 ${seckillActivity.lockCount}`;
+        document.getElementById('seckillBtn').disabled = seckillActivity.availableCount <= 0 || seckillActivity.status !== 1;
+    })
+    .catch(error => renderResult('秒杀活动查询异常：' + error.message, false));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    bindShellControls();
+    loadSeckill();
+
+    document.getElementById('seckillBtn').addEventListener('click', function() {
+        const userId = AppUtils.getCurrentUserId();
+        if (!userId || !seckillActivity) return;
+
+        this.disabled = true;
+        renderResult('正在创建秒杀支付单...', true);
+
+        fetch(AppConfig.sPayMallUrl + '/api/v1/alipay/create_pay_order', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                userId: userId,
+                productId: seckillActivity.goodsId,
+                activityId: seckillActivity.activityId,
+                marketType: 2,
+                payChannel: AppUtils.getPayChannel()
+            })
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.code !== '0000') {
+                renderResult(res.info || '秒杀支付单创建失败', false);
+                this.disabled = false;
+                return;
+            }
+            const channel = AppUtils.getPayChannel() === 'alipay' ? '支付宝' : '模拟支付';
+            document.querySelectorAll('form').forEach(form => form.remove());
+            document.body.insertAdjacentHTML('beforeend', res.data);
+            renderResult(`秒杀支付单创建成功，当前选择 ${channel}。`, true);
+            showSeckillPaymentConfirm(seckillActivity.seckillPrice);
+            loadSeckill();
+        })
+        .catch(error => {
+            renderResult('秒杀支付单创建异常：' + error.message, false);
+            this.disabled = false;
+        });
+    });
+});
+</script>
+</body>
+</html>

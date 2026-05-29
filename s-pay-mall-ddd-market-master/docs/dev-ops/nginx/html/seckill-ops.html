@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>秒杀补偿台</title>
+    <link rel="stylesheet" href="./css/reconcile-admin.css">
+</head>
+<body>
+<main class="shell">
+    <header class="topbar">
+        <div>
+            <h1>秒杀补偿台</h1>
+            <p>人工补偿 Stream 查询与重放</p>
+        </div>
+        <nav>
+            <a href="./index.html">商城</a>
+            <a href="./seckill.html">秒杀</a>
+            <a href="./reconcile-admin.html">对账</a>
+        </nav>
+    </header>
+
+    <section class="authbar">
+        <input id="adminToken" type="password" placeholder="秒杀运维口令">
+        <input id="adminOperator" type="text" placeholder="操作人">
+        <button id="saveAuthBtn">保存</button>
+    </section>
+
+    <section class="toolbar">
+        <button id="queryBtn">查询补偿消息</button>
+        <button id="replaySelectedBtn">重放选中</button>
+        <button id="replayTopBtn">重放前 20 条</button>
+    </section>
+
+    <section class="panel">
+        <table>
+            <thead>
+            <tr>
+                <th><input type="checkbox" id="checkAll"></th>
+                <th>消息 ID</th>
+                <th>原 Stream</th>
+                <th>原消息</th>
+                <th>重试</th>
+                <th>错误</th>
+                <th>订单体</th>
+            </tr>
+            </thead>
+            <tbody id="messageBody"></tbody>
+        </table>
+    </section>
+</main>
+<script src="./js/common.js?v=20260524"></script>
+<script src="./js/seckill-ops.js?v=20260526"></script>
+</body>
+</html>

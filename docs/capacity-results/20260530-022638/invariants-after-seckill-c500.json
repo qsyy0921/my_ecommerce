@@ -1,0 +1,20 @@
+﻿{
+    "passed":  true,
+    "checkedAt":  "2026-05-30 02:28:14",
+    "checks":  [
+                   {
+                       "name":  "seckill",
+                       "passed":  true,
+                       "activityId":  990700,
+                       "orderTables":  "seckill_order",
+                       "totalCount":  20000,
+                       "dbAvailableCount":  18000,
+                       "dbLockCount":  2000,
+                       "activeOrderCount":  2000,
+                       "redisAvailableCount":  18000,
+                       "expectedAvailableCount":  18000,
+                       "duplicateUserActivity":  0,
+                       "duplicateUserOutTrade":  0
+                   }
+               ]
+}

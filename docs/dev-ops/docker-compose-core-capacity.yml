@@ -1,0 +1,60 @@
+services:
+  group-buy-market-1:
+    build:
+      context: ../../group-buy-market-master/group-buy-market-app
+    container_name: group-buy-market-1
+    restart: on-failure
+    ports:
+      - "8091:8091"
+    environment:
+      - TZ=Asia/Shanghai
+      - SERVER_PORT=8091
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:23306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_RABBITMQ_ADDRESSES=host.docker.internal
+      - SPRING_RABBITMQ_PORT=5672
+      - REDIS_SDK_CONFIG_HOST=host.docker.internal
+      - REDIS_SDK_CONFIG_PORT=26379
+      - APP_SECKILL_ORDER_CREATE_BUFFER_MODE=redis_stream
+
+  group-buy-market-2:
+    build:
+      context: ../../group-buy-market-master/group-buy-market-app
+    container_name: group-buy-market-2
+    restart: on-failure
+    ports:
+      - "8092:8092"
+    environment:
+      - TZ=Asia/Shanghai
+      - SERVER_PORT=8092
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:23306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_RABBITMQ_ADDRESSES=host.docker.internal
+      - SPRING_RABBITMQ_PORT=5672
+      - REDIS_SDK_CONFIG_HOST=host.docker.internal
+      - REDIS_SDK_CONFIG_PORT=26379
+      - APP_SECKILL_ORDER_CREATE_BUFFER_MODE=redis_stream
+
+  group-buy-market-3:
+    build:
+      context: ../../group-buy-market-master/group-buy-market-app
+    container_name: group-buy-market-3
+    restart: on-failure
+    ports:
+      - "8093:8093"
+    environment:
+      - TZ=Asia/Shanghai
+      - SERVER_PORT=8093
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:23306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_RABBITMQ_ADDRESSES=host.docker.internal
+      - SPRING_RABBITMQ_PORT=5672
+      - REDIS_SDK_CONFIG_HOST=host.docker.internal
+      - REDIS_SDK_CONFIG_PORT=26379
+      - APP_SECKILL_ORDER_CREATE_BUFFER_MODE=redis_stream

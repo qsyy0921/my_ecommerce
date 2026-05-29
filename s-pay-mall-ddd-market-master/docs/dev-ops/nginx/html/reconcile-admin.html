@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对账中心</title>
+    <link rel="stylesheet" href="./css/reconcile-admin.css">
+</head>
+<body>
+<main class="shell">
+    <header class="topbar">
+        <div>
+            <h1>对账中心</h1>
+            <p>差错单、批量处理、三方账单导入</p>
+        </div>
+        <nav>
+            <a href="./index.html">商城</a>
+            <a href="./order-list.html">订单</a>
+            <a href="./seckill.html">秒杀</a>
+        </nav>
+    </header>
+
+    <section class="authbar">
+        <input id="adminToken" type="password" placeholder="对账后台口令">
+        <input id="adminOperator" type="text" placeholder="操作人">
+        <button id="saveAuthBtn">保存</button>
+    </section>
+
+    <section class="toolbar">
+        <select id="caseStatus">
+            <option value="0">待处理</option>
+            <option value="">全部</option>
+            <option value="1">已处理</option>
+            <option value="2">已忽略</option>
+        </select>
+        <select id="caseType">
+            <option value="">全部类型</option>
+            <option value="MARKET_SETTLEMENT_TIMEOUT">营销结算超时</option>
+            <option value="PAY_WAIT_TIMEOUT">待支付超时</option>
+            <option value="REFUND_TIMEOUT">退款中间态</option>
+            <option value="MQ_CONSUME_FAIL">MQ 消费失败</option>
+            <option value="PAY_FLOW_MISS_BILL">支付流水缺账单</option>
+            <option value="REFUND_FLOW_MISS_BILL">退款流水缺账单</option>
+            <option value="BILL_MISS_LOCAL_FLOW">账单缺本地流水</option>
+        </select>
+        <button id="scanBtn">扫描</button>
+        <button id="queryBtn">查询</button>
+        <button id="batchReplayBtn">批量重放</button>
+        <button id="batchHandledBtn">批量处理</button>
+        <button id="batchIgnoredBtn">批量忽略</button>
+    </section>
+
+    <section class="panel">
+        <table>
+            <thead>
+            <tr>
+                <th><input type="checkbox" id="checkAll"></th>
+                <th>差错单</th>
+                <th>类型</th>
+                <th>等级</th>
+                <th>业务单号</th>
+                <th>状态</th>
+                <th>说明</th>
+                <th>更新时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="caseBody"></tbody>
+        </table>
+    </section>
+
+    <section class="bill-panel">
+        <h2>三方账单导入</h2>
+        <p>CSV 列：billNo,orderId,channel,channelTradeNo,billType,amount,billStatus,billTime</p>
+        <textarea id="billCsv" spellcheck="false" placeholder="billNo,orderId,channel,channelTradeNo,billType,amount,billStatus,billTime"></textarea>
+        <button id="importBillBtn">导入账单</button>
+    </section>
+</main>
+<script src="./js/reconcile-admin.js?v=20260525-reconcile2"></script>
+</body>
+</html>

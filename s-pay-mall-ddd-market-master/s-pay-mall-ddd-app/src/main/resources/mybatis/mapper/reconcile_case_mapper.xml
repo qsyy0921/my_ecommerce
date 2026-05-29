@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IReconcileCaseDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.ReconcileCase">
+        <id column="id" property="id"/>
+        <result column="case_no" property="caseNo"/>
+        <result column="biz_type" property="bizType"/>
+        <result column="biz_id" property="bizId"/>
+        <result column="user_id" property="userId"/>
+        <result column="case_type" property="caseType"/>
+        <result column="case_status" property="caseStatus"/>
+        <result column="severity" property="severity"/>
+        <result column="source_status" property="sourceStatus"/>
+        <result column="target_status" property="targetStatus"/>
+        <result column="summary" property="summary"/>
+        <result column="detail" property="detail"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="handled_time" property="handledTime"/>
+        <result column="handler" property="handler"/>
+        <result column="handle_note" property="handleNote"/>
+    </resultMap>
+
+    <insert id="upsert" parameterType="cn.bugstack.infrastructure.dao.po.ReconcileCase">
+        insert into reconcile_case(
+            case_no, biz_type, biz_id, user_id, case_type, case_status,
+            severity, source_status, target_status, summary, detail, retry_count,
+            create_time, update_time
+        ) values(
+            #{caseNo}, #{bizType}, #{bizId}, #{userId}, #{caseType}, #{caseStatus},
+            #{severity}, #{sourceStatus}, #{targetStatus}, #{summary}, #{detail}, #{retryCount},
+            now(), now()
+        )
+        on duplicate key update
+            source_status = values(source_status),
+            target_status = values(target_status),
+            summary = values(summary),
+            detail = values(detail),
+            retry_count = retry_count + 1,
+            case_status = if(case_status = 1, case_status, values(case_status)),
+            update_time = now()
+    </insert>
+
+    <select id="queryCaseList" resultMap="dataMap">
+        select id, case_no, biz_type, biz_id, user_id, case_type, case_status,
+               severity, source_status, target_status, summary, detail, retry_count,
+               create_time, update_time, handled_time, handler, handle_note
+        from reconcile_case
+        where 1 = 1
+        <if test="caseStatus != null">
+            and case_status = #{caseStatus}
+        </if>
+        <if test="caseType != null and caseType != ''">
+            and case_type = #{caseType}
+        </if>
+        <if test="lastId != null">
+            and id &gt; #{lastId}
+        </if>
+        order by id asc
+        limit #{pageSize}
+    </select>
+
+    <update id="updateCaseHandled">
+        update reconcile_case
+        set case_status = #{caseStatus},
+            handler = #{handler},
+            handle_note = #{handleNote},
+            handled_time = now(),
+            update_time = now()
+        where case_no = #{caseNo}
+          and case_status != 1
+    </update>
+
+    <select id="countOpenCase" resultType="int">
+        select count(1)
+        from reconcile_case
+        where case_status = 0
+        <if test="caseType != null and caseType != ''">
+            and case_type = #{caseType}
+        </if>
+    </select>
+
+    <select id="countSlaTimeoutOpenCase" resultType="int">
+        select count(1)
+        from reconcile_case
+        where case_status = 0
+          and (
+            (severity = 'critical' and update_time &lt; date_sub(now(), interval 15 minute))
+            or
+            (severity &lt;&gt; 'critical' and update_time &lt; date_sub(now(), interval 2 hour))
+          )
+    </select>
+
+</mapper>

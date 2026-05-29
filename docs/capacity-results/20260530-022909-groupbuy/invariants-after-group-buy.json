@@ -1,0 +1,15 @@
+﻿{
+    "passed":  true,
+    "checkedAt":  "2026-05-30 02:29:19",
+    "checks":  [
+                   {
+                       "name":  "group-buy",
+                       "passed":  true,
+                       "userPrefix":  "gbcap0530022909",
+                       "teamCount":  400,
+                       "orderCount":  400,
+                       "teamMismatch":  0,
+                       "duplicateUserOutTrade":  0
+                   }
+               ]
+}

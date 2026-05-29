@@ -1,0 +1,231 @@
+groups:
+  - name: group-buy-market.rules
+    rules:
+      - alert: GroupBuyMarketDown
+        expr: up{job="group-buy-market"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "group-buy-market is down"
+          description: "The marketing service has not been scraped for more than 1 minute."
+
+      - alert: GroupBuyMarketHighHttp5xx
+        expr: sum(rate(http_server_requests_seconds_count{job="group-buy-market",status=~"5.."}[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "group-buy-market 5xx rate is high"
+          description: "HTTP 5xx count is above 1 request/sec for 3 minutes."
+
+      - alert: GroupBuyMarketSlowHttp
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="group-buy-market"}[5m])) by (le,uri)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "group-buy-market P95 latency is high"
+          description: "P95 latency is above 1 second."
+
+      - alert: SeckillStreamLagHigh
+        expr: max(seckill_stream_lag_messages{job="group-buy-market"}) > 10000
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill stream lag is high"
+          description: "Redis Stream lag is above 10000 messages for 3 minutes."
+
+      - alert: SeckillStreamPendingHigh
+        expr: max(seckill_stream_pending_messages{job="group-buy-market"}) > 1000
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill stream pending is high"
+          description: "Redis Stream pending-list is above 1000 messages for 3 minutes."
+
+      - alert: SeckillStreamDlqIncrease
+        expr: increase(seckill_stream_dlq_total{job="group-buy-market"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "seckill stream has manual compensation messages"
+          description: "Messages have been isolated to the manual compensation stream."
+
+      - alert: SeckillOrderBatchInsertSlow
+        expr: histogram_quantile(0.95, sum(rate(seckill_order_batch_insert_seconds_bucket{job="group-buy-market"}[5m])) by (le)) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill batch insert is slow"
+          description: "P95 batch insert latency is above 500ms."
+
+      - alert: SeckillLockSlow
+        expr: histogram_quantile(0.95, sum(rate(seckill_lock_seconds_bucket{job="group-buy-market"}[5m])) by (le,outcome)) > 0.2
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill lock latency is high"
+          description: "P95 seckill lock latency is above 200ms."
+
+      - alert: SeckillEntranceRateLimited
+        expr: increase(seckill_rate_limited_total{job="group-buy-market"}[5m]) > 1000
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill entrance rate limiting is high"
+          description: "More than 1000 seckill requests were rate limited in 5 minutes."
+
+      - alert: SeckillDuplicateSpike
+        expr: increase(seckill_duplicate_total{job="group-buy-market"}[5m]) > 100
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill duplicate requests increased"
+          description: "Duplicate seckill qualifications increased sharply in 5 minutes."
+
+      - alert: SeckillStockNotEnough
+        expr: increase(seckill_stock_not_enough_total{job="group-buy-market"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "seckill stock not enough"
+          description: "Seckill stock has been exhausted or local sold-out cache is active."
+
+      - alert: MarketNotifyTaskPendingHigh
+        expr: market_notify_task_pending{job="group-buy-market"} > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "market notify task backlog is high"
+          description: "notify_task pending/retry backlog is above 100 for 5 minutes."
+
+      - alert: MarketNotifyTaskFailed
+        expr: market_notify_task_failed{job="group-buy-market"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "market notify task has failed records"
+          description: "notify_task has terminal failed records and needs manual reconciliation."
+
+      - alert: MarketRabbitMqDlqIncrease
+        expr: increase(market_mq_dlq_total{job="group-buy-market"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "group-buy-market RabbitMQ DLQ increased"
+          description: "RabbitMQ dead-letter messages were persisted to mq_message_record and need manual handling."
+
+  - name: s-pay-mall.rules
+    rules:
+      - alert: SPayMallDown
+        expr: up{job="s-pay-mall"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "s-pay-mall is down"
+          description: "The payment mall service has not been scraped for more than 1 minute."
+
+      - alert: SPayMallHighHttp5xx
+        expr: sum(rate(http_server_requests_seconds_count{job="s-pay-mall",status=~"5.."}[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "s-pay-mall 5xx rate is high"
+          description: "HTTP 5xx count is above 1 request/sec for 3 minutes."
+
+      - alert: SPayMallPaymentCallbackFailed
+        expr: increase(mall_payment_callback_fail_total{job="s-pay-mall"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "payment callback validation failed"
+          description: "Alipay callback failed because trade_status or signature validation failed."
+
+      - alert: SPayMallReconcileOpenCases
+        expr: mall_reconcile_open_cases{job="s-pay-mall",type="ALL"} > 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "reconciliation open cases exist"
+          description: "Open discrepancy cases exist in reconcile_case."
+
+      - alert: SPayMallCriticalReconcileCases
+        expr: mall_reconcile_open_cases{job="s-pay-mall",type=~"MARKET_SETTLEMENT_TIMEOUT|MQ_CONSUME_FAIL"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "critical reconciliation cases exist"
+          description: "Market settlement timeout or MQ consume failure needs immediate handling."
+
+      - alert: SPayMallReconcileSlaTimeout
+        expr: mall_reconcile_sla_timeout_cases{job="s-pay-mall",type="ALL"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "reconciliation cases exceeded SLA"
+          description: "Critical cases exceeded 15 minutes or warning cases exceeded 2 hours."
+
+      - alert: SPayMallOrderIntermediateAnomaly
+        expr: mall_order_intermediate_anomaly{job="s-pay-mall"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "mall order stuck in intermediate status"
+          description: "PAY_WAIT, PAY_SUCCESS or WAIT_REFUND order has stayed too long."
+
+      - alert: SPayMallMqConsumeFailed
+        expr: mall_mq_consume_failed_messages{job="s-pay-mall",type="ALL"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "mall MQ consume failure exists"
+          description: "mq_message_record has failed messages and needs replay or compensation."
+
+      - alert: SPayMallBillReconcileAnomaly
+        expr: mall_bill_reconcile_anomaly{job="s-pay-mall"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "payment/refund bill reconciliation anomaly"
+          description: "Local payment/refund flow and third-party bill are not matched."
+
+  - name: rabbitmq.rules
+    rules:
+      - alert: RabbitMQQueueBacklogHigh
+        expr: rabbitmq_queue_messages_ready{queue=~"group_buy_market_queue_.*|s_pay_mall_queue_.*"} > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ queue ready backlog is high"
+          description: "Queue ready messages are above 10000 for 5 minutes."
+
+      - alert: RabbitMQQueueUnackedHigh
+        expr: rabbitmq_queue_messages_unacked{queue=~"group_buy_market_queue_.*|s_pay_mall_queue_.*"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ queue unacked backlog is high"
+          description: "Queue unacked messages are above 1000 for 5 minutes."

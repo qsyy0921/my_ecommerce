@@ -1,0 +1,167 @@
+server:
+  port: 8070
+
+# 应用配置
+app:
+  config:
+    # 版本，方便通过接口版本升级
+    api-version: v1
+    # 跨域，开发阶段可以设置为 * 不限制
+    cross-origin: '*'
+    # SC 渠道配置 - 拼团对接渠道值、回调通知
+    group-buy-market:
+      api-url: http://127.0.0.1:8091
+      notify-url: http://127.0.0.1:8070/api/v1/alipay/group_buy_notify
+      source: s01
+      chanel: c01
+
+reconcile:
+  admin-token: local-admin-token
+
+mq:
+  publish-retry:
+    enabled: true
+    fixed-delay-millis: 30000
+    batch-size: 20
+
+# 线程池配置
+thread:
+  pool:
+    executor:
+      config:
+        core-pool-size: 20
+        max-pool-size: 50
+        keep-alive-time: 5000
+        block-queue-size: 5000
+        policy: CallerRunsPolicy
+
+# 数据库配置；启动时配置数据库资源信息
+spring:
+  datasource:
+    username: root
+    password: 123456
+    url: jdbc:mysql://127.0.0.1:23306/s-pay-mall-ddd-market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  hikari:
+    pool-name: Retail_HikariCP
+    minimum-idle: 15 #最小空闲连接数量
+    idle-timeout: 180000 #空闲连接存活最大时间，默认600000（10分钟）
+    maximum-pool-size: 25 #连接池最大连接数，默认是10
+    auto-commit: true  #此属性控制从池返回的连接的默认自动提交行为,默认值：true
+    max-lifetime: 1800000 #此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+    connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
+    connection-test-query: SELECT 1
+  type: com.zaxxer.hikari.HikariDataSource
+  # RabbitMQ
+  rabbitmq:
+    addresses: 127.0.0.1
+    port: 25672
+    username: admin
+    password: admin
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1 # 每次投递n个消息，消费完在投递n个
+    template:
+      mandatory: true
+      delivery-mode: persistent # 确保全局默认设置为持久化（可选）
+    # 消息配置
+    config:
+      # 生产者
+      producer:
+        # 主题配置
+        topic_order_pay_success:
+          # 绑定交换机
+          exchange: s_pay_mall_exchange
+          # 消费主题
+          routing_key: topic.order_pay_success
+          # 消费队列
+          queue: s_pay_mall_queue_2_order_pay_success
+      consumer:
+        # 主题配置 topic 主题，team_success
+        topic_team_success:
+          # 绑定交换机 - 消息提供者的交换机
+          exchange: group_buy_market_exchange
+          # 消息主题
+          routing_key: topic.team_success
+          # 消费队列 - 每个系统有自己的消费队列
+          queue: s_pay_mall_queue_2_topic_team_success
+        topic_team_refund:
+          # 绑定交换机 - 消息提供者的交换机
+          exchange: group_buy_market_exchange
+          # 消息主题
+          routing_key: topic.team_refund
+          # 消费队列
+          queue: s_pay_mall_queue_2_topic_team_refund
+        # 主题配置
+        topic_order_pay_success:
+          # 绑定交换机
+          exchange: s_pay_mall_exchange
+          # 消费主题
+          routing_key: topic.order_pay_success
+          # 消费队列
+          queue: s_pay_mall_queue_2_order_pay_success
+      dlx:
+        exchange: s_pay_mall_dlx_exchange
+        routing_key: s.pay.mall.dlq
+        queue: s_pay_mall_queue_dlq
+
+# MyBatis 配置【如需使用记得打开】
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/*.xml
+  config-location:  classpath:/mybatis/config/mybatis-config.xml
+
+# 微信公众号对接
+weixin:
+  config:
+    originalid: gh_e067c267e056
+    token: b8b6
+    app-id: wx5a228ff69e28a91f
+    app-secret: 0bea03aa1310bac050aae79dd8703928
+    template_id: RbEZ2jo47dQmF4A7_Ku7RsDy1x_5by6bk1Ox6rPCl4Y
+
+# 支付宝支付 - 沙箱 https://opendocs.alipay.com/common/02kkv7
+alipay:
+  enabled: true
+  app_id: 9021000132689924
+  merchant_private_key: MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCm5vMsZacZu7ShMOoWwHpCojCSBIr5Ik0IruxcHxDkuF6c4fLyPSyIxA+wv8mwGcQH6T4xhP2X+q6HwP9OuhSpg4QGxZkpbspQ7VkDICfklE6v3XzSucAxfedWtMzw8GJuASSnkO142xbTmBgPXA75zXtzYcAr5YVhQZ/SndfNFy9B3qHXuI8e7NJ/qCAhtK/0xC/2AJZiw9TStwguFjkulDMzspvwA576Zy8q9pTO5QyY5uzvwkVuVbnMB9TiW945b/pmYznYY0EcXECNbVN9Bg8ibgOwwm3WEZheDOpJzoSXFPOESjENp/cRNgcpZzicRQI23556jiokUFbSl16JAgMBAAECggEAXAMCmL1JzBQBVsQCqZxfSpDjufwrKYHRejIFOBwgUheagV7HcuhqvtNn2wdAh4cM3Vem4+HvdHPM+CZcGejYL0PD63/QGllrzAWtht2ZYJiqcKXohLvGywIgIVr3iPTdLswOixqI8JHIGcrFqOIVl33Cyy9epFSana1yEMjYCcYSHT9+h/2ZvARAQuFWA0kcWwlbL96HjSiKvBZdB8pJXYveqrAt7efSHJVQPaqDPJE1izSI55F9Y9HyrGb6NlCA7Hwf6r7M+7FoSkcAK4HVkXUOHV3amtDQJ6Bu2DfJ5U/k4rcdrlTb7AegKNjFVocaW4vpMxHZ9kEHvFk/l9+UIQKBgQDuR8ucPNKWcwgNoWOpTnXY7P4glTSex6VpkHfEQtbsc/7UDOsejAwnWFU9gsGus+x2Pp4V+JbhDvS5eqQqRSS1bpjzo5rr5na9ejyFpyP/C/ZduJmZ1a1nQFUG69FX5I+YgAqyBFWFWsBRSjDZnISTG+6gX7YCd1LRtUrkEsFujQKBgQCzUE7TRe2DJ1Z2HJg1b4BtFijJxoEerX99zeGAcUDoM1rF2/p8rmxSWKAopeCTIE90fr7/RGnAiCO43XG75MYxcaAyHjy/+de9U2xHZuOA1JSFc6on16DmuauS33Vq0narc5dXCzJXX/Nk3uRQX6JRXPqQC5omCbNx9cuPVq2e7QKBgCewRbXMW7c7icfbbeIxc2eiceGzeIRJ9L9UlN5X07ymxXdEf5Ui9pNHH0uTj/cteOFpJKO8OEVcXF7YkqeHxMmDlm5efdt1E6oTxijs4g4FTA/oQ41gDfX4vTDd7oyZQWHBUga8uhHwP8BKf0B/1YU7Tc/goUxf26eabtL2XMmxAoGBAKvpoqkLsdq8LDiw0Xzpmcb8J77LgZ9X15NVf40VB5WXJr/rVwuSbmfEcEiIP/bOU17s5VD21iywWQ8zv4bUnu9ocJ2cP8IOVrg88uLB0fwB0yLe8ZOhN7H88HGvq3LutLdL6xyYr3r1kvRyfZJRHd3DtrXDadZuFox7it2xzGNBAoGASg0rCIauq273MoHIFoYQnDmGDm1Jr1Iivo6ggPTyhmu1YkeHIXTDc4jv80W0PefyaJ8AN2joZFiEZFJgBb0u82Qv6XYas/YbLceAtq9QMmnHgzZbN7K8L4UidM7/2iDHOJez/Px6qBcm8Ugee4rmEt41EojYvQTXpDERVjGLR5Q=
+  alipay_public_key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmgtSO8GV5YSl01AWgGWe2xKJ9oDfjzf5vNtJS6SSc5klmGMToVdsi3gmLipN04yzmnEEchmFxsuxKLLhdQuC4d9V74I6CVIZPPHtaSuz/T3EZTHtQIGwF705Yrq1bd63l70iTfkrS0Ry9f72SDZEBBLllXfFo+otChwRRN+UXDd8X/bplV3/cbRncV5yWRnHHCgzQiwpH3ilS+sOmMfdfac0bi/xB7HIU6nUX04VCjAR7itSr0OmU8HC6p20Ubvjs45R6VuR7FMI+OahCd3LDe/ayelScfQ4zavruk4HGx3TDH4hLDA3N+xid5Cu5erLDPHtFXfnQHI4n/opQaXo5wIDAQAB
+  notify_url: http://xfg-studio.natapp1.cc/api/v1/alipay/alipay_notify_url
+  return_url: http://localhost:63342/s-pay-mall-ddd-market/docs/dev-ops/nginx/html/index.html
+  gatewayUrl: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+
+# SC 渠道配置 - 拼团对接渠道值
+sc:
+  group:
+    buy:
+      market:
+        source: s01
+        chanel: c01
+
+# 日志
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  prometheus:
+    enabled: true
+
+mock-pay:
+  enabled: true
+  confirm-url: http://127.0.0.1:8070/api/v1/mock-pay/confirm
+  return-url: http://127.0.0.1:8088/order-list.html

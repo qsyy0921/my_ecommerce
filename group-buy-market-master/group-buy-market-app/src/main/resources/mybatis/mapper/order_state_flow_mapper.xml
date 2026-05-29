@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IOrderStateFlowDao">
+
+    <insert id="insertIgnore" parameterType="cn.bugstack.infrastructure.dao.po.OrderStateFlow">
+        insert ignore into order_state_flow(
+            flow_no, biz_type, biz_id, sub_biz_id, from_status,
+            to_status, event, operator_id, trace_id, source_message_id,
+            message, create_time
+        ) values(
+            #{flowNo}, #{bizType}, #{bizId}, #{subBizId}, #{fromStatus},
+            #{toStatus}, #{event}, #{operatorId}, #{traceId}, #{sourceMessageId},
+            #{message}, now()
+        )
+    </insert>
+
+</mapper>

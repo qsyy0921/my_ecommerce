@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IGroupBuyStockFlowDao">
+
+    <insert id="insertIgnore" parameterType="cn.bugstack.infrastructure.dao.po.GroupBuyStockFlow">
+        insert ignore into group_buy_stock_flow(
+            flow_no, user_id, activity_id, team_id, order_id,
+            out_trade_no, change_type, change_count, stock_before, stock_after,
+            biz_event, trace_id, source_message_id, source, message,
+            create_time, update_time
+        ) values(
+            #{flowNo}, #{userId}, #{activityId}, #{teamId}, #{orderId},
+            #{outTradeNo}, #{changeType}, #{changeCount}, #{stockBefore}, #{stockAfter},
+            #{bizEvent}, #{traceId}, #{sourceMessageId}, #{source}, #{message},
+            now(), now()
+        )
+    </insert>
+
+</mapper>

@@ -1,0 +1,101 @@
+{
+  "title": "Group Buy Market Transaction Health",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Open Reconcile Cases",
+      "targets": [
+        {
+          "expr": "mall_reconcile_open_cases{type=\"ALL\"}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "SLA Timeout Cases",
+      "targets": [
+        {
+          "expr": "mall_reconcile_sla_timeout_cases{type=\"ALL\"}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Payment Callback Failures",
+      "targets": [
+        {
+          "expr": "increase(mall_payment_callback_fail_total[5m])",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Notify Task Backlog",
+      "targets": [
+        {
+          "expr": "market_notify_task_pending",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Seckill Stream Lag",
+      "targets": [
+        {
+          "expr": "seckill_stream_lag_messages",
+          "legendFormat": "{{stream}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Seckill Stream Pending",
+      "targets": [
+        {
+          "expr": "seckill_stream_pending_messages",
+          "legendFormat": "{{stream}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Order Intermediate Anomaly",
+      "targets": [
+        {
+          "expr": "mall_order_intermediate_anomaly",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Bill Reconcile Anomaly",
+      "targets": [
+        {
+          "expr": "mall_bill_reconcile_anomaly",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 }
+    }
+  ]
+}

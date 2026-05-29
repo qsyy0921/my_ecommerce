@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IMqMessageRecordDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.MqMessageRecord">
+        <id column="id" property="id"/>
+        <result column="message_id" property="messageId"/>
+        <result column="exchange_name" property="exchangeName"/>
+        <result column="queue_name" property="queueName"/>
+        <result column="message_body" property="messageBody"/>
+        <result column="status" property="status"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="cn.bugstack.infrastructure.dao.po.MqMessageRecord">
+        insert into mq_message_record(
+            message_id, exchange_name, queue_name, message_body,
+            status, retry_count, error_message, create_time, update_time
+        ) values(
+            #{messageId}, #{exchangeName}, #{queueName}, #{messageBody},
+            #{status}, #{retryCount}, #{errorMessage}, now(), now()
+        )
+    </insert>
+
+    <select id="queryByMessageId" parameterType="java.lang.String" resultMap="dataMap">
+        select id, message_id, exchange_name, queue_name, message_body,
+               status, retry_count, error_message, create_time, update_time
+        from mq_message_record
+        where message_id = #{messageId}
+    </select>
+
+    <update id="updateProcessing" parameterType="java.lang.String">
+        update mq_message_record
+        set status = 0,
+            retry_count = retry_count + 1,
+            update_time = now()
+        where message_id = #{messageId}
+          and status != 1
+    </update>
+
+    <update id="updateSuccess" parameterType="java.lang.String">
+        update mq_message_record
+        set status = 1,
+            error_message = null,
+            update_time = now()
+        where message_id = #{messageId}
+    </update>
+
+    <update id="updateFail" parameterType="cn.bugstack.infrastructure.dao.po.MqMessageRecord">
+        update mq_message_record
+        set status = 2,
+            error_message = #{errorMessage},
+            update_time = now()
+        where message_id = #{messageId}
+    </update>
+
+    <select id="queryFailedMessageList" resultMap="dataMap">
+        select id, message_id, exchange_name, queue_name, message_body,
+               status, retry_count, error_message, create_time, update_time
+        from mq_message_record
+        where status = 2
+        order by update_time desc, id desc
+        limit #{limit}
+    </select>
+
+    <select id="queryProducerFailedMessageList" resultMap="dataMap">
+        select id, message_id, exchange_name, queue_name, message_body,
+               status, retry_count, error_message, create_time, update_time
+        from mq_message_record
+        where status = 2
+          and queue_name like 'routing:%'
+        order by update_time asc, id asc
+        limit #{limit}
+    </select>
+
+</mapper>

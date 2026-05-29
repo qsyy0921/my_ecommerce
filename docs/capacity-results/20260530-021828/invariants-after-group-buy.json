@@ -1,0 +1,29 @@
+﻿{
+    "passed":  true,
+    "checkedAt":  "2026-05-30 02:19:48",
+    "checks":  [
+                   {
+                       "name":  "seckill",
+                       "passed":  true,
+                       "activityId":  990700,
+                       "orderTables":  "seckill_order",
+                       "totalCount":  20000,
+                       "dbAvailableCount":  19980,
+                       "dbLockCount":  20,
+                       "activeOrderCount":  20,
+                       "redisAvailableCount":  19980,
+                       "expectedAvailableCount":  19980,
+                       "duplicateUserActivity":  0,
+                       "duplicateUserOutTrade":  0
+                   },
+                   {
+                       "name":  "group-buy",
+                       "passed":  true,
+                       "userPrefix":  "cap0530021850_gb",
+                       "teamCount":  10,
+                       "orderCount":  10,
+                       "teamMismatch":  0,
+                       "duplicateUserOutTrade":  0
+                   }
+               ]
+}

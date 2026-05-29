@@ -1,0 +1,19 @@
+﻿{
+  "scenario": "seckill-query",
+  "total": 1000,
+  "concurrency": 100,
+  "elapsedSeconds": 7.339,
+  "throughput": 136.25,
+  "httpSuccess": 1000,
+  "businessSuccess": 1000,
+  "businessFailed": 0,
+  "avgMs": 716.36,
+  "p50Ms": 686.74,
+  "p95Ms": 1023.48,
+  "p99Ms": 1115.12,
+  "maxMs": 1241.32,
+  "codeCounts": {
+    "0000": 1000
+  },
+  "resultStatusCounts": {}
+}

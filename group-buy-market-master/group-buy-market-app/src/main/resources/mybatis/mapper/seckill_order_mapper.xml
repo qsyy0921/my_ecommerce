@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.ISeckillOrderDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.SeckillOrder">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="activity_name" property="activityName"/>
+        <result column="goods_id" property="goodsId"/>
+        <result column="goods_name" property="goodsName"/>
+        <result column="source" property="source"/>
+        <result column="channel" property="channel"/>
+        <result column="order_id" property="orderId"/>
+        <result column="out_trade_no" property="outTradeNo"/>
+        <result column="original_price" property="originalPrice"/>
+        <result column="seckill_price" property="seckillPrice"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="cn.bugstack.infrastructure.dao.po.SeckillOrder">
+        insert into seckill_order(
+            user_id, activity_id, activity_name, goods_id, goods_name,
+            source, channel, order_id, out_trade_no, original_price,
+            seckill_price, status, create_time, update_time
+        ) values(
+            #{userId}, #{activityId}, #{activityName}, #{goodsId}, #{goodsName},
+            #{source}, #{channel}, #{orderId}, #{outTradeNo}, #{originalPrice},
+            #{seckillPrice}, #{status}, now(), now()
+        )
+    </insert>
+
+    <insert id="insertToTable">
+        insert into ${tableName}(
+            user_id, activity_id, activity_name, goods_id, goods_name,
+            source, channel, order_id, out_trade_no, original_price,
+            seckill_price, status, create_time, update_time
+        ) values(
+            #{item.userId}, #{item.activityId}, #{item.activityName}, #{item.goodsId}, #{item.goodsName},
+            #{item.source}, #{item.channel}, #{item.orderId}, #{item.outTradeNo}, #{item.originalPrice},
+            #{item.seckillPrice}, #{item.status}, now(), now()
+        )
+    </insert>
+
+    <insert id="insertIgnoreBatch">
+        insert ignore into seckill_order(
+            user_id, activity_id, activity_name, goods_id, goods_name,
+            source, channel, order_id, out_trade_no, original_price,
+            seckill_price, status, create_time, update_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.userId}, #{item.activityId}, #{item.activityName}, #{item.goodsId}, #{item.goodsName},
+                #{item.source}, #{item.channel}, #{item.orderId}, #{item.outTradeNo}, #{item.originalPrice},
+                #{item.seckillPrice}, #{item.status}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+    <insert id="insertIgnoreShardBatch">
+        insert ignore into ${tableName}(
+            user_id, activity_id, activity_name, goods_id, goods_name,
+            source, channel, order_id, out_trade_no, original_price,
+            seckill_price, status, create_time, update_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.userId}, #{item.activityId}, #{item.activityName}, #{item.goodsId}, #{item.goodsName},
+                #{item.source}, #{item.channel}, #{item.orderId}, #{item.outTradeNo}, #{item.originalPrice},
+                #{item.seckillPrice}, #{item.status}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+    <select id="querySeckillOrderByOutTradeNo"
+            parameterType="cn.bugstack.infrastructure.dao.po.SeckillOrder"
+            resultMap="dataMap">
+        select id, user_id, activity_id, activity_name, goods_id, goods_name,
+               source, channel, order_id, out_trade_no, original_price,
+               seckill_price, status, create_time, update_time
+        from seckill_order
+        where user_id = #{userId}
+          and out_trade_no = #{outTradeNo}
+        limit 1
+    </select>
+
+    <select id="querySeckillOrderByOutTradeNoFromTable" resultMap="dataMap">
+        select id, user_id, activity_id, activity_name, goods_id, goods_name,
+               source, channel, order_id, out_trade_no, original_price,
+               seckill_price, status, create_time, update_time
+        from ${tableName}
+        where user_id = #{item.userId}
+          and out_trade_no = #{item.outTradeNo}
+        limit 1
+    </select>
+
+    <select id="countActiveOrders" resultType="java.lang.Integer">
+        select count(1)
+        from seckill_order
+        where activity_id = #{activityId}
+          and status in (0, 1)
+    </select>
+
+    <select id="countActiveOrdersFromTable" resultType="java.lang.Integer">
+        select count(1)
+        from ${tableName}
+        where activity_id = #{activityId}
+          and status in (0, 1)
+    </select>
+
+    <select id="queryTimeoutUnpaidOrders" resultMap="dataMap">
+        select id, user_id, activity_id, activity_name, goods_id, goods_name,
+               source, channel, order_id, out_trade_no, original_price,
+               seckill_price, status, create_time, update_time
+        from seckill_order
+        where status = 0
+          and update_time &lt; date_sub(now(), interval 30 minute)
+        order by id asc
+        limit 100
+    </select>
+
+    <select id="queryTimeoutUnpaidOrdersFromTable" resultMap="dataMap">
+        select id, user_id, activity_id, activity_name, goods_id, goods_name,
+               source, channel, order_id, out_trade_no, original_price,
+               seckill_price, status, create_time, update_time
+        from ${tableName}
+        where status = 0
+          and update_time &lt; date_sub(now(), interval 30 minute)
+        order by id asc
+        limit 100
+    </select>
+
+    <update id="closeTimeoutUnpaidOrder">
+        update seckill_order
+        set status = 2,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
+    <update id="closeTimeoutUnpaidOrderFromTable">
+        update ${tableName}
+        set status = 2,
+            update_time = now()
+        where order_id = #{orderId}
+          and status = 0
+    </update>
+
+</mapper>

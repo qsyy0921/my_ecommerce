@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.IRefundFlowDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.RefundFlow">
+        <id column="id" property="id"/>
+        <result column="flow_no" property="flowNo"/>
+        <result column="order_id" property="orderId"/>
+        <result column="user_id" property="userId"/>
+        <result column="refund_channel" property="refundChannel"/>
+        <result column="channel_refund_no" property="channelRefundNo"/>
+        <result column="refund_amount" property="refundAmount"/>
+        <result column="refund_status" property="refundStatus"/>
+        <result column="refund_reason" property="refundReason"/>
+        <result column="refund_time" property="refundTime"/>
+        <result column="raw_message" property="rawMessage"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insertIgnore" parameterType="cn.bugstack.infrastructure.dao.po.RefundFlow">
+        insert ignore into refund_flow(
+            flow_no, order_id, user_id, refund_channel, channel_refund_no,
+            refund_amount, refund_status, refund_reason, refund_time, raw_message, create_time, update_time
+        ) values(
+            #{flowNo}, #{orderId}, #{userId}, #{refundChannel}, #{channelRefundNo},
+            #{refundAmount}, #{refundStatus}, #{refundReason}, #{refundTime}, #{rawMessage}, now(), now()
+        )
+    </insert>
+
+    <select id="countMissThirdPartyBill" resultType="int">
+        select count(1)
+        from refund_flow rf
+        left join third_party_bill tb on tb.order_id = rf.order_id and tb.bill_type = 'REFUND'
+        where rf.refund_status = 'SUCCESS'
+          and tb.id is null
+    </select>
+
+    <select id="queryMissThirdPartyBillList" resultMap="dataMap">
+        select rf.id, rf.flow_no, rf.order_id, rf.user_id, rf.refund_channel, rf.channel_refund_no,
+               rf.refund_amount, rf.refund_status, rf.refund_reason, rf.refund_time, rf.raw_message,
+               rf.create_time, rf.update_time
+        from refund_flow rf
+        left join third_party_bill tb on tb.order_id = rf.order_id and tb.bill_type = 'REFUND'
+        where rf.refund_status = 'SUCCESS'
+          and tb.id is null
+        order by rf.refund_time asc
+        limit #{limit}
+    </select>
+
+</mapper>

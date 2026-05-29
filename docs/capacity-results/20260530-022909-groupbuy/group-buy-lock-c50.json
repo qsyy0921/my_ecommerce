@@ -1,0 +1,19 @@
+﻿{
+  "scenario": "group-buy-lock",
+  "total": 200,
+  "concurrency": 50,
+  "elapsedSeconds": 2.489,
+  "throughput": 80.35,
+  "httpSuccess": 200,
+  "businessSuccess": 200,
+  "businessFailed": 0,
+  "avgMs": 568.88,
+  "p50Ms": 491.07,
+  "p95Ms": 997.47,
+  "p99Ms": 1018.46,
+  "maxMs": 1031.01,
+  "codeCounts": {
+    "0000": 200
+  },
+  "resultStatusCounts": {}
+}
