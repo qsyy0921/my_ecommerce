@@ -91,4 +91,5 @@
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
 - [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍的合法/非法状态迁移。
+- [x] 抽象 `IDomainTaskExecutor`，domain 不再直接依赖 `ThreadPoolExecutor`。
 - [~] 继续拆分大 Repository 和补偿编排，补更多领域用例测试。

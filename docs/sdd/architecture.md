@@ -45,6 +45,7 @@ flowchart TB
 - `trigger` 只做协议转换、参数校验和调用编排。
 - `domain` 表达业务规则，包含试算模板、责任链、策略、聚合行为。
 - `infrastructure` 只适配 DB、Redis、MQ、外部接口，不写业务决策。
+- `domain` 不直接依赖 Spring 注解和具体线程池，异步执行通过 `IDomainTaskExecutor` 端口适配。
 - `types` 放通用异常、响应码和值对象。
 
 ## 领域边界

@@ -15,11 +15,11 @@ import cn.bugstack.domain.activity.service.trial.node.MarketNode;
 import cn.bugstack.domain.activity.service.trial.node.RootNode;
 import cn.bugstack.domain.activity.service.trial.node.SwitchNode;
 import cn.bugstack.domain.activity.service.trial.node.TagNode;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
 public class ActivityDomainConfig {
@@ -61,11 +61,11 @@ public class ActivityDomainConfig {
 
     @Bean
     public MarketNode marketNode(IActivityRepository activityRepository,
-                                 ThreadPoolExecutor threadPoolExecutor,
+                                 IDomainTaskExecutor domainTaskExecutor,
                                  Map<String, IDiscountCalculateService> discountCalculateServiceMap,
                                  ErrorNode errorNode,
                                  TagNode tagNode) {
-        return new MarketNode(activityRepository, threadPoolExecutor, discountCalculateServiceMap, errorNode, tagNode);
+        return new MarketNode(activityRepository, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
     }
 
     @Bean

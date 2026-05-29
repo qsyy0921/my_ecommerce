@@ -11,7 +11,8 @@ $patterns = @(
   "@Component",
   "@Resource",
   "@Autowired",
-  "@Value"
+  "@Value",
+  "ThreadPoolExecutor"
 )
 
 $domainPaths = @(

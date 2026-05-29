@@ -6,6 +6,7 @@ import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import cn.bugstack.domain.seckill.service.SeckillService;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.tag.adapter.repository.ITagRepository;
 import cn.bugstack.domain.tag.service.ITagService;
 import cn.bugstack.domain.tag.service.TagService;
@@ -36,7 +37,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
 public class DomainServiceConfig {
@@ -72,10 +72,10 @@ public class DomainServiceConfig {
     @Bean
     public ITradeSettlementOrderService tradeSettlementOrderService(
             ITradeRepository tradeRepository,
-            ThreadPoolExecutor threadPoolExecutor,
+            IDomainTaskExecutor domainTaskExecutor,
             ITradeTaskService tradeTaskService,
             @Qualifier("tradeSettlementRuleFilter") BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter) {
-        return new TradeSettlementOrderService(tradeRepository, threadPoolExecutor, tradeTaskService, tradeSettlementRuleFilter);
+        return new TradeSettlementOrderService(tradeRepository, domainTaskExecutor, tradeTaskService, tradeSettlementRuleFilter);
     }
 
     @Bean

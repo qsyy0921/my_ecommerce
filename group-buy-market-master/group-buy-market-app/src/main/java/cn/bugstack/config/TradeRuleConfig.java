@@ -1,5 +1,6 @@
 package cn.bugstack.config;
 
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
@@ -30,7 +31,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
 public class TradeRuleConfig {
@@ -113,22 +113,22 @@ public class TradeRuleConfig {
     @Bean("unpaid2RefundStrategy")
     public IRefundOrderStrategy unpaid2RefundStrategy(ITradeRepository tradeRepository,
                                                       ITradeTaskService tradeTaskService,
-                                                      ThreadPoolExecutor threadPoolExecutor) {
-        return new Unpaid2RefundStrategy(tradeRepository, tradeTaskService, threadPoolExecutor);
+                                                      IDomainTaskExecutor domainTaskExecutor) {
+        return new Unpaid2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paid2RefundStrategy")
     public IRefundOrderStrategy paid2RefundStrategy(ITradeRepository tradeRepository,
                                                     ITradeTaskService tradeTaskService,
-                                                    ThreadPoolExecutor threadPoolExecutor) {
-        return new Paid2RefundStrategy(tradeRepository, tradeTaskService, threadPoolExecutor);
+                                                    IDomainTaskExecutor domainTaskExecutor) {
+        return new Paid2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paidTeam2RefundStrategy")
     public IRefundOrderStrategy paidTeam2RefundStrategy(ITradeRepository tradeRepository,
                                                         ITradeTaskService tradeTaskService,
-                                                        ThreadPoolExecutor threadPoolExecutor) {
-        return new PaidTeam2RefundStrategy(tradeRepository, tradeTaskService, threadPoolExecutor);
+                                                        IDomainTaskExecutor domainTaskExecutor) {
+        return new PaidTeam2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
     }
 
 }

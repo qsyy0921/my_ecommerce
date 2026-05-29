@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.settlement;
 
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
@@ -13,7 +14,6 @@ import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -24,16 +24,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class TradeSettlementOrderService implements ITradeSettlementOrderService {
 
     private final ITradeRepository repository;
-    private final ThreadPoolExecutor threadPoolExecutor;
+    private final IDomainTaskExecutor domainTaskExecutor;
     private final ITradeTaskService tradeTaskService;
     private final BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter;
 
     public TradeSettlementOrderService(ITradeRepository repository,
-                                       ThreadPoolExecutor threadPoolExecutor,
+                                       IDomainTaskExecutor domainTaskExecutor,
                                        ITradeTaskService tradeTaskService,
                                        BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter) {
         this.repository = repository;
-        this.threadPoolExecutor = threadPoolExecutor;
+        this.domainTaskExecutor = domainTaskExecutor;
         this.tradeTaskService = tradeTaskService;
         this.tradeSettlementRuleFilter = tradeSettlementRuleFilter;
     }
@@ -79,7 +79,7 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
 
         // 5. 组队回调处理 - 处理失败也会有定时任务补偿，通过这样的方式，可以减轻任务调度，提高时效性
         if (null != notifyTaskEntity) {
-            threadPoolExecutor.execute(() -> {
+            domainTaskExecutor.execute(() -> {
                 Map<String, Integer> notifyResultMap = null;
                 try {
                     notifyResultMap = tradeTaskService.execNotifyJob(notifyTaskEntity);

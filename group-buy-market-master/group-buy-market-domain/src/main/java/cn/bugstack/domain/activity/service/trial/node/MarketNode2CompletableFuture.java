@@ -7,12 +7,12 @@ import cn.bugstack.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.bugstack.domain.activity.model.valobj.SkuVO;
 import cn.bugstack.domain.activity.service.discount.IDiscountCalculateService;
 import cn.bugstack.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -24,11 +24,11 @@ import java.util.concurrent.TimeoutException;
 public class MarketNode2CompletableFuture extends MarketNode {
 
     public MarketNode2CompletableFuture(IActivityRepository repository,
-                                        ThreadPoolExecutor threadPoolExecutor,
+                                        IDomainTaskExecutor domainTaskExecutor,
                                         Map<String, IDiscountCalculateService> discountCalculateServiceMap,
                                         ErrorNode errorNode,
                                         TagNode tagNode) {
-        super(repository, threadPoolExecutor, discountCalculateServiceMap, errorNode, tagNode);
+        super(repository, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class MarketNode2CompletableFuture extends MarketNode {
                 log.error("异步查询活动配置异常", e);
                 return null;
             }
-        }, threadPoolExecutor);
+        }, domainTaskExecutor::execute);
 
         // 异步查询商品信息 - 在实际生产中，商品有同步库或者调用接口查询。这里暂时使用DB方式查询。
         CompletableFuture<SkuVO> skuVOCompletableFuture = CompletableFuture.supplyAsync(() -> {
@@ -59,7 +59,7 @@ public class MarketNode2CompletableFuture extends MarketNode {
                 log.error("异步查询商品信息异常", e);
                 return null;
             }
-        }, threadPoolExecutor);
+        }, domainTaskExecutor::execute);
 
         // 等待所有异步任务完成并写入上下文
         CompletableFuture.allOf(groupBuyActivityDiscountVOCompletableFuture, skuVOCompletableFuture)

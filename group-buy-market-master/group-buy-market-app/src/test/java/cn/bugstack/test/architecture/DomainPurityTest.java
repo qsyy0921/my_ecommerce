@@ -26,7 +26,8 @@ public class DomainPurityTest {
             Pattern.compile("@Component"),
             Pattern.compile("@Resource"),
             Pattern.compile("@Autowired"),
-            Pattern.compile("@Value")
+            Pattern.compile("@Value"),
+            Pattern.compile("ThreadPoolExecutor")
     );
 
     @Test

@@ -1,5 +1,6 @@
 package cn.bugstack.config;
 
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,6 +15,11 @@ import java.util.concurrent.*;
 @Configuration
 @EnableConfigurationProperties(ThreadPoolConfigProperties.class)
 public class ThreadPoolConfig {
+
+    @Bean
+    public IDomainTaskExecutor domainTaskExecutor(ThreadPoolExecutor threadPoolExecutor) {
+        return threadPoolExecutor::execute;
+    }
 
     @Bean
     @ConditionalOnMissingBean(ThreadPoolExecutor.class)

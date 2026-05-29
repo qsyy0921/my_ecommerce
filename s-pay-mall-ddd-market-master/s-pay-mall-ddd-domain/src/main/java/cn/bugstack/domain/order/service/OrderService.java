@@ -10,24 +10,24 @@ import cn.bugstack.domain.order.model.entity.PayOrderEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
 import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class OrderService extends AbstractOrderService {
 
-    private final ThreadPoolExecutor threadPoolExecutor;
+    private final IDomainTaskExecutor domainTaskExecutor;
     private final IPayPort payPort;
 
-    public OrderService(IOrderRepository repository, IProductPort port, IPayPort payPort, ThreadPoolExecutor threadPoolExecutor) {
+    public OrderService(IOrderRepository repository, IProductPort port, IPayPort payPort, IDomainTaskExecutor domainTaskExecutor) {
         super(repository, port);
         this.payPort = payPort;
-        this.threadPoolExecutor = threadPoolExecutor;
+        this.domainTaskExecutor = domainTaskExecutor;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class OrderService extends AbstractOrderService {
     }
 
     private void asyncSettlementMarketPayOrder(OrderEntity orderEntity, Date payTime) {
-        threadPoolExecutor.execute(() -> {
+        domainTaskExecutor.execute(() -> {
             try {
                 port.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
             } catch (Exception e) {
@@ -114,7 +114,7 @@ public class OrderService extends AbstractOrderService {
     }
 
     private void asyncSettlementSeckillPayOrder(OrderEntity orderEntity, Date payTime) {
-        threadPoolExecutor.execute(() -> {
+        domainTaskExecutor.execute(() -> {
             try {
                 port.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 repository.changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));

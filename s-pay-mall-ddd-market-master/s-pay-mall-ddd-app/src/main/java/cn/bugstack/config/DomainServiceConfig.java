@@ -15,13 +15,12 @@ import cn.bugstack.domain.order.adapter.port.IProductPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.domain.order.service.OrderService;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import com.google.common.cache.Cache;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
 public class DomainServiceConfig {
@@ -30,8 +29,8 @@ public class DomainServiceConfig {
     public IOrderService orderService(IOrderRepository orderRepository,
                                       IProductPort productPort,
                                       IPayPort payPort,
-                                      ThreadPoolExecutor threadPoolExecutor) {
-        return new OrderService(orderRepository, productPort, payPort, threadPoolExecutor);
+                                      IDomainTaskExecutor domainTaskExecutor) {
+        return new OrderService(orderRepository, productPort, payPort, domainTaskExecutor);
     }
 
     @Bean

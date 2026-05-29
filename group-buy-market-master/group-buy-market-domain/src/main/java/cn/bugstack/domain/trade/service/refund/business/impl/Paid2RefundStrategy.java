@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.refund.business.impl;
 
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
@@ -8,8 +9,6 @@ import cn.bugstack.domain.trade.model.valobj.TeamRefundSuccess;
 import cn.bugstack.domain.trade.service.ITradeTaskService;
 import cn.bugstack.domain.trade.service.refund.business.AbstractRefundOrderStrategy;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 发起退单（已支付、未成团），锁单量-1、完成量-1、组队订单状态更新、发送退单消息（MQ）
@@ -20,8 +19,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 public class Paid2RefundStrategy extends AbstractRefundOrderStrategy {
 
-    public Paid2RefundStrategy(ITradeRepository repository, ITradeTaskService tradeTaskService, ThreadPoolExecutor threadPoolExecutor) {
-        super(repository, tradeTaskService, threadPoolExecutor);
+    public Paid2RefundStrategy(ITradeRepository repository, ITradeTaskService tradeTaskService, IDomainTaskExecutor domainTaskExecutor) {
+        super(repository, tradeTaskService, domainTaskExecutor);
     }
 
     @Override

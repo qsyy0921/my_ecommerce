@@ -10,6 +10,7 @@ import cn.bugstack.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.bugstack.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.bugstack.domain.activity.service.trial.thread.QueryGroupBuyActivityDiscountVOThreadTask;
 import cn.bugstack.domain.activity.service.trial.thread.QuerySkuVOFromDBThreadTask;
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
@@ -28,7 +29,7 @@ import java.util.concurrent.*;
 @Slf4j
 public class MarketNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> {
 
-    protected final ThreadPoolExecutor threadPoolExecutor;
+    protected final IDomainTaskExecutor domainTaskExecutor;
     /**
      * <a href="https://bugstack.cn/md/road-map/spring-dependency-injection.html">Spring 注入详细说明</a>
      */
@@ -37,12 +38,12 @@ public class MarketNode extends AbstractGroupBuyMarketSupport<MarketProductEntit
     private final TagNode tagNode;
 
     public MarketNode(IActivityRepository repository,
-                      ThreadPoolExecutor threadPoolExecutor,
+                      IDomainTaskExecutor domainTaskExecutor,
                       Map<String, IDiscountCalculateService> discountCalculateServiceMap,
                       ErrorNode errorNode,
                       TagNode tagNode) {
         super(repository);
-        this.threadPoolExecutor = threadPoolExecutor;
+        this.domainTaskExecutor = domainTaskExecutor;
         this.discountCalculateServiceMap = discountCalculateServiceMap;
         this.errorNode = errorNode;
         this.tagNode = tagNode;
@@ -69,12 +70,12 @@ public class MarketNode extends AbstractGroupBuyMarketSupport<MarketProductEntit
         // 异步查询活动配置
         QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask = new QueryGroupBuyActivityDiscountVOThreadTask(requestParameter.getActivityId(), requestParameter.getSource(), requestParameter.getChannel(), requestParameter.getGoodsId(), repository);
         FutureTask<GroupBuyActivityDiscountVO> groupBuyActivityDiscountVOFutureTask = new FutureTask<>(queryGroupBuyActivityDiscountVOThreadTask);
-        threadPoolExecutor.execute(groupBuyActivityDiscountVOFutureTask);
+        domainTaskExecutor.execute(groupBuyActivityDiscountVOFutureTask);
 
         // 异步查询商品信息 - 在实际生产中，商品有同步库或者调用接口查询。这里暂时使用DB方式查询。
         QuerySkuVOFromDBThreadTask querySkuVOFromDBThreadTask = new QuerySkuVOFromDBThreadTask(requestParameter.getGoodsId(), repository);
         FutureTask<SkuVO> skuVOFutureTask = new FutureTask<>(querySkuVOFromDBThreadTask);
-        threadPoolExecutor.execute(skuVOFutureTask);
+        domainTaskExecutor.execute(skuVOFutureTask);
 
         // 写入上下文 - 对于一些复杂场景，获取数据的操作，有时候会在下N个节点获取，这样前置查询数据，可以提高接口响应效率
         dynamicContext.setGroupBuyActivityDiscountVO(groupBuyActivityDiscountVOFutureTask.get(timeout, TimeUnit.MILLISECONDS));

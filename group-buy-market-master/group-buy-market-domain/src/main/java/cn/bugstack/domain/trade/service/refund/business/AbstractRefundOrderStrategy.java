@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.refund.business;
 
+import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.model.valobj.TeamRefundSuccess;
@@ -10,7 +11,6 @@ import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 退单策略抽象基类
@@ -24,14 +24,14 @@ public abstract class AbstractRefundOrderStrategy implements IRefundOrderStrateg
 
     protected final ITradeRepository repository;
     protected final ITradeTaskService tradeTaskService;
-    protected final ThreadPoolExecutor threadPoolExecutor;
+    protected final IDomainTaskExecutor domainTaskExecutor;
 
     protected AbstractRefundOrderStrategy(ITradeRepository repository,
                                           ITradeTaskService tradeTaskService,
-                                          ThreadPoolExecutor threadPoolExecutor) {
+                                          IDomainTaskExecutor domainTaskExecutor) {
         this.repository = repository;
         this.tradeTaskService = tradeTaskService;
-        this.threadPoolExecutor = threadPoolExecutor;
+        this.domainTaskExecutor = domainTaskExecutor;
     }
 
     /**
@@ -41,7 +41,7 @@ public abstract class AbstractRefundOrderStrategy implements IRefundOrderStrateg
      */
     protected void sendRefundNotifyMessage(NotifyTaskEntity notifyTaskEntity, String refundType) {
         if (null != notifyTaskEntity) {
-            threadPoolExecutor.execute(() -> {
+            domainTaskExecutor.execute(() -> {
                 Map<String, Integer> notifyResultMap = null;
                 try {
                     notifyResultMap = tradeTaskService.execNotifyJob(notifyTaskEntity);
