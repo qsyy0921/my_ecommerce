@@ -12,6 +12,7 @@ import cn.bugstack.domain.seckill.adapter.port.ISeckillRateLimitPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.service.ISeckillService;
+import cn.bugstack.trigger.support.StructuredBusinessLogger;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import cn.bugstack.wrench.rate.limiter.types.annotations.RateLimiterAccessInterceptor;
@@ -43,6 +44,8 @@ public class SeckillMarketController implements ISeckillMarketService {
     private ISeckillRateLimitPort seckillRateLimitPort;
     @Resource
     private ISeckillMetricsPort seckillMetricsPort;
+    @Resource
+    private StructuredBusinessLogger businessLogger;
     @Autowired
     private HttpServletRequest httpServletRequest;
 
@@ -108,6 +111,7 @@ public class SeckillMarketController implements ISeckillMarketService {
     @RequestMapping(value = "lock_seckill_order", method = RequestMethod.POST)
     @Override
     public Response<LockSeckillOrderResponseDTO> lockSeckillOrder(@RequestBody LockSeckillOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
         try {
             log.debug("lock seckill order start requestDTO:{}", JSON.toJSONString(requestDTO));
             if (null == requestDTO
@@ -117,6 +121,12 @@ public class SeckillMarketController implements ISeckillMarketService {
                     || StringUtils.isBlank(requestDTO.getGoodsId())
                     || null == requestDTO.getActivityId()
                     || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+                businessLogger.warn("seckill_lock_order", "illegal_parameter", businessLogger.fields(
+                        "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                        "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
+                        "goodsId", null == requestDTO ? null : requestDTO.getGoodsId(),
+                        "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -125,6 +135,14 @@ public class SeckillMarketController implements ISeckillMarketService {
 
             SeckillOrderEntity existsOrder = seckillService.querySeckillOrderByOutTradeNo(requestDTO.getUserId(), requestDTO.getOutTradeNo());
             if (null != existsOrder) {
+                businessLogger.info("seckill_lock_order", "idempotent_db_hit", businessLogger.fields(
+                        "userId", requestDTO.getUserId(),
+                        "activityId", requestDTO.getActivityId(),
+                        "goodsId", requestDTO.getGoodsId(),
+                        "outTradeNo", requestDTO.getOutTradeNo(),
+                        "orderId", existsOrder.getOrderId(),
+                        "resultStatus", existsOrder.getResultStatus(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
@@ -133,6 +151,14 @@ public class SeckillMarketController implements ISeckillMarketService {
             }
             SeckillOrderEntity existsResult = seckillService.querySeckillResult(requestDTO.getUserId(), requestDTO.getActivityId(), requestDTO.getOutTradeNo());
             if (null != existsResult && !SeckillOrderEntity.RESULT_NOT_FOUND.equals(existsResult.getResultStatus())) {
+                businessLogger.info("seckill_lock_order", "idempotent_cache_hit", businessLogger.fields(
+                        "userId", requestDTO.getUserId(),
+                        "activityId", requestDTO.getActivityId(),
+                        "goodsId", requestDTO.getGoodsId(),
+                        "outTradeNo", requestDTO.getOutTradeNo(),
+                        "orderId", existsResult.getOrderId(),
+                        "resultStatus", existsResult.getResultStatus(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
@@ -144,6 +170,13 @@ public class SeckillMarketController implements ISeckillMarketService {
             if (!seckillRateLimitPort.tryAcquire(requestDTO.getActivityId(), requestDTO.getUserId(), getClientIp())) {
                 seckillMetricsPort.recordRateLimited();
                 seckillMetricsPort.recordLock(System.nanoTime() - lockStartNanos, "rate_limited");
+                businessLogger.warn("seckill_lock_order", "rate_limited", businessLogger.fields(
+                        "userId", requestDTO.getUserId(),
+                        "activityId", requestDTO.getActivityId(),
+                        "goodsId", requestDTO.getGoodsId(),
+                        "outTradeNo", requestDTO.getOutTradeNo(),
+                        "clientIp", getClientIp(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.RATE_LIMITER.getCode())
                         .info(ResponseCode.RATE_LIMITER.getInfo())
@@ -168,6 +201,14 @@ public class SeckillMarketController implements ISeckillMarketService {
                 throw e;
             }
 
+            businessLogger.info("seckill_lock_order", "success", businessLogger.fields(
+                    "userId", requestDTO.getUserId(),
+                    "activityId", requestDTO.getActivityId(),
+                    "goodsId", requestDTO.getGoodsId(),
+                    "outTradeNo", requestDTO.getOutTradeNo(),
+                    "orderId", seckillOrderEntity.getOrderId(),
+                    "resultStatus", seckillOrderEntity.getResultStatus(),
+                    "costMs", System.currentTimeMillis() - startMillis));
             return Response.<LockSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
@@ -175,12 +216,26 @@ public class SeckillMarketController implements ISeckillMarketService {
                     .build();
         } catch (AppException e) {
             log.error("lock seckill order business error requestDTO:{}", JSON.toJSONString(requestDTO), e);
+            businessLogger.warn("seckill_lock_order", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
+                    "goodsId", null == requestDTO ? null : requestDTO.getGoodsId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
             return Response.<LockSeckillOrderResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
             log.error("lock seckill order error requestDTO:{}", JSON.toJSONString(requestDTO), e);
+            businessLogger.error("seckill_lock_order", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
+                    "goodsId", null == requestDTO ? null : requestDTO.getGoodsId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
             return Response.<LockSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())

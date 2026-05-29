@@ -17,6 +17,7 @@ import cn.bugstack.domain.trade.model.valobj.TradeOrderStatusEnumVO;
 import cn.bugstack.domain.trade.service.ITradeLockOrderService;
 import cn.bugstack.domain.trade.service.ITradeRefundOrderService;
 import cn.bugstack.domain.trade.service.ITradeSettlementOrderService;
+import cn.bugstack.trigger.support.StructuredBusinessLogger;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
@@ -48,6 +49,8 @@ public class MarketTradeController implements IMarketTradeService {
     private ITradeSettlementOrderService tradeSettlementOrderService;
     @Resource
     private ITradeRefundOrderService tradeRefundOrderService;
+    @Resource
+    private StructuredBusinessLogger businessLogger;
 
     /**
      * 拼团营销锁单
@@ -55,8 +58,11 @@ public class MarketTradeController implements IMarketTradeService {
     @RequestMapping(value = "lock_market_pay_order", method = RequestMethod.POST)
     @Override
     public Response<LockMarketPayOrderResponseDTO> lockMarketPayOrder(@RequestBody LockMarketPayOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
         try {
             if (null == requestDTO) {
+                businessLogger.warn("group_buy_lock_order", "illegal_parameter", businessLogger.fields(
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -83,6 +89,13 @@ public class MarketTradeController implements IMarketTradeService {
                     || StringUtils.isBlank(outTradeNo)
                     || null == notifyConfigVO
                     || StringUtils.isBlank(notifyConfigVO.getNotifyType())) {
+                businessLogger.warn("group_buy_lock_order", "illegal_parameter", businessLogger.fields(
+                        "userId", userId,
+                        "activityId", activityId,
+                        "goodsId", goodsId,
+                        "teamId", teamId,
+                        "outTradeNo", outTradeNo,
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -92,12 +105,28 @@ public class MarketTradeController implements IMarketTradeService {
             try {
                 notifyTypeEnumVO = NotifyTypeEnumVO.valueOf(notifyConfigVO.getNotifyType());
             } catch (IllegalArgumentException e) {
+                businessLogger.warn("group_buy_lock_order", "illegal_notify_type", businessLogger.fields(
+                        "userId", userId,
+                        "activityId", activityId,
+                        "goodsId", goodsId,
+                        "teamId", teamId,
+                        "outTradeNo", outTradeNo,
+                        "notifyType", notifyConfigVO.getNotifyType(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
                         .build();
             }
             if (NotifyTypeEnumVO.HTTP.equals(notifyTypeEnumVO) && StringUtils.isBlank(notifyConfigVO.getNotifyUrl())) {
+                businessLogger.warn("group_buy_lock_order", "illegal_notify_url", businessLogger.fields(
+                        "userId", userId,
+                        "activityId", activityId,
+                        "goodsId", goodsId,
+                        "teamId", teamId,
+                        "outTradeNo", outTradeNo,
+                        "notifyType", notifyConfigVO.getNotifyType(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -117,6 +146,15 @@ public class MarketTradeController implements IMarketTradeService {
                         .build();
 
                 log.info("交易锁单记录(存在):{} marketPayOrderEntity:{}", userId, JSON.toJSONString(marketPayOrderEntity));
+                businessLogger.info("group_buy_lock_order", "idempotent_hit", businessLogger.fields(
+                        "userId", userId,
+                        "activityId", activityId,
+                        "goodsId", goodsId,
+                        "teamId", marketPayOrderEntity.getTeamId(),
+                        "outTradeNo", outTradeNo,
+                        "orderId", marketPayOrderEntity.getOrderId(),
+                        "status", marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
@@ -129,6 +167,15 @@ public class MarketTradeController implements IMarketTradeService {
                 GroupBuyProgressVO groupBuyProgressVO = tradeOrderService.queryGroupBuyProgress(teamId);
                 if (null != groupBuyProgressVO && Objects.equals(groupBuyProgressVO.getTargetCount(), groupBuyProgressVO.getLockCount())) {
                     log.info("交易锁单拦截-拼单目标已达成:{} {}", userId, teamId);
+                    businessLogger.warn("group_buy_lock_order", "team_full", businessLogger.fields(
+                            "userId", userId,
+                            "activityId", activityId,
+                            "goodsId", goodsId,
+                            "teamId", teamId,
+                            "outTradeNo", outTradeNo,
+                            "targetCount", groupBuyProgressVO.getTargetCount(),
+                            "lockCount", groupBuyProgressVO.getLockCount(),
+                            "costMs", System.currentTimeMillis() - startMillis));
                     return Response.<LockMarketPayOrderResponseDTO>builder()
                             .code(ResponseCode.E0006.getCode())
                             .info(ResponseCode.E0006.getInfo())
@@ -147,6 +194,15 @@ public class MarketTradeController implements IMarketTradeService {
 
             // 人群限定
             if (!trialBalanceEntity.getIsVisible() || !trialBalanceEntity.getIsEnable()) {
+                businessLogger.warn("group_buy_lock_order", "activity_invisible", businessLogger.fields(
+                        "userId", userId,
+                        "activityId", activityId,
+                        "goodsId", goodsId,
+                        "teamId", teamId,
+                        "outTradeNo", outTradeNo,
+                        "visible", trialBalanceEntity.getIsVisible(),
+                        "enable", trialBalanceEntity.getIsEnable(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.E0007.getCode())
                         .info(ResponseCode.E0007.getInfo())
@@ -186,6 +242,16 @@ public class MarketTradeController implements IMarketTradeService {
                             .build());
 
             log.info("交易锁单记录(新):{} marketPayOrderEntity:{}", userId, JSON.toJSONString(marketPayOrderEntity));
+            businessLogger.info("group_buy_lock_order", "success", businessLogger.fields(
+                    "userId", userId,
+                    "activityId", activityId,
+                    "goodsId", goodsId,
+                    "teamId", marketPayOrderEntity.getTeamId(),
+                    "outTradeNo", outTradeNo,
+                    "orderId", marketPayOrderEntity.getOrderId(),
+                    "status", marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode(),
+                    "payPrice", marketPayOrderEntity.getPayPrice(),
+                    "costMs", System.currentTimeMillis() - startMillis));
 
             // 返回结果
             return Response.<LockMarketPayOrderResponseDTO>builder()
@@ -201,13 +267,29 @@ public class MarketTradeController implements IMarketTradeService {
                             .build())
                     .build();
         } catch (AppException e) {
-            log.error("营销交易锁单业务异常:{} LockMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销交易锁单业务异常:{} LockMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.warn("group_buy_lock_order", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
+                    "goodsId", null == requestDTO ? null : requestDTO.getGoodsId(),
+                    "teamId", null == requestDTO ? null : requestDTO.getTeamId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
             return Response.<LockMarketPayOrderResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
-            log.error("营销交易锁单服务失败:{} LockMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销交易锁单服务失败:{} LockMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.error("group_buy_lock_order", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
+                    "goodsId", null == requestDTO ? null : requestDTO.getGoodsId(),
+                    "teamId", null == requestDTO ? null : requestDTO.getTeamId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
             return Response.<LockMarketPayOrderResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
@@ -218,10 +300,23 @@ public class MarketTradeController implements IMarketTradeService {
     @RequestMapping(value = "settlement_market_pay_order", method = RequestMethod.POST)
     @Override
     public Response<SettlementMarketPayOrderResponseDTO> settlementMarketPayOrder(@RequestBody SettlementMarketPayOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
         try {
+            if (null == requestDTO) {
+                businessLogger.warn("group_buy_settlement", "illegal_parameter", businessLogger.fields(
+                        "costMs", System.currentTimeMillis() - startMillis));
+                return Response.<SettlementMarketPayOrderResponseDTO>builder()
+                        .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                        .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                        .build();
+            }
             log.info("营销交易组队结算开始:{} outTradeNo:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo());
 
             if (StringUtils.isBlank(requestDTO.getUserId()) || StringUtils.isBlank(requestDTO.getSource()) || StringUtils.isBlank(requestDTO.getChannel()) || StringUtils.isBlank(requestDTO.getOutTradeNo()) || null == requestDTO.getOutTradeTime()) {
+                businessLogger.warn("group_buy_settlement", "illegal_parameter", businessLogger.fields(
+                        "userId", requestDTO.getUserId(),
+                        "outTradeNo", requestDTO.getOutTradeNo(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<SettlementMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -252,16 +347,32 @@ public class MarketTradeController implements IMarketTradeService {
                     .build();
 
             log.info("营销交易组队结算完成:{} outTradeNo:{} response:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo(), JSON.toJSONString(response));
+            businessLogger.info("group_buy_settlement", "success", businessLogger.fields(
+                    "userId", requestDTO.getUserId(),
+                    "activityId", responseDTO.getActivityId(),
+                    "teamId", responseDTO.getTeamId(),
+                    "outTradeNo", responseDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
 
             return response;
         } catch (AppException e) {
-            log.error("营销交易组队结算异常:{} LockMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销交易组队结算异常:{} LockMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.warn("group_buy_settlement", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
             return Response.<SettlementMarketPayOrderResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
-            log.error("营销交易组队结算失败:{} LockMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销交易组队结算失败:{} LockMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.error("group_buy_settlement", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
             return Response.<SettlementMarketPayOrderResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
@@ -272,10 +383,23 @@ public class MarketTradeController implements IMarketTradeService {
     @RequestMapping(value = "refund_market_pay_order", method = RequestMethod.POST)
     @Override
     public Response<RefundMarketPayOrderResponseDTO> refundMarketPayOrder(@RequestBody RefundMarketPayOrderRequestDTO requestDTO) {
+        long startMillis = System.currentTimeMillis();
         try {
+            if (null == requestDTO) {
+                businessLogger.warn("group_buy_refund", "illegal_parameter", businessLogger.fields(
+                        "costMs", System.currentTimeMillis() - startMillis));
+                return Response.<RefundMarketPayOrderResponseDTO>builder()
+                        .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                        .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                        .build();
+            }
             log.info("营销拼团退单开始:{} outTradeNo:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo());
 
             if (StringUtils.isBlank(requestDTO.getUserId()) || StringUtils.isBlank(requestDTO.getOutTradeNo()) || StringUtils.isBlank(requestDTO.getSource()) || StringUtils.isBlank(requestDTO.getChannel())) {
+                businessLogger.warn("group_buy_refund", "illegal_parameter", businessLogger.fields(
+                        "userId", requestDTO.getUserId(),
+                        "outTradeNo", requestDTO.getOutTradeNo(),
+                        "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<RefundMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -306,16 +430,33 @@ public class MarketTradeController implements IMarketTradeService {
                     .build();
 
             log.info("营销拼团退单完成:{} outTradeNo:{} response:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo(), JSON.toJSONString(response));
+            businessLogger.info("group_buy_refund", "success", businessLogger.fields(
+                    "userId", requestDTO.getUserId(),
+                    "orderId", responseDTO.getOrderId(),
+                    "teamId", responseDTO.getTeamId(),
+                    "outTradeNo", requestDTO.getOutTradeNo(),
+                    "refundCode", responseDTO.getCode(),
+                    "costMs", System.currentTimeMillis() - startMillis));
 
             return response;
         } catch (AppException e) {
-            log.error("营销拼团退单异常:{} RefundMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销拼团退单异常:{} RefundMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.warn("group_buy_refund", "business_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "code", e.getCode(),
+                    "info", e.getInfo(),
+                    "costMs", System.currentTimeMillis() - startMillis));
             return Response.<RefundMarketPayOrderResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
-            log.error("营销拼团退单失败:{} RefundMarketPayOrderRequestDTO:{}", requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            log.error("营销拼团退单失败:{} RefundMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
+            businessLogger.error("group_buy_refund", "system_error", businessLogger.fields(
+                    "userId", null == requestDTO ? null : requestDTO.getUserId(),
+                    "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
             return Response.<RefundMarketPayOrderResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
