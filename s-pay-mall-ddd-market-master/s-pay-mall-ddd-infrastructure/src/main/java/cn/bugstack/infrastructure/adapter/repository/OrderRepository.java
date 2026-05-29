@@ -1,6 +1,7 @@
 package cn.bugstack.infrastructure.adapter.repository;
 
 import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
+import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
@@ -40,7 +41,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-public class OrderRepository implements IOrderRepository {
+public class OrderRepository implements IOrderRepository, IOrderReconcileRepository {
 
     @Resource
     private IOrderDao orderDao;

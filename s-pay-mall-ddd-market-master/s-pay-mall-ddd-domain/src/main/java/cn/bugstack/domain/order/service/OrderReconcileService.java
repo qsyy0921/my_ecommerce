@@ -1,6 +1,7 @@
 package cn.bugstack.domain.order.service;
 
 import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
@@ -14,18 +15,23 @@ import java.util.List;
 public class OrderReconcileService implements IOrderReconcileService {
 
     private final IOrderRepository repository;
+    private final IOrderReconcileRepository reconcileRepository;
     private final IProductPort productPort;
     private final IOrderService orderService;
 
-    public OrderReconcileService(IOrderRepository repository, IProductPort productPort, IOrderService orderService) {
+    public OrderReconcileService(IOrderRepository repository,
+                                 IOrderReconcileRepository reconcileRepository,
+                                 IProductPort productPort,
+                                 IOrderService orderService) {
         this.repository = repository;
+        this.reconcileRepository = reconcileRepository;
         this.productPort = productPort;
         this.orderService = orderService;
     }
 
     @Override
     public int reconcileMarketSettlementOrders() {
-        List<OrderEntity> orderEntities = repository.queryStaleMarketSettlementOrderList();
+        List<OrderEntity> orderEntities = reconcileRepository.queryStaleMarketSettlementOrderList();
         if (null == orderEntities || orderEntities.isEmpty()) {
             return 0;
         }
@@ -50,17 +56,17 @@ public class OrderReconcileService implements IOrderReconcileService {
 
     @Override
     public int scanReconcileCases() {
-        return repository.scanReconcileCases();
+        return reconcileRepository.scanReconcileCases();
     }
 
     @Override
     public List<ReconcileCaseEntity> queryReconcileCaseList(Integer caseStatus, String caseType, Long lastId, Integer pageSize) {
-        return repository.queryReconcileCaseList(caseStatus, caseType, lastId, null == pageSize ? 20 : pageSize);
+        return reconcileRepository.queryReconcileCaseList(caseStatus, caseType, lastId, null == pageSize ? 20 : pageSize);
     }
 
     @Override
     public boolean handleReconcileCase(String caseNo, Integer caseStatus, String handler, String handleNote) {
-        return repository.handleReconcileCase(caseNo, caseStatus, handler, handleNote);
+        return reconcileRepository.handleReconcileCase(caseNo, caseStatus, handler, handleNote);
     }
 
     @Override
@@ -83,7 +89,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 } else {
                     productPort.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }
-                return repository.handleReconcileCase(caseNo, 1, handler, "replay market settlement success");
+                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "replay market settlement success");
             }
 
             if (caseNo.startsWith("PAY_WAIT_TIMEOUT:")) {
@@ -92,7 +98,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 if (!closed) {
                     return false;
                 }
-                return repository.handleReconcileCase(caseNo, 1, handler, "timeout unpaid order closed by replay");
+                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "timeout unpaid order closed by replay");
             }
 
             if (caseNo.startsWith("REFUND_TIMEOUT:")) {
@@ -105,35 +111,35 @@ public class OrderReconcileService implements IOrderReconcileService {
                 if (!refunded) {
                     return false;
                 }
-                return repository.handleReconcileCase(caseNo, 1, handler, "refund replay success");
+                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "refund replay success");
             }
 
             if (caseNo.startsWith("MQ_CONSUME_FAIL:")) {
                 String messageId = bizId(caseNo);
-                boolean replayed = repository.replayMqFailure(messageId);
+                boolean replayed = reconcileRepository.replayMqFailure(messageId);
                 if (!replayed) {
                     return false;
                 }
-                return repository.handleReconcileCase(caseNo, 1, handler, "mq message replayed to original exchange");
+                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "mq message replayed to original exchange");
             }
 
             log.warn("reconcile case does not support auto replay caseNo:{}", caseNo);
             return false;
         } catch (Exception e) {
             log.error("replay reconcile case failed caseNo:{}", caseNo, e);
-            repository.handleReconcileCase(caseNo, 0, handler, "replay failed: " + e.getMessage());
+            reconcileRepository.handleReconcileCase(caseNo, 0, handler, "replay failed: " + e.getMessage());
             return false;
         }
     }
 
     @Override
     public void recordReconcileOperation(String operator, String operationType, String bizId, String requestBody, String result) {
-        repository.recordReconcileOperation(operator, operationType, bizId, requestBody, result);
+        reconcileRepository.recordReconcileOperation(operator, operationType, bizId, requestBody, result);
     }
 
     @Override
     public int importThirdPartyBillCsv(String csvText) {
-        return repository.importThirdPartyBillCsv(csvText);
+        return reconcileRepository.importThirdPartyBillCsv(csvText);
     }
 
     private String bizId(String caseNo) {

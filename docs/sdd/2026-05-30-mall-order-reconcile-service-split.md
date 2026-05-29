@@ -21,6 +21,8 @@
   - 订单关闭。
   - 订单列表。
   - 退款。
+- 新增 `IOrderReconcileRepository`，把差错单扫描、查询、处理、MQ 重放和三方账单导入从 `IOrderRepository` 中拆出。
+- `IOrderRepository` 只保留订单主链路所需的订单查询、支付状态、关单、营销结算状态和退款方法。
 - `ReconcileCaseController`、`OrderReconciliationJob`、`ReconcileCaseScanJob` 改注入 `IOrderReconcileService`。
 - 对账重放仍可调用 `IOrderService.refundPayOrder(...)` 完成真实退款动作，避免复制退款逻辑。
 
@@ -44,3 +46,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 ## 面试表达
 
 > 商城订单服务早期为了快速闭环，把对账和差错重放也放在 `OrderService` 里。后续我把它拆成 `OrderReconcileService`，让订单服务只负责下单、支付、退款主链路，对账服务负责扫描、差错单、重放和三方账单导入。这样后续继续加对账日报、人工审批、SLA 统计，不会污染订单主流程。
+
+## 追加治理
+
+服务拆分后继续把仓储端口也拆开：
+
+- `IOrderRepository`：订单主链路仓储端口。
+- `IOrderReconcileRepository`：对账差错仓储端口。
+- `OrderRepository` 作为基础设施适配器同时实现两个端口，但 domain 服务只依赖自己需要的端口。
+
+这样做的目的不是增加类数量，而是让订单主链路在接口层看不到对账台账、三方账单和 MQ 重放方法。

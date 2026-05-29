@@ -12,6 +12,7 @@ import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.domain.order.service.IOrderService;
@@ -37,9 +38,10 @@ public class DomainServiceConfig {
 
     @Bean
     public IOrderReconcileService orderReconcileService(IOrderRepository orderRepository,
+                                                        IOrderReconcileRepository orderReconcileRepository,
                                                         IProductPort productPort,
                                                         IOrderService orderService) {
-        return new OrderReconcileService(orderRepository, productPort, orderService);
+        return new OrderReconcileService(orderRepository, orderReconcileRepository, productPort, orderService);
     }
 
     @Bean

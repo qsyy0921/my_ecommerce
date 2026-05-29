@@ -68,6 +68,7 @@
 
 - [x] 商城订单、营销订单、支付渠道三方对账任务。
 - [x] 商城 `OrderService` 与 `OrderReconcileService` 拆分，订单主链路和对账差错处理分离。
+- [x] 商城 `IOrderRepository` 与 `IOrderReconcileRepository` 拆分，订单主链路仓储端口不暴露对账台账能力。
 - [x] 超时未支付退单补偿。
 - [x] 秒杀已支付退款恢复库存和未支付取消释放资格。
 - [x] 已支付未成团退款补偿。
