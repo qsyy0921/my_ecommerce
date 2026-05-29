@@ -17,12 +17,13 @@
 - 秒杀 Redis Stream 分片、pending-list 回收、失败隔离和人工补偿 Stream。
 - 秒杀订单批量落库、可配置分片表、库存流水和故障注入开关。
 - 拼团锁单请求幂等锁、结果缓存、用户维度 Redis 占位和 DB 唯一索引兜底。
+- 本地 OpenTelemetry Java agent + Jaeger 链路追踪启动方案。
 
 主要差距：
 
 - 拼团已补齐队伍名额 + 用户维度 Redis 原子占位和库存流水审计，但压测覆盖仍弱于秒杀。
 - 支付、营销、MQ 三类幂等已有各自模型，还需要抽象成统一事件幂等规范。
-- 链路追踪有 `traceId`，但还没有接入 OpenTelemetry/Jaeger 级别的分布式 trace。
+- 本地已接入 OpenTelemetry Java agent + Jaeger，但生产还需要 Collector、采样策略、Trace 存储和告警联动。
 - 对账任务已有基础形态，还需要形成日报、差错单和人工处理台账。
 - 压测报告重点覆盖秒杀，还需要覆盖拼团、支付、MQ 消费全链路。
 - 生产容量还需独立 Linux 环境压测验证，不能用 Windows + Docker Desktop 结果替代。

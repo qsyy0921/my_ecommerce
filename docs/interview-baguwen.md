@@ -51,14 +51,14 @@ flowchart LR
 - Redis 承担高并发热路径：秒杀库存预扣、用户防重、拼团队伍名额占位、锁单结果缓存、限流、分布式锁和 Redis Stream 排队。
 - MySQL 承担最终一致性约束：订单、队伍、库存流水、状态流水、支付流水、退款流水、对账差错单、MQ 消息台账和 Job 执行记录。
 - RabbitMQ 承担跨服务事件通知：成团通知、支付成功、退单退款、失败 DLQ 和生产者失败补偿。
-- Prometheus/Grafana/Alertmanager 配置和结构化 JSON 业务日志用于观测，`trace-id` 在 HTTP/MQ/Job 日志中贯穿。
+- Prometheus/Grafana/Alertmanager 配置、结构化 JSON 业务日志和本地 OpenTelemetry + Jaeger 用于观测，`trace-id` 在 HTTP/MQ/Job 日志中贯穿。
 - SDD 文档记录了每次 AI 辅助开发的需求、设计、验收和边界，防止后续继续堆代码变成不可维护的大类。
 
 这套架构当前适合面试描述为“课程项目基础上做了交易可靠性和高并发治理”。它不是简单 CRUD，也不是纯秒杀 Demo，而是把拼团、秒杀、支付、补偿、对账、监控放在同一套 DDD 边界里做一致性闭环。
 
 面试可以这样评价当前成熟度：
 
-> 现在的系统已经从教学项目升级到本机可运行、可压测、可观测、可补偿的交易营销系统。核心链路有 Redis 快速失败、MySQL 唯一索引兜底、MQ 可靠通知、支付回调幂等、DLQ、对账差错单、补偿台账和结构化日志。但我不会说它已经是生产满分，因为生产容量、多实例部署、正式三方账单、OpenTelemetry Trace、权限审批和长期运维治理还需要真实环境继续建设。
+> 现在的系统已经从教学项目升级到本机可运行、可压测、可观测、可补偿的交易营销系统。核心链路有 Redis 快速失败、MySQL 唯一索引兜底、MQ 可靠通知、支付回调幂等、DLQ、对账差错单、补偿台账、结构化日志和本地 Jaeger Trace。但我不会说它已经是生产满分，因为生产容量、多实例部署、正式三方账单、Trace 采样/存储、权限审批和长期运维治理还需要真实环境继续建设。
 
 ### 4. 限界上下文
 
@@ -668,12 +668,12 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 容量：本机压测只能证明趋势，不能代表生产容量；还需要独立 Linux 压测机、多实例服务、独立 Redis/MySQL/RabbitMQ 和资源水位曲线。
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
-- 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例，但还没有完整 OpenTelemetry/Jaeger Trace。
+- 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
 - 代码质量：DDD 边界和 domain 纯净化已经做了，但 Repository 和补偿编排仍要长期拆分，领域单元测试和架构测试还需要继续补。
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、结构化日志、压测脚本我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做本地 Jaeger Trace、资源水位压测报告、秒杀退款库存闭环，以及把大 Repository 继续拆成更细的端口适配器。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、结构化日志、Jaeger Trace、压测脚本我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做资源水位压测报告、秒杀退款库存闭环、Trace 采样和日志指标跳转，以及把大 Repository 继续拆成更细的端口适配器。
 
 ## 六、当前已修复的问题
 
@@ -711,6 +711,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 秒杀分片订单表下的库存同步口径修复。
 - 核心交易入口结构化 JSON 业务日志：秒杀锁单、拼团锁单、拼团结算、拼团退单、支付创建、支付回调、模拟支付、成团通知。
 - 补偿/对账定时任务 MySQL 分布式锁和 `job_execution_record` 执行审计，支持 success/fail/skipped 追踪。
+- 本地 OpenTelemetry Java agent + Jaeger：两个服务可通过 `-javaagent` 上报 Trace 到 `http://127.0.0.1:16686`。
 
 ## 七、仍需诚实说明的边界
 
@@ -753,8 +754,9 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 ### 6. 可观测性问题
 
 - Grafana、Prometheus、Alertmanager 已有配置样例；真实接收人、告警抑制、升级策略和值班排班要按部署环境配置。
-- 现在已有 `trace-id` 过滤器、HTTP/MQ trace 透传、业务指标和核心交易入口结构化 JSON 日志，但还没有接入 OpenTelemetry/Jaeger 级别的完整跨进程 Trace。
+- 现在已有 `trace-id` 过滤器、HTTP/MQ trace 透传、业务指标、核心交易入口结构化 JSON 日志和本地 OpenTelemetry/Jaeger Trace。
 - 非核心 debug/info 文本日志仍保留用于本地排障，后续可以逐步沉淀为统一 JSON 日志规范。
+- 生产环境还需要 OpenTelemetry Collector、采样策略、Trace 存储周期、Trace 与日志/指标跳转、脱敏规则和告警联动。
 
 ### 7. DDD 质量问题
 
@@ -822,7 +824,7 @@ MQ：
 >
 > 秒杀是项目里的高并发重点。入口通过本地缓存、售罄短路、限流和活动并发闸门挡无效请求，再用 Redis Lua 原子扣库存和防重复。抢到资格后写 Redis Stream 分片，后台 consumer group 批量消费和批量落库。pending-list 用于消费者宕机后的自动接管，失败超过阈值后进入人工补偿 Stream，秒杀补偿台可以查询并按消息 ID 重放。消费幂等靠 MySQL 唯一索引、insert ignore 和库存流水。支付回调用 `payment_flow` 记录独立幂等流水，只有订单状态首次更新成功才发 MQ 或触发营销结算。跨服务一致性靠本地事务、幂等接口、MQ、通知任务、对账任务和差错单台账。
 >
-> 目前这套架构已经能在本机完成运行、压测、不变量校验、故障补偿和日志观测，但我不会把它包装成生产满分。真实生产还需要独立 Linux 环境和多实例压测，接入 OpenTelemetry/Jaeger，补资源水位曲线、审批型补偿后台、正式支付宝账单下载，以及更完整的秒杀退款库存闭环。
+> 目前这套架构已经能在本机完成运行、压测、不变量校验、故障补偿、结构化日志和 Jaeger Trace，但我不会把它包装成生产满分。真实生产还需要独立 Linux 环境和多实例压测，补资源水位曲线、Trace 采样和存储策略、审批型补偿后台、正式支付宝账单下载，以及更完整的秒杀退款库存闭环。
 
 ## 十、回答模板
 
@@ -855,6 +857,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-30：重新梳理当前架构成熟度和剩余问题，补充“当前架构分析”“现在这套架构还有什么问题”与两分钟面试稿边界说明。
+- 2026-05-30：补齐本地 OpenTelemetry Java agent + Jaeger 链路追踪启动方案，新增 `docs/dev-ops/docker-compose-tracing.yml`、`scripts/observability/*` 和 SDD 记录 `docs/sdd/2026-05-30-local-opentelemetry-jaeger.md`。
 - 2026-05-30：补齐核心交易入口结构化 JSON 日志和补偿/对账 Job 执行审计，新增 SDD 记录 `docs/sdd/2026-05-30-structured-logs-job-audit.md`。
 - 2026-05-30：补齐拼团锁单强幂等和用户维度 Redis 占位，新增请求幂等锁、锁单结果缓存、队伍用户占位 Key、DB 唯一索引迁移和 SDD 文档 `docs/sdd/2026-05-30-group-buy-lock-idempotency.md`。
 - 2026-05-30：补齐支付回调独立幂等流水，普通订单 MQ 和拼团营销结算只在订单首次支付成功时触发，并记录 SDD 文档 `docs/sdd/2026-05-30-payment-callback-idempotency.md`。

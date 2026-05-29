@@ -79,4 +79,4 @@ Get-ChildItem s-pay-mall-ddd-market-master\s-pay-mall-ddd-trigger\src\main\java\
 
 - 结构化日志已覆盖核心交易入口，但普通 debug/info 文本日志不会一次性全部删除，避免影响排障上下文。
 - 当前使用 MySQL 锁满足本机和小规模多实例；如果未来拆到真正分布式调度平台，可以演进为 XXL-Job/Scheduler 统一调度锁和执行台账。
-- 还没有接入 OpenTelemetry/Jaeger，跨进程 Trace 仍停留在 `trace-id` 透传和日志关联层面。
+- 本地 OpenTelemetry/Jaeger 已在 `2026-05-30-local-opentelemetry-jaeger.md` 中补齐；生产仍需要 Collector、采样、存储和告警联动。

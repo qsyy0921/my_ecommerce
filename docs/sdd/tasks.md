@@ -58,6 +58,7 @@
 - [x] 有基础日志。
 - [x] 全链路 traceId 过滤器。
 - [x] 结构化 JSON 业务日志字段标准。
+- [x] 本地 OpenTelemetry Java agent + Jaeger 链路追踪。
 - [x] 自定义指标：秒杀库存不足、重复参与、锁单耗时、MQ/Stream 积压。
 - [x] Grafana Dashboard。
 - [x] 告警规则：错误率、P95、DLQ、库存不一致。
