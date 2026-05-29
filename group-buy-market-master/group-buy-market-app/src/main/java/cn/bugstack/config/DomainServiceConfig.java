@@ -10,6 +10,7 @@ import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.tag.adapter.repository.ITagRepository;
 import cn.bugstack.domain.tag.service.ITagService;
 import cn.bugstack.domain.tag.service.TagService;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.domain.trade.adapter.port.ITradePort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
@@ -58,8 +59,8 @@ public class DomainServiceConfig {
     }
 
     @Bean
-    public ITradeTaskService tradeTaskService(ITradeRepository tradeRepository, ITradePort tradePort) {
-        return new TradeTaskService(tradeRepository, tradePort);
+    public ITradeTaskService tradeTaskService(ITradeNotifyTaskPort tradeNotifyTaskPort, ITradePort tradePort) {
+        return new TradeTaskService(tradeNotifyTaskPort, tradePort);
     }
 
     @Bean

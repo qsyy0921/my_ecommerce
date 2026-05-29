@@ -94,4 +94,6 @@
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
 - [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍的合法/非法状态迁移。
 - [x] 抽象 `IDomainTaskExecutor`，domain 不再直接依赖 `ThreadPoolExecutor`。
+- [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
+- [x] `DomainPurityTest` 增加 `ITradeRepository` 通知任务方法回流守护。
 - [~] 继续拆分大 Repository、补偿编排和更多领域用例测试。

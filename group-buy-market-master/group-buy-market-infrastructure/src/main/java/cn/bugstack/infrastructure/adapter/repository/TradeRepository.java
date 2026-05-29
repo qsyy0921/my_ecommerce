@@ -361,31 +361,6 @@ public class TradeRepository implements ITradeRepository {
         return dccService.isSCBlackIntercept(source, channel);
     }
 
-    @Override
-    public List<NotifyTaskEntity> queryUnExecutedNotifyTaskList() {
-        return tradeNotifyTaskPort.queryUnExecutedNotifyTaskList();
-    }
-
-    @Override
-    public List<NotifyTaskEntity> queryUnExecutedNotifyTaskList(String teamId) {
-        return tradeNotifyTaskPort.queryUnExecutedNotifyTaskList(teamId);
-    }
-
-    @Override
-    public int updateNotifyTaskStatusSuccess(NotifyTaskEntity notifyTaskEntity) {
-        return tradeNotifyTaskPort.updateNotifyTaskStatusSuccess(notifyTaskEntity);
-    }
-
-    @Override
-    public int updateNotifyTaskStatusError(NotifyTaskEntity notifyTaskEntity) {
-        return tradeNotifyTaskPort.updateNotifyTaskStatusError(notifyTaskEntity);
-    }
-
-    @Override
-    public int updateNotifyTaskStatusRetry(NotifyTaskEntity notifyTaskEntity) {
-        return tradeNotifyTaskPort.updateNotifyTaskStatusRetry(notifyTaskEntity);
-    }
-
     /**
      * 占用库存
      * <p>

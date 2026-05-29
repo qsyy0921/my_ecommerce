@@ -2,7 +2,7 @@
 
 ## 背景
 
-`TradeRepository` 已经承载拼团锁单、结算、退单、通知任务、库存流水和状态流水。状态流水已经通过 `IOrderStateFlowPort` 移出仓储，但通知任务构建和库存流水构建仍直接散落在仓储方法内，导致 Repository 偏厚。
+`TradeRepository` 已经承载拼团锁单、结算、退单、通知任务、库存流水和状态流水。状态流水已经通过 `IOrderStateFlowPort` 移出仓储，但通知任务构建和库存流水构建仍直接散落在仓储方法内，导致 Repository 偏厚。后续检查又发现 `TradeTaskService` 只是执行通知任务，却依赖整个 `ITradeRepository`，这会让任务编排看到锁单、结算、退款等无关能力。
 
 本次目标不是增加新的中间件，而是在现有 DDD 架构下把职责边界拆清楚。拼团成团和退单通知继续使用 RabbitMQ，本地 `notify_task` 表作为 Outbox 和补偿台账；拼团库存流水继续落 MySQL，作为审计和异常恢复依据。
 
@@ -10,6 +10,8 @@
 
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
 - 通知任务由 `ITradeNotifyTaskPort` 表达，基础设施适配器负责构建 `notify_task` PO 并落库。
+- `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort` 查询和更新通知任务状态，不再依赖 `ITradeRepository`。
+- `ITradeRepository` 不再暴露通知任务查询和状态更新方法，只保留交易主链路需要的锁单、结算、退款和库存占位方法。
 - 拼团库存流水由 `IGroupBuyStockFlowPort` 表达，领域实体 `GroupBuyStockFlowEntity` 负责承载业务语义。
 - 结算和退单方法只保留交易状态更新、状态机流水调用、通知任务端口调用、库存审计端口调用。
 - 不改变现有接口、表结构、MQ 路由和业务行为。
@@ -43,6 +45,7 @@ flowchart LR
 ## 验收
 
 - `TradeRepository` 中不能再出现 `NotifyTask` PO 和 `GroupBuyStockFlow` PO。
+- `DomainPurityTest.tradeRepositoryShouldNotExposeNotifyTaskExecutionMethods` 能防止通知任务扫描和状态更新方法回流到 `ITradeRepository`。
 - domain 不依赖 infrastructure。
 - `scripts/check-domain-purity.ps1` 通过。
 - `mvn -q -DskipTests compile` 通过。
@@ -54,7 +57,8 @@ flowchart LR
 - 新增 `IGroupBuyStockFlowPort`，由 `GroupBuyStockFlowPort` 适配 `group_buy_stock_flow` 表。
 - 新增 `ITradeNotifyTaskPort`，由 `TradeNotifyTaskPort` 适配 `notify_task` 本地消息表。
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
-- 通知任务查询和状态更新也改为通过 `ITradeNotifyTaskPort` 委托。
+- 通知任务查询和状态更新不再挂在 `ITradeRepository` 上，`TradeTaskService` 直接通过 `ITradeNotifyTaskPort` 完成任务扫描和状态推进。
+- `DomainPurityTest` 增加回归用例，防止通知任务执行方法重新回流到 `ITradeRepository`。
 
 ## 当前验证
 

@@ -1,7 +1,7 @@
 package cn.bugstack.domain.trade.service.task;
 
 import cn.bugstack.domain.trade.adapter.port.ITradePort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.service.ITradeTaskService;
 import cn.bugstack.types.enums.NotifyTaskHTTPEnumVO;
@@ -22,11 +22,11 @@ import java.util.Map;
 @Slf4j
 public class TradeTaskService implements ITradeTaskService {
 
-    private final ITradeRepository repository;
+    private final ITradeNotifyTaskPort notifyTaskPort;
     private final ITradePort port;
 
-    public TradeTaskService(ITradeRepository repository, ITradePort port) {
-        this.repository = repository;
+    public TradeTaskService(ITradeNotifyTaskPort notifyTaskPort, ITradePort port) {
+        this.notifyTaskPort = notifyTaskPort;
         this.port = port;
     }
     
@@ -35,7 +35,7 @@ public class TradeTaskService implements ITradeTaskService {
         log.info("拼团交易-执行回调通知任务");
 
         // 查询未执行任务
-        List<NotifyTaskEntity> notifyTaskEntityList = repository.queryUnExecutedNotifyTaskList();
+        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskPort.queryUnExecutedNotifyTaskList();
 
         return execNotifyJob(notifyTaskEntityList);
     }
@@ -43,7 +43,7 @@ public class TradeTaskService implements ITradeTaskService {
     @Override
     public Map<String, Integer> execNotifyJob(String teamId) throws Exception {
         log.info("拼团交易-执行回调通知回调，指定 teamId:{}", teamId);
-        List<NotifyTaskEntity> notifyTaskEntityList = repository.queryUnExecutedNotifyTaskList(teamId);
+        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskPort.queryUnExecutedNotifyTaskList(teamId);
         return execNotifyJob(notifyTaskEntityList);
     }
 
@@ -61,18 +61,18 @@ public class TradeTaskService implements ITradeTaskService {
 
             // 更新状态判断&变更数据库表回调任务状态
             if (NotifyTaskHTTPEnumVO.SUCCESS.getCode().equals(response)) {
-                int updateCount = repository.updateNotifyTaskStatusSuccess(notifyTask);
+                int updateCount = notifyTaskPort.updateNotifyTaskStatusSuccess(notifyTask);
                 if (1 == updateCount) {
                     successCount += 1;
                 }
             } else if (NotifyTaskHTTPEnumVO.ERROR.getCode().equals(response)) {
                 if (notifyTask.getNotifyCount() > 4) {
-                    int updateCount = repository.updateNotifyTaskStatusError(notifyTask);
+                    int updateCount = notifyTaskPort.updateNotifyTaskStatusError(notifyTask);
                     if (1 == updateCount) {
                         errorCount += 1;
                     }
                 } else {
-                    int updateCount = repository.updateNotifyTaskStatusRetry(notifyTask);
+                    int updateCount = notifyTaskPort.updateNotifyTaskStatusRetry(notifyTask);
                     if (1 == updateCount) {
                         retryCount += 1;
                     }

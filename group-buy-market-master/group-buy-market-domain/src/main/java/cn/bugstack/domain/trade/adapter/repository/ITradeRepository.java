@@ -43,16 +43,6 @@ public interface ITradeRepository {
 
     boolean isSCBlackIntercept(String source, String channel);
 
-    List<NotifyTaskEntity> queryUnExecutedNotifyTaskList();
-
-    List<NotifyTaskEntity> queryUnExecutedNotifyTaskList(String teamId);
-
-    int updateNotifyTaskStatusSuccess(NotifyTaskEntity notifyTaskEntity);
-
-    int updateNotifyTaskStatusError(NotifyTaskEntity notifyTaskEntity);
-
-    int updateNotifyTaskStatusRetry(NotifyTaskEntity notifyTaskEntity);
-
     long occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, String userTeamOccupyKey, String outTradeNo, Integer target, Integer validTime);
 
     void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime);

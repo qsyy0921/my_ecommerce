@@ -46,6 +46,29 @@ public class DomainPurityTest {
         Assert.assertTrue("Domain layer must not import Spring/container annotations:\n" + joinLines(violations), violations.isEmpty());
     }
 
+    @Test
+    public void tradeRepositoryShouldNotExposeNotifyTaskExecutionMethods() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
+        String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenMethods = Arrays.asList(
+                "queryUnExecutedNotifyTaskList",
+                "updateNotifyTaskStatusSuccess",
+                "updateNotifyTaskStatusError",
+                "updateNotifyTaskStatusRetry"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String method : forbiddenMethods) {
+            if (source.contains(method)) {
+                violations.add(method);
+            }
+        }
+
+        Assert.assertTrue("ITradeRepository must keep notify task execution behind ITradeNotifyTaskPort: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

@@ -72,4 +72,4 @@ flowchart LR
 
 ## 后续治理
 
-本次只是先把状态流水的技术细节从 Repository 中移走。后续如果继续收敛代码，需要把 `TradeRepository` 中的退单、通知任务、库存流水构建进一步拆成更小的基础设施适配器或领域服务，避免一个仓储类同时承担太多流程编排职责。
+本次先把状态流水的技术细节从 Repository 中移走，后续又把通知任务和库存流水构建拆到端口适配器，并让 `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort`，避免通知任务扫描能力继续污染 `ITradeRepository`。后续如果继续收敛代码，需要把 `TradeRepository` 中的退单和库存占位编排继续拆成更小的领域服务或基础设施适配器，避免一个仓储类同时承担太多流程编排职责。
