@@ -43,19 +43,11 @@ public interface ITradeRepository {
 
     boolean isSCBlackIntercept(String source, String channel);
 
-    long occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, String userTeamOccupyKey, String outTradeNo, Integer target, Integer validTime);
-
-    void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime);
-
-    void releaseUserTeamOccupy(String userTeamOccupyKey);
-
     NotifyTaskEntity unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 
     NotifyTaskEntity paid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 
     NotifyTaskEntity paidTeam2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
-
-    void refund2AddRecovery(String recoveryTeamStockKey, String orderId);
 
     List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList();
 

@@ -12,6 +12,7 @@
 - 通知任务由 `ITradeNotifyTaskPort` 表达，基础设施适配器负责构建 `notify_task` PO 并落库。
 - `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort` 查询和更新通知任务状态，不再依赖 `ITradeRepository`。
 - `ITradeRepository` 不再暴露通知任务查询和状态更新方法，只保留交易主链路需要的锁单、结算、退款和库存占位方法。
+- 拼团队伍库存占位由 `IGroupBuyTeamStockPort` 表达，Redis Lua 占位、用户占位释放和退单恢复量写入不再挂在 `ITradeRepository` 上。
 - 拼团库存流水由 `IGroupBuyStockFlowPort` 表达，领域实体 `GroupBuyStockFlowEntity` 负责承载业务语义。
 - 结算和退单方法只保留交易状态更新、状态机流水调用、通知任务端口调用、库存审计端口调用。
 - 不改变现有接口、表结构、MQ 路由和业务行为。
@@ -23,10 +24,13 @@ flowchart LR
     A["TradeRepository"] --> B["ITradeNotifyTaskPort"]
     A --> C["IGroupBuyStockFlowPort"]
     A --> D["IOrderStateFlowPort"]
+    I["TradeLockOrderService / Rule / Refund Strategy"] --> J["IGroupBuyTeamStockPort"]
     B --> E["TradeNotifyTaskPort"]
     C --> F["GroupBuyStockFlowPort"]
+    J --> K["GroupBuyTeamStockPort"]
     E --> G["notify_task"]
     F --> H["group_buy_stock_flow"]
+    K --> L["Redis Lua / Recovery Key"]
 ```
 
 端口职责：
@@ -42,10 +46,15 @@ flowchart LR
   - 记录已支付未成团退单释放流水。
   - 记录已支付已成团退单流水。
 
+- `IGroupBuyTeamStockPort`
+  - 参团时通过 Redis Lua 原子占用队伍名额和用户占位。
+  - 锁单失败时恢复恢复量并释放用户队伍占位。
+  - 退款成功后按订单维度幂等增加恢复量。
+
 ## 验收
 
 - `TradeRepository` 中不能再出现 `NotifyTask` PO 和 `GroupBuyStockFlow` PO。
-- `DomainPurityTest.tradeRepositoryShouldNotExposeNotifyTaskExecutionMethods` 能防止通知任务扫描和状态更新方法回流到 `ITradeRepository`。
+- `DomainPurityTest.tradeRepositoryShouldNotExposeInfrastructureSidePorts` 能防止通知任务扫描、状态更新、队伍库存占位和退单恢复方法回流到 `ITradeRepository`。
 - domain 不依赖 infrastructure。
 - `scripts/check-domain-purity.ps1` 通过。
 - `mvn -q -DskipTests compile` 通过。
@@ -58,7 +67,8 @@ flowchart LR
 - 新增 `ITradeNotifyTaskPort`，由 `TradeNotifyTaskPort` 适配 `notify_task` 本地消息表。
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
 - 通知任务查询和状态更新不再挂在 `ITradeRepository` 上，`TradeTaskService` 直接通过 `ITradeNotifyTaskPort` 完成任务扫描和状态推进。
-- `DomainPurityTest` 增加回归用例，防止通知任务执行方法重新回流到 `ITradeRepository`。
+- 新增 `IGroupBuyTeamStockPort` 和 `GroupBuyTeamStockPort`，锁单规则、锁单失败补偿和退单策略通过专用端口处理 Redis 队伍库存占位。
+- `DomainPurityTest` 增加回归用例，防止通知任务执行方法和队伍库存占位方法重新回流到 `ITradeRepository`。
 
 ## 当前验证
 

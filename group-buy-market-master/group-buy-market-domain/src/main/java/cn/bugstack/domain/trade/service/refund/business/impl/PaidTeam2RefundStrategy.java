@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.refund.business.impl;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
@@ -21,8 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PaidTeam2RefundStrategy extends AbstractRefundOrderStrategy {
 
-    public PaidTeam2RefundStrategy(ITradeRepository repository, ITradeTaskService tradeTaskService, IDomainTaskExecutor domainTaskExecutor) {
-        super(repository, tradeTaskService, domainTaskExecutor);
+    public PaidTeam2RefundStrategy(ITradeRepository repository,
+                                   IGroupBuyTeamStockPort groupBuyTeamStockPort,
+                                   ITradeTaskService tradeTaskService,
+                                   IDomainTaskExecutor domainTaskExecutor) {
+        super(repository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Override

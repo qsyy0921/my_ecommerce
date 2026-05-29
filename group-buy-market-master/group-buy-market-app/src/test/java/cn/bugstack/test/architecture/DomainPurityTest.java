@@ -47,7 +47,7 @@ public class DomainPurityTest {
     }
 
     @Test
-    public void tradeRepositoryShouldNotExposeNotifyTaskExecutionMethods() throws Exception {
+    public void tradeRepositoryShouldNotExposeInfrastructureSidePorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
         String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
@@ -56,7 +56,11 @@ public class DomainPurityTest {
                 "queryUnExecutedNotifyTaskList",
                 "updateNotifyTaskStatusSuccess",
                 "updateNotifyTaskStatusError",
-                "updateNotifyTaskStatusRetry"
+                "updateNotifyTaskStatusRetry",
+                "occupyTeamStock",
+                "recoveryTeamStock",
+                "releaseUserTeamOccupy",
+                "refund2AddRecovery"
         );
 
         List<String> violations = new ArrayList<>();
@@ -66,7 +70,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("ITradeRepository must keep notify task execution behind ITradeNotifyTaskPort: " + violations, violations.isEmpty());
+        Assert.assertTrue("ITradeRepository must keep notify task and team stock operations behind dedicated ports: " + violations, violations.isEmpty());
     }
 
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {

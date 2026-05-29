@@ -10,6 +10,7 @@ import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.tag.adapter.repository.ITagRepository;
 import cn.bugstack.domain.tag.service.ITagService;
 import cn.bugstack.domain.tag.service.TagService;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.domain.trade.adapter.port.ITradePort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
@@ -66,8 +67,9 @@ public class DomainServiceConfig {
     @Bean
     public ITradeLockOrderService tradeLockOrderService(
             ITradeRepository tradeRepository,
+            IGroupBuyTeamStockPort groupBuyTeamStockPort,
             @Qualifier("tradeRuleFilter") BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
-        return new TradeLockOrderService(tradeRepository, tradeRuleFilter);
+        return new TradeLockOrderService(tradeRepository, groupBuyTeamStockPort, tradeRuleFilter);
     }
 
     @Bean

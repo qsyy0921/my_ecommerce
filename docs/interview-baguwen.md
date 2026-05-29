@@ -503,7 +503,7 @@ http://127.0.0.1:8088/seckill-ops.html
 - 领域异步执行通过 `IDomainTaskExecutor` 端口隔离具体线程池。
 - 状态机和状态迁移对象沉在 domain 层。
 - 状态流水落库通过领域端口适配。
-- 拼团通知任务 Outbox 和库存流水审计已从 `TradeRepository` 拆成端口适配。
+- 拼团通知任务 Outbox、库存流水审计和队伍库存占位已从 `TradeRepository` 拆成端口适配。
 - trigger 只做入口适配。
 - infrastructure 负责技术实现。
 
@@ -696,7 +696,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、领域异步执行端口和部分大 Repository 拆分我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及继续拆退单和库存占位编排。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、领域异步执行端口和部分大 Repository 拆分我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及继续拆退单状态更新编排。
 
 ## 六、当前已修复的问题
 
@@ -790,9 +790,9 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 ### 7. DDD 质量问题
 
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
-- 现在已新增 `DomainPurityTest` 和 `OrderStateMachineTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过，或通知任务方法重新回流到 `ITradeRepository`。
+- 现在已新增 `DomainPurityTest` 和 `OrderStateMachineTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过，或通知任务/队伍库存方法重新回流到 `ITradeRepository`。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；营销侧已把通知任务扫描从 `ITradeRepository` 移到 `ITradeNotifyTaskPort`；但还需要补更多领域单元测试、契约测试和退单/库存占位编排的长期演进。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；营销侧已把通知任务扫描移到 `ITradeNotifyTaskPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`；但还需要补更多领域单元测试、契约测试和退单状态更新编排的长期演进。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -883,7 +883,7 @@ MQ：
 
 例子：
 
-> 拼团锁单的业务场景是用户开团或参团，需要先锁定队伍名额和营销优惠。问题是最后一个名额可能被多人同时抢，还要防止同一用户重复参与和同一外部单号重复重试。我的方案是先用锁单结果缓存和短 TTL 请求锁保证 `userId + outTradeNo` 幂等，再用责任链校验活动、人群和队伍状态，参团时用 Redis Lua 原子占用队伍名额和用户队伍占位，最后用 MySQL 条件更新、`user_id + out_trade_no` 唯一索引和 `biz_id` 唯一索引兜底。代码上 Controller 只作为入口，核心流程在领域服务、交易仓储端口和通知/库存流水端口中完成。不足是生产压测还需要独立 Linux 环境和多实例验证。
+> 拼团锁单的业务场景是用户开团或参团，需要先锁定队伍名额和营销优惠。问题是最后一个名额可能被多人同时抢，还要防止同一用户重复参与和同一外部单号重复重试。我的方案是先用锁单结果缓存和短 TTL 请求锁保证 `userId + outTradeNo` 幂等，再用责任链校验活动、人群和队伍状态，参团时通过 `IGroupBuyTeamStockPort` 调 Redis Lua 原子占用队伍名额和用户队伍占位，最后用 MySQL 条件更新、`user_id + out_trade_no` 唯一索引和 `biz_id` 唯一索引兜底。代码上 Controller 只作为入口，核心流程在领域服务、交易仓储端口、队伍库存端口和通知/库存流水端口中完成。不足是生产压测还需要独立 Linux 环境和多实例验证。
 
 ## 十一、维护记录
 
@@ -892,7 +892,8 @@ MQ：
 - 2026-05-30：拆分商城订单服务与对账服务，新增 `IOrderReconcileService` / `OrderReconcileService`，Controller/Job 改注入对账服务，顺手修复秒杀营销结算差错重放路由，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-order-reconcile-service-split.md`。
 - 2026-05-30：继续拆分商城仓储端口，新增 `IOrderReconcileRepository`，`IOrderRepository` 只保留订单主链路方法，避免订单服务接口层感知对账台账和 MQ 重放能力。
 - 2026-05-30：继续治理营销侧交易端口，`TradeTaskService` 改直接依赖 `ITradeNotifyTaskPort`，`ITradeRepository` 移除通知任务扫描和状态更新方法，避免任务补偿能力污染交易主仓储端口。
-- 2026-05-30：给 `DomainPurityTest` 增加 `tradeRepositoryShouldNotExposeNotifyTaskExecutionMethods`，把本次端口拆分变成可回归验证的架构约束。
+- 2026-05-30：给 `DomainPurityTest` 增加 `tradeRepositoryShouldNotExposeInfrastructureSidePorts`，把通知任务和队伍库存端口拆分变成可回归验证的架构约束。
+- 2026-05-30：继续拆分营销侧交易端口，新增 `IGroupBuyTeamStockPort` / `GroupBuyTeamStockPort`，锁单规则、锁单失败补偿和退单策略不再通过 `ITradeRepository` 操作 Redis 队伍库存占位。
 - 2026-05-30：补充 DDD 拆分建议，明确“全系统统一 DDD 方法论、每个服务独立 DDD 分层”，并新增 `DomainPurityTest`、`OrderStateMachineTest` 和 SDD 记录 `docs/sdd/2026-05-30-ddd-architecture-test-guard.md`。
 - 2026-05-30：补齐秒杀支付结算和退款库存闭环，新增秒杀结算/退款接口，商城按 `marketType` 路由拼团和秒杀，秒杀订单支持 `CREATE -> COMPLETE -> REFUND` 和 `ROLLBACK_CANCEL/ROLLBACK_REFUND` 库存流水，并记录 SDD 文档 `docs/sdd/2026-05-30-seckill-refund-stock-closure.md`。
 - 2026-05-30：补齐压测资源水位联动脚本，新增 `scripts/pressure/collect-resource-watermark.ps1`、`scripts/pressure/run-local-pressure-with-watermark.ps1` 和 SDD 记录 `docs/sdd/2026-05-30-pressure-resource-watermark.md`，可输出 JVM、Docker、Redis、MySQL、RabbitMQ、Actuator 水位报告。

@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.lock.filter;
 
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
@@ -25,9 +26,11 @@ import java.util.Objects;
 public class TeamStockOccupyRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
     private final ITradeRepository repository;
+    private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
 
-    public TeamStockOccupyRuleFilter(ITradeRepository repository) {
+    public TeamStockOccupyRuleFilter(ITradeRepository repository, IGroupBuyTeamStockPort groupBuyTeamStockPort) {
         this.repository = repository;
+        this.groupBuyTeamStockPort = groupBuyTeamStockPort;
     }
 
     @Override
@@ -63,7 +66,7 @@ public class TeamStockOccupyRuleFilter implements ILogicHandler<TradeLockRuleCom
         String recoveryTeamStockKey = dynamicContext.generateRecoveryTeamStockKey(teamId);
         String userTeamOccupyKey = dynamicContext.generateUserTeamOccupyKey(teamId, requestParameter.getUserId());
 
-        long occupy = repository.occupyTeamStock(teamStockKey, recoveryTeamStockKey, userTeamOccupyKey, requestParameter.getOutTradeNo(), target, validTime);
+        long occupy = groupBuyTeamStockPort.occupyTeamStock(teamStockKey, recoveryTeamStockKey, userTeamOccupyKey, requestParameter.getOutTradeNo(), target, validTime);
 
         if (-3 == occupy) {
             log.warn("交易规则过滤-组队库存校验{} activityId:{} 用户已占用队伍名额:{}", requestParameter.getUserId(), requestParameter.getActivityId(), userTeamOccupyKey);

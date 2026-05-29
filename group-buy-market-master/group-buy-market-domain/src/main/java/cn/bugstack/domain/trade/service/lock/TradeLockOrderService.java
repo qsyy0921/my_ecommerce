@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.lock;
 
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
@@ -20,11 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 public class TradeLockOrderService implements ITradeLockOrderService {
 
     private final ITradeRepository repository;
+    private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
     private final BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter;
 
     public TradeLockOrderService(ITradeRepository repository,
+                                 IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                  BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
         this.repository = repository;
+        this.groupBuyTeamStockPort = groupBuyTeamStockPort;
         this.tradeRuleFilter = tradeRuleFilter;
     }
 
@@ -82,8 +86,8 @@ public class TradeLockOrderService implements ITradeLockOrderService {
         } catch (Exception e) {
             // 记录失败恢复量
             if (null != tradeLockRuleFilterBackEntity) {
-                repository.recoveryTeamStock(tradeLockRuleFilterBackEntity.getRecoveryTeamStockKey(), payActivityEntity.getValidTime());
-                repository.releaseUserTeamOccupy(tradeLockRuleFilterBackEntity.getUserTeamOccupyKey());
+                groupBuyTeamStockPort.recoveryTeamStock(tradeLockRuleFilterBackEntity.getRecoveryTeamStockKey(), payActivityEntity.getValidTime());
+                groupBuyTeamStockPort.releaseUserTeamOccupy(tradeLockRuleFilterBackEntity.getUserTeamOccupyKey());
             }
             throw e;
         } finally {

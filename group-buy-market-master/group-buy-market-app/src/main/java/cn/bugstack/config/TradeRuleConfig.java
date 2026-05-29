@@ -1,6 +1,7 @@
 package cn.bugstack.config;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
@@ -46,8 +47,9 @@ public class TradeRuleConfig {
     }
 
     @Bean
-    public TeamStockOccupyRuleFilter teamStockOccupyRuleFilter(ITradeRepository tradeRepository) {
-        return new TeamStockOccupyRuleFilter(tradeRepository);
+    public TeamStockOccupyRuleFilter teamStockOccupyRuleFilter(ITradeRepository tradeRepository,
+                                                               IGroupBuyTeamStockPort groupBuyTeamStockPort) {
+        return new TeamStockOccupyRuleFilter(tradeRepository, groupBuyTeamStockPort);
     }
 
     @Bean("tradeRuleFilter")
@@ -112,23 +114,26 @@ public class TradeRuleConfig {
 
     @Bean("unpaid2RefundStrategy")
     public IRefundOrderStrategy unpaid2RefundStrategy(ITradeRepository tradeRepository,
+                                                      IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                       ITradeTaskService tradeTaskService,
                                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new Unpaid2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
+        return new Unpaid2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paid2RefundStrategy")
     public IRefundOrderStrategy paid2RefundStrategy(ITradeRepository tradeRepository,
+                                                    IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                     ITradeTaskService tradeTaskService,
                                                     IDomainTaskExecutor domainTaskExecutor) {
-        return new Paid2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
+        return new Paid2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paidTeam2RefundStrategy")
     public IRefundOrderStrategy paidTeam2RefundStrategy(ITradeRepository tradeRepository,
+                                                        IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                         ITradeTaskService tradeTaskService,
                                                         IDomainTaskExecutor domainTaskExecutor) {
-        return new PaidTeam2RefundStrategy(tradeRepository, tradeTaskService, domainTaskExecutor);
+        return new PaidTeam2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
 }

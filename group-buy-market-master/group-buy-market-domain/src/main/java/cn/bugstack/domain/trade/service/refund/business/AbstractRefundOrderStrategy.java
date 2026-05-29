@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.refund.business;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.model.valobj.TeamRefundSuccess;
@@ -23,13 +24,16 @@ import java.util.Map;
 public abstract class AbstractRefundOrderStrategy implements IRefundOrderStrategy {
 
     protected final ITradeRepository repository;
+    protected final IGroupBuyTeamStockPort groupBuyTeamStockPort;
     protected final ITradeTaskService tradeTaskService;
     protected final IDomainTaskExecutor domainTaskExecutor;
 
     protected AbstractRefundOrderStrategy(ITradeRepository repository,
+                                          IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                           ITradeTaskService tradeTaskService,
                                           IDomainTaskExecutor domainTaskExecutor) {
         this.repository = repository;
+        this.groupBuyTeamStockPort = groupBuyTeamStockPort;
         this.tradeTaskService = tradeTaskService;
         this.domainTaskExecutor = domainTaskExecutor;
     }
@@ -65,7 +69,7 @@ public abstract class AbstractRefundOrderStrategy implements IRefundOrderStrateg
         // 1. 恢复库存key
         String recoveryTeamStockKey = TradeLockRuleFilterFactory.generateRecoveryTeamStockKey(teamRefundSuccess.getActivityId(), teamRefundSuccess.getTeamId());
         // 2. 退单恢复库存
-        repository.refund2AddRecovery(recoveryTeamStockKey, teamRefundSuccess.getOrderId());
+        groupBuyTeamStockPort.refund2AddRecovery(recoveryTeamStockKey, teamRefundSuccess.getOrderId());
     }
 
 }

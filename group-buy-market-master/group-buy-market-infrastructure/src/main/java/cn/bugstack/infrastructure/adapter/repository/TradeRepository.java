@@ -361,47 +361,6 @@ public class TradeRepository implements ITradeRepository {
         return dccService.isSCBlackIntercept(source, channel);
     }
 
-    /**
-     * 占用库存
-     * <p>
-     * 关于 Redis 独占锁和无锁化设计；<a href="https://bugstack.cn/md/road-map/redis.html">Redis 缓存、加锁(独占/分段)、发布/订阅，常用特性的使用和高级编码操作</a>
-     */
-    @Override
-    public long occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, String userTeamOccupyKey, String outTradeNo, Integer target, Integer validTime) {
-        // Reserve the team slot through Redis Lua so the stock check, recovery count
-        // check, occupy-lock creation and user occupancy stay atomic under concurrent joins.
-        int ttlMinutes = null == validTime ? 60 : validTime + 60;
-        long occupy = redisService.reserveTeamStock(
-                teamStockKey,
-                recoveryTeamStockKey,
-                teamStockKey + Constants.UNDERLINE,
-                userTeamOccupyKey,
-                outTradeNo,
-                target,
-                ttlMinutes,
-                TimeUnit.MINUTES);
-
-        if (-2 == occupy) {
-            log.info("Team stock reservation lock failed. teamStockKey:{} occupy:{}", teamStockKey, occupy);
-        }
-
-        return occupy;
-    }
-
-    @Override
-    public void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime) {
-        // 首次组队拼团，是没有 teamId 的，所以不需要这个做处理。
-        if (StringUtils.isBlank(recoveryTeamStockKey)) return;
-
-        redisService.incr(recoveryTeamStockKey);
-    }
-
-    @Override
-    public void releaseUserTeamOccupy(String userTeamOccupyKey) {
-        if (StringUtils.isBlank(userTeamOccupyKey)) return;
-        redisService.remove(userTeamOccupyKey);
-    }
-
     @Override
     @Transactional(timeout = 5000)
     public NotifyTaskEntity unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
@@ -568,37 +527,6 @@ public class TradeRepository implements ITradeRepository {
                 MDC.get("trace-id")));
 
         return notifyTaskEntity;
-    }
-
-    @Override
-    public void refund2AddRecovery(String recoveryTeamStockKey, String orderId) {
-        // 如果恢复库存key为空，直接返回
-        if (StringUtils.isBlank(recoveryTeamStockKey) || StringUtils.isBlank(orderId)) {
-            return;
-        }
-
-        // 使用orderId作为锁的key，避免同一订单重复恢复库存
-        String lockKey = "refund_lock_" + orderId;
-        
-        // 尝试获取分布式锁，防止重复操作 30天过期
-        Boolean lockAcquired = redisService.setNx(lockKey, 30 * 24 * 60 * 60 * 1000L, TimeUnit.MINUTES);
-        
-        if (!lockAcquired) {
-            log.warn("订单 {} 恢复库存操作已在进行中，跳过重复操作", orderId);
-            return;
-        }
-
-        try {
-            // 在锁保护下执行库存恢复操作
-            redisService.incr(recoveryTeamStockKey);
-            log.info("订单 {} 恢复库存成功，恢复库存key: {}", orderId, recoveryTeamStockKey);
-        } catch (Exception e) {
-            log.error("订单 {} 恢复库存失败，恢复库存key: {}", orderId, recoveryTeamStockKey, e);
-            // 如果抛异常则释放锁，允许MQ重新消费恢复库存
-            redisService.remove(lockKey);
-            throw e;
-        }
-
     }
 
     @Override
