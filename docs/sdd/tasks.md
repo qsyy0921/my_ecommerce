@@ -83,3 +83,12 @@
 - [x] 压测后自动校验库存不变量。
 - [x] 压测资源水位采集：JVM、Docker、Redis、MySQL、RabbitMQ、Actuator。
 - [x] 写容量评估：单机 QPS、瓶颈、扩容策略。
+
+## T9 DDD 治理
+
+- [x] 明确商城服务和营销服务各自维护独立 DDD 分层，拼团和秒杀先作为营销上下文内的两个子域。
+- [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
+- [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
+- [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
+- [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍的合法/非法状态迁移。
+- [~] 继续拆分大 Repository 和补偿编排，补更多领域用例测试。

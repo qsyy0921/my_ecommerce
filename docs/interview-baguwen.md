@@ -112,13 +112,29 @@ types           异常、枚举、常量、通用类型
 - 商城和营销的 domain 包已经去 Spring 注解。
 - 领域服务、规则链、试算节点、折扣策略都由 app 层配置类装配。
 - 新增 `scripts/check-domain-purity.ps1`，用于检查 domain 包不能重新引入 Spring 注解、`@Resource`、`@Autowired`。
+- 新增 `DomainPurityTest` 和 `OrderStateMachineTest`，用 Maven 测试守住 DDD 分层和核心状态机。
 - 状态迁移已抽成 `OrderStateMachine`、`OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，Repository 不再直接拼接状态流水 PO。
 
 面试可以这样说：
 
-> 我没有让 Controller 直接写业务逻辑，而是让 HTTP、MQ、Job 都作为触发入口，最终收敛到 domain 层。domain 层表达业务规则，infrastructure 层适配 MySQL、Redis、RabbitMQ 和外部接口。现在 domain 包已经去 Spring 注解，Spring 装配统一放到 app 层配置类，状态机和状态迁移也通过领域对象表达，Repository 只调用端口记录业务迁移，不直接感知状态流水表结构。
+> 我没有让 Controller 直接写业务逻辑，而是让 HTTP、MQ、Job 都作为触发入口，最终收敛到 domain 层。domain 层表达业务规则，infrastructure 层适配 MySQL、Redis、RabbitMQ 和外部接口。现在 domain 包已经去 Spring 注解，Spring 装配统一放到 app 层配置类，状态机和状态迁移也通过领域对象表达，Repository 只调用端口记录业务迁移，不直接感知状态流水表结构。另外我把 domain 纯净化和状态机合法性写成了测试，后续修改如果破坏边界会直接失败。
 
-### 6. 核心代码路径
+### 6. DDD 拆分建议
+
+这个项目不是“所有服务共用一套 DDD 代码”，而是“全系统统一 DDD 方法论，每个服务独立维护自己的 DDD 分层”。
+
+当前更合理的拆法：
+
+- 支付商城服务一个 DDD：订单、支付、退款、支付流水、退款流水、对账差错单。
+- 拼团营销服务一个 DDD：拼团、秒杀、优惠试算、队伍、库存、结算、补偿。
+- 拼团和秒杀先作为营销服务内部两个子域，不急着拆成两个服务。
+- 当秒杀流量、发布节奏、资源隔离和团队归属明显独立时，再拆成独立 `seckill-market-service`。
+
+面试可以这样说：
+
+> 我倾向于一个系统统一 DDD 原则，但每个微服务内部各自做 DDD 分层。对当前项目来说，商城和营销是两个服务边界；拼团和秒杀虽然业务模型不同，但都属于营销交易上下文，共享活动、优惠、库存、支付结算和补偿能力，所以先放在营销服务内部做两个子域。等秒杀流量规模和资源隔离诉求足够强，再把秒杀拆成独立服务。
+
+### 7. 核心代码路径
 
 营销服务：
 
@@ -141,6 +157,8 @@ types           异常、枚举、常量、通用类型
 - 支付适配：`s-pay-mall-ddd-infrastructure/.../port/PayPort.java`
 - 对账中心：`s-pay-mall-ddd-trigger/.../ReconcileCaseController.java`
 - 对账页面：`s-pay-mall-ddd-market-master/docs/dev-ops/nginx/html/reconcile-admin.html`
+- 架构测试：`group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java`
+- 状态机测试：`group-buy-market-app/src/test/java/cn/bugstack/test/domain/shared/OrderStateMachineTest.java`
 
 ## 二、核心业务链路
 
@@ -480,6 +498,7 @@ http://127.0.0.1:8088/seckill-ops.html
 - 商城和营销职责分离。
 - domain 已去 Spring 注解。
 - app 层统一装配领域对象。
+- DDD 规则已增加 Maven 架构测试守护。
 - 状态机和状态迁移对象沉在 domain 层。
 - 状态流水落库通过领域端口适配。
 - 拼团通知任务 Outbox 和库存流水审计已从 `TradeRepository` 拆成端口适配。
@@ -671,11 +690,11 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
 - 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
-- 代码质量：DDD 边界和 domain 纯净化已经做了，但 Repository 和补偿编排仍要长期拆分，领域单元测试和架构测试还需要继续补。
+- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试和核心状态机单测；但 Repository、补偿编排和更多领域用例仍要长期拆分和补测。
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本和资源水位联动报告我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及把大 Repository 继续拆成更细的端口适配器。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告和 DDD 架构测试我已经补了；本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及把大 Repository 继续拆成更细的端口适配器。
 
 ## 六、当前已修复的问题
 
@@ -708,6 +727,8 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 故障演练脚本。
 - domain 去 Spring 注解。
 - domain 纯净化守护脚本。
+- DDD 架构测试：`DomainPurityTest` 扫描商城/营销 domain，防止重新引入 Spring 注解。
+- 核心状态机单测：`OrderStateMachineTest` 覆盖秒杀和拼团合法/非法状态迁移。
 - 拼团试算、拼团锁单、秒杀、支付回调压测脚本。
 - 秒杀 100/500/1000 并发阶梯压测和压测后库存不变量自动校验。
 - 拼团队伍统计不变量自动校验。
@@ -765,7 +786,8 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 ### 7. DDD 质量问题
 
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
-- 但还需要补更多领域单元测试、架构测试和仓储职责拆分，尤其是大 Repository 的长期演进。
+- 现在已新增 `DomainPurityTest` 和 `OrderStateMachineTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring 或状态机被绕过。
+- 但还需要补更多领域单元测试、契约测试和仓储职责拆分，尤其是大 Repository 的长期演进。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -861,6 +883,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-30：重新梳理当前架构成熟度和剩余问题，补充“当前架构分析”“现在这套架构还有什么问题”与两分钟面试稿边界说明。
+- 2026-05-30：补充 DDD 拆分建议，明确“全系统统一 DDD 方法论、每个服务独立 DDD 分层”，并新增 `DomainPurityTest`、`OrderStateMachineTest` 和 SDD 记录 `docs/sdd/2026-05-30-ddd-architecture-test-guard.md`。
 - 2026-05-30：补齐秒杀支付结算和退款库存闭环，新增秒杀结算/退款接口，商城按 `marketType` 路由拼团和秒杀，秒杀订单支持 `CREATE -> COMPLETE -> REFUND` 和 `ROLLBACK_CANCEL/ROLLBACK_REFUND` 库存流水，并记录 SDD 文档 `docs/sdd/2026-05-30-seckill-refund-stock-closure.md`。
 - 2026-05-30：补齐压测资源水位联动脚本，新增 `scripts/pressure/collect-resource-watermark.ps1`、`scripts/pressure/run-local-pressure-with-watermark.ps1` 和 SDD 记录 `docs/sdd/2026-05-30-pressure-resource-watermark.md`，可输出 JVM、Docker、Redis、MySQL、RabbitMQ、Actuator 水位报告。
 - 2026-05-30：补齐本地 OpenTelemetry Java agent + Jaeger 链路追踪启动方案，新增 `docs/dev-ops/docker-compose-tracing.yml`、`scripts/observability/*` 和 SDD 记录 `docs/sdd/2026-05-30-local-opentelemetry-jaeger.md`。
