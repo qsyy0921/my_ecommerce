@@ -100,4 +100,4 @@
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
 - [x] `DomainPurityTest` 增加 `ITradeRepository` 通知任务、队伍库存和锁单请求缓存方法回流守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
-- [~] 继续拆分大 Repository、补偿编排和更多领域用例测试。
+- [~] 继续拆分大 Repository、补偿编排和更多领域用例测试，详细后续任务见 `docs/sdd/ddd-sdd-todo-list.md`。

@@ -11,6 +11,7 @@
 - `contracts.md`：商城、营销、支付、前端之间的接口契约。
 - `data-model.md`：聚合、表模型、缓存键、幂等键和消息模型。
 - `tasks.md`：按 SDD 拆分的实现任务和验收状态。
+- `ddd-sdd-todo-list.md`：后续 DDD 治理 TODO，约束所有后续改动必须按 SDD 先规格、后设计、再实现。
 - `big-factory-alignment.md`：面向大厂工程实践的差距分析和路线图。
 - `2026-05-30-ddd-boundary-audit.md`：记录本次 AI 辅助开发的 DDD 边界治理、SDD 输入文档、审核结论和验证命令。
 - `2026-05-30-ddd-architecture-test-guard.md`：记录 DDD 架构测试、domain 纯净化测试和核心状态机单测。
