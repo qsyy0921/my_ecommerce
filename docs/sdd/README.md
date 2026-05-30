@@ -45,6 +45,7 @@
 - `2026-05-30-seckill-stock-reservation-port.md`：记录秒杀 Redis 库存桶、Lua 预扣、用户占位和库存释放从主仓储拆出。
 - `2026-05-30-seckill-stock-reservation-internal-split.md`：记录 `SeckillStockReservationPort` 内部继续拆出 Redis Key、库存桶路由和初始化短缓存。
 - `2026-05-31-seckill-stock-reservation-support-split.md`：记录 `SeckillStockReservationPort` 内部继续拆出库存桶初始化/查询和资格预扣/释放支撑组件。
+- `2026-05-31-seckill-stock-availability-support-split.md`：记录秒杀库存可用性端口内部拆出库存快照和库存初始化支撑组件。
 - `2026-05-30-seckill-order-command-port-split.md`：记录秒杀订单创建、批量落库、支付结算和退款状态更新从 `ISeckillRepository` 拆到 `ISeckillOrderCommandPort`。
 - `2026-05-30-seckill-order-command-decomposition.md`：记录继续删除 `ISeckillOrderCommandPort`，把秒杀订单创建、支付结算、退款拆到三个生命周期端口。
 - `2026-05-31-seckill-order-create-support-split.md`：记录秒杀订单创建端口内部拆出单条创建和批量创建支撑组件。

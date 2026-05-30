@@ -746,6 +746,47 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillStockAvailabilityPortShouldDelegateSnapshotAndInitializationDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path availabilityPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java");
+        String source = new String(Files.readAllBytes(availabilityPort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "ISeckillActivityDao",
+                "ISeckillStockReservationPort",
+                "SeckillSoldOutCache",
+                "SeckillActivity",
+                "tryAcquireInitializationLock",
+                "releaseInitializationLock",
+                "initializeStock",
+                "isSoldOut",
+                "markSoldOut",
+                "clear(",
+                "InterruptedException",
+                "Thread.currentThread"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockSnapshotSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillStockAvailabilityPort must delegate snapshot and initialization details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillStockReservationPortShouldDelegateRedisAndBucketDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path reservationPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockReservationPort.java");

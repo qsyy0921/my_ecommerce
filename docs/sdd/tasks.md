@@ -124,6 +124,7 @@
 - [x] 秒杀 Redis 库存预扣拆到 `ISeckillStockReservationPort`，`SeckillRepository` 不再直接依赖 `IRedisService`、库存桶 Key、用户占位 Key 和 Lua 预扣细节。
 - [x] 秒杀库存预扣适配器内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，预扣主适配器不再直接持有 Key 常量、CRC32 和本地初始化缓存。
 - [x] 秒杀库存预扣适配器内部继续拆出库存桶初始化/查询和资格预扣/释放两个支撑组件，端口实现只保留门面委托。
+- [x] 秒杀库存可用性端口内部继续拆出库存快照和库存初始化支撑组件，端口实现只保留配置和委托。
 - [x] 秒杀锁单端口内部继续拆出库存闸门和预扣发布两个支撑组件，入口实现只保留配置和委托。
 - [x] 秒杀订单创建、批量落库、支付结算和退款状态更新先拆到订单命令端口，后续继续拆成 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，`ISeckillOrderCommandPort` 已删除。
 - [x] 秒杀订单创建端口内部继续拆出单条创建和批量创建两个支撑组件，`SeckillOrderCreatePort` 只保留事务门面。
@@ -169,6 +170,7 @@
 - [x] `DomainPurityTest` 增加秒杀退款端口边界守护，避免未支付取消、已支付退款、库存释放和状态流水细节回流。
 - [x] `DomainPurityTest` 增加秒杀锁单适配器消息中间件路由回流守护。
 - [x] `DomainPurityTest` 增加秒杀锁单端口库存闸门和预扣发布边界守护，避免售罄缓存、预扣、消息投递和回滚细节回流。
+- [x] `DomainPurityTest` 增加秒杀库存可用性端口边界守护，避免售罄缓存、初始化锁、DB 回源和 Redis 初始化细节回流。
 - [x] `DomainPurityTest` 增强秒杀库存预扣端口边界守护，避免 Redis API、Lua 预扣和库存桶循环细节回流。
 - [x] `DomainPurityTest` 增加秒杀补偿台 Controller 边界守护，避免 trigger 直接依赖 Redis Stream 实现类。
 - [x] `DomainPurityTest` 增加秒杀市场 Controller 边界守护，避免请求校验、客户端 IP 解析和 DTO 组装回流到 HTTP 入口。
