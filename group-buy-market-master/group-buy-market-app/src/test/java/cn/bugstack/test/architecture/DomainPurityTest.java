@@ -552,6 +552,43 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillRefundPortShouldDelegateStateSpecificDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRefundPort.java");
+        String source = new String(Files.readAllBytes(refundAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IOrderStateFlowPort",
+                "SeckillStockReleaseSupport",
+                "SeckillStockFlowEntity",
+                "OrderStateTransitionEntity",
+                "MDC",
+                "closeUnpaid",
+                "refundPaid",
+                "releaseByOrder"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillUnpaidCancelSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidRefundSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillRefundPort must delegate state-specific refund details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillLockAndAvailabilityAdaptersShouldNotContainOrderLifecycleCommands() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> adapterPaths = Arrays.asList(
