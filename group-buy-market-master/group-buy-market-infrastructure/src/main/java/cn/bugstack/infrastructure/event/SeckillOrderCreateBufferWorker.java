@@ -83,7 +83,7 @@ public class SeckillOrderCreateBufferWorker {
 
     private void consumeLoop(String consumerName) {
         while (running) {
-            List<SeckillOrderCreateBuffer.BufferMessage> messages = null;
+            List<SeckillOrderBufferMessage> messages = null;
             long startNanos = 0L;
             try {
                 messages = seckillOrderCreateBuffer.pollBatch(
@@ -96,7 +96,7 @@ public class SeckillOrderCreateBufferWorker {
                 }
                 startNanos = System.nanoTime();
                 List<SeckillOrderEntity> orderEntities = new ArrayList<>(messages.size());
-                for (SeckillOrderCreateBuffer.BufferMessage message : messages) {
+                for (SeckillOrderBufferMessage message : messages) {
                     SeckillOrderEntity orderEntity = JSON.parseObject(message.getBody(), SeckillOrderEntity.class);
                     orderEntity.setSourceMessageId(message.getStreamKey() + ":" + String.valueOf(message.getStreamMessageId()));
                     orderEntities.add(orderEntity);

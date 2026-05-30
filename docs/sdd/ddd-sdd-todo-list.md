@@ -66,6 +66,11 @@
   - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
   - 验收：Redis Stream、RabbitMQ、Redis Queue、本地队列投递选择收敛到消息 Adapter；锁单适配器不再感知具体中间件。
 
+- [x] 拆分秒杀 Redis Stream 缓冲队列内部技术细节。
+  - 目标：避免 `SeckillOrderCreateBuffer` 继续承载分片路由、消息映射、DLQ payload 和指标采样等细节。
+  - 实际拆分：`SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler`。
+  - 验收：`DomainPurityTest` 防止 CRC32、StreamAddArgs、JSON payload、指标 Lua 和内部 BufferMessage 回流到缓冲主类。
+
 - [x] 补齐 Stream 人工补偿治理。
   - 目标：人工补偿 Stream 不只是失败隔离，还要有可查询、可重放、可审计能力。
   - 本机已做：补偿查询接口、单条/批量重放接口、`seckill_manual_compensation_log` 操作日志表、操作记录查询接口和补偿台展示。

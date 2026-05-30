@@ -42,6 +42,7 @@
 - `2026-05-30-seckill-order-command-decomposition.md`：记录继续删除 `ISeckillOrderCommandPort`，把秒杀订单创建、支付结算、退款拆到三个生命周期端口。
 - `2026-05-30-seckill-repository-delete-port-split.md`：记录删除通用 `ISeckillRepository` / `SeckillRepository`，拆成查询、库存可用性、锁单和维护端口。
 - `2026-05-30-seckill-order-message-port.md`：记录秒杀下单消息投递从锁单适配器拆到 `ISeckillOrderMessagePort`。
+- `2026-05-30-seckill-buffer-internal-split.md`：记录 `SeckillOrderCreateBuffer` 内部拆出 Stream 分片路由、消息映射和指标采样组件。
 - `2026-05-30-seckill-manual-compensation-audit.md`：记录秒杀人工补偿 Stream 查询、重放和操作审计闭环。
 - `2026-05-30-after-sale-state-machine.md`：记录售后状态机扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截。
 - `2026-05-30-mall-payment-refund-flow-port-split.md`：记录商城支付流水、退款流水和对账仓储从 `OrderRepository` 拆分出来。

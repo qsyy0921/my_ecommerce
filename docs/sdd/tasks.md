@@ -114,6 +114,7 @@
 - [x] 秒杀订单创建、批量落库、支付结算和退款状态更新先拆到订单命令端口，后续继续拆成 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，`ISeckillOrderCommandPort` 已删除。
 - [x] 秒杀查询、库存可用性、锁单预扣和维护任务分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
 - [x] 秒杀下单消息投递拆到 `ISeckillOrderMessagePort`，`SeckillOrderLockPort` 不再感知 Redis Stream、RabbitMQ、routing key 和 JSON 序列化。
+- [x] 秒杀 Redis Stream 缓冲队列内部继续拆出 `SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler` 和 `SeckillOrderBufferMessage`，缓冲主类不再直接持有分片 hash、StreamAddArgs、DLQ payload 和指标采样 Lua。
 - [x] 秒杀订单生命周期命令拆成创建、结算、退款三个端口，分片表访问、PO/Entity 转换、库存释放/回滚从主适配器移出。
 - [x] 秒杀库存纯单元测试已补齐，覆盖预扣成功、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - [x] 专业 MQ 演进方案已补齐到 `docs/sdd/mq-evolution.md`，明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、迁移步骤和回滚方案。

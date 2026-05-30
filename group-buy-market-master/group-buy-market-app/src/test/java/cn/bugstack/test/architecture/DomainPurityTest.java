@@ -288,6 +288,56 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillOrderCreateBufferShouldDelegateStreamRoutingAndMapping() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path buffer = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderCreateBuffer.java");
+        String source = new String(Files.readAllBytes(buffer), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "CRC32",
+                "StandardCharsets",
+                "StreamAddArgs",
+                "TrimStrategy",
+                "RScript",
+                "JSON.toJSONString",
+                "JSON.parseObject",
+                "JSONObject",
+                "STREAM_FIELD_BODY",
+                "STREAM_METRICS_LUA",
+                "private String streamKey",
+                "private Integer streamShardCount",
+                "private int shardOf",
+                "private int shardCount",
+                "private String retryKey",
+                "private long parseLong",
+                "public static class BufferMessage",
+                "private SeckillManualMessageEntity toDeadMessage",
+                "private StreamMessageId parseStreamMessageId"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderBufferMessage.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamShardRouter.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMessageMapper.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Seckill order create buffer must delegate stream routing, retry key and message mapping details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOrderLockPortShouldNotOwnMessageMiddlewareRouting() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
