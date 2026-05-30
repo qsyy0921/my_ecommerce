@@ -92,6 +92,11 @@
   - 本次完成：新增 `ReconcileCaseStatusVO`，补齐确认、忽略、关闭、备注、操作日志查询接口和前端入口；终态差错单不会被扫描 upsert 重新打开，重放只允许待处理差错单执行。
   - 生产边界：统一登录、权限审批、SLA 报表和正式告警通知路由后续再补。
 
+- [x] 拆分商城对账仓储内部技术细节。
+  - 目标：避免 `OrderReconcileRepository` 继续承担差错单构建、MQ 重放、三方账单 CSV 解析和 PO/Entity 映射。
+  - 实际拆分：`ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser`、`OrderReconcileEntityMapper`。
+  - 验收：`DomainPurityTest` 防止 `EventPublisher`、routing key 解析、CSV 解析、金额/时间解析和 builder 映射回流到对账仓储。
+
 ## P3 测试和容量验证
 
 - [x] 补拼团锁单纯单元测试。

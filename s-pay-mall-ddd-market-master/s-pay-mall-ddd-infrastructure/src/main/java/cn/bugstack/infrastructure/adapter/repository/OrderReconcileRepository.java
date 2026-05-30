@@ -8,7 +8,10 @@ import cn.bugstack.domain.order.model.entity.PaymentFlowEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.model.entity.RefundFlowEntity;
-import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
+import cn.bugstack.infrastructure.adapter.support.MqFailureReplaySupport;
+import cn.bugstack.infrastructure.adapter.support.OrderReconcileEntityMapper;
+import cn.bugstack.infrastructure.adapter.support.ReconcileCaseFactory;
+import cn.bugstack.infrastructure.adapter.support.ThirdPartyBillCsvParser;
 import cn.bugstack.infrastructure.dao.IMqMessageRecordDao;
 import cn.bugstack.infrastructure.dao.IOrderDao;
 import cn.bugstack.infrastructure.dao.IReconcileCaseDao;
@@ -19,15 +22,10 @@ import cn.bugstack.infrastructure.dao.po.PayOrder;
 import cn.bugstack.infrastructure.dao.po.ReconcileCase;
 import cn.bugstack.infrastructure.dao.po.ReconcileOperationLog;
 import cn.bugstack.infrastructure.dao.po.ThirdPartyBill;
-import cn.bugstack.infrastructure.event.EventPublisher;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,7 +47,11 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
     @Resource
     private IRefundFlowPort refundFlowPort;
     @Resource
-    private EventPublisher eventPublisher;
+    private MqFailureReplaySupport mqFailureReplaySupport;
+
+    private final ReconcileCaseFactory reconcileCaseFactory = new ReconcileCaseFactory();
+    private final OrderReconcileEntityMapper entityMapper = new OrderReconcileEntityMapper();
+    private final ThirdPartyBillCsvParser thirdPartyBillCsvParser = new ThirdPartyBillCsvParser();
 
     @Override
     public List<OrderEntity> queryStaleMarketSettlementOrderList() {
@@ -58,7 +60,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
             return new ArrayList<>();
         }
 
-        return payOrderList.stream().map(this::toOrderEntity).collect(Collectors.toList());
+        return payOrderList.stream().map(entityMapper::toOrderEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -74,20 +76,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         List<MqMessageRecord> failedMessageList = mqMessageRecordDao.queryFailedMessageList();
         if (null != failedMessageList) {
             for (MqMessageRecord messageRecord : failedMessageList) {
-                ReconcileCase reconcileCase = ReconcileCase.builder()
-                        .caseNo("MQ_CONSUME_FAIL:" + messageRecord.getMessageId())
-                        .bizType("MQ_MESSAGE")
-                        .bizId(messageRecord.getMessageId())
-                        .caseType("MQ_CONSUME_FAIL")
-                        .caseStatus(0)
-                        .severity("critical")
-                        .sourceStatus("FAIL")
-                        .targetStatus("SUCCESS")
-                        .summary("MQ 消费失败，需要重放或人工补偿")
-                        .detail(null == messageRecord.getErrorMessage() ? messageRecord.getMessageBody() : messageRecord.getErrorMessage())
-                        .retryCount(null == messageRecord.getRetryCount() ? 0 : messageRecord.getRetryCount())
-                        .build();
-                count += reconcileCaseDao.upsert(reconcileCase);
+                count += reconcileCaseDao.upsert(reconcileCaseFactory.failedMqCase(messageRecord));
             }
         }
         count += upsertPaymentFlowMissBillCases(paymentFlowPort.queryMissThirdPartyBillList(50));
@@ -102,7 +91,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         if (null == reconcileCaseList || reconcileCaseList.isEmpty()) {
             return new ArrayList<>();
         }
-        return reconcileCaseList.stream().map(this::toReconcileCaseEntity).collect(Collectors.toList());
+        return reconcileCaseList.stream().map(entityMapper::toReconcileCaseEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -111,7 +100,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         if (null == reconcileCase) {
             return null;
         }
-        return toReconcileCaseEntity(reconcileCase);
+        return entityMapper.toReconcileCaseEntity(reconcileCase);
     }
 
     @Override
@@ -126,26 +115,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
 
     @Override
     public boolean replayMqFailure(String messageId) {
-        MqMessageRecord messageRecord = mqMessageRecordDao.queryByMessageId(messageId);
-        if (null == messageRecord) {
-            return false;
-        }
-        String routingKey = resolveRoutingKey(messageRecord.getQueueName());
-        if (isBlank(messageRecord.getExchangeName()) || isBlank(routingKey) || isBlank(messageRecord.getMessageBody())) {
-            return false;
-        }
-        try {
-            mqMessageRecordDao.updateProcessing(messageId);
-            eventPublisher.publishToExchange(messageRecord.getExchangeName(), routingKey, messageRecord.getMessageBody());
-            mqMessageRecordDao.updateSuccess(messageId);
-            return true;
-        } catch (Exception e) {
-            mqMessageRecordDao.updateFail(MqMessageRecord.builder()
-                    .messageId(messageId)
-                    .errorMessage("replay failed: " + e.getMessage())
-                    .build());
-            throw new IllegalStateException(e);
-        }
+        return mqFailureReplaySupport.replay(messageId);
     }
 
     @Override
@@ -165,59 +135,16 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         if (null == operationLogList || operationLogList.isEmpty()) {
             return new ArrayList<>();
         }
-        return operationLogList.stream().map(this::toReconcileOperationLogEntity).collect(Collectors.toList());
+        return operationLogList.stream().map(entityMapper::toReconcileOperationLogEntity).collect(Collectors.toList());
     }
 
     @Override
     public int importThirdPartyBillCsv(String csvText) {
-        if (null == csvText || csvText.trim().isEmpty()) {
-            return 0;
-        }
-        String[] lines = csvText.split("\\r?\\n");
-        List<ThirdPartyBill> billList = new ArrayList<>();
-        for (String line : lines) {
-            if (null == line || line.trim().isEmpty() || line.startsWith("billNo,")) {
-                continue;
-            }
-            String[] columns = line.split(",", -1);
-            if (columns.length < 8) {
-                continue;
-            }
-            billList.add(ThirdPartyBill.builder()
-                    .billNo(columns[0].trim())
-                    .orderId(columns[1].trim())
-                    .channel(columns[2].trim())
-                    .channelTradeNo(columns[3].trim())
-                    .billType(columns[4].trim())
-                    .amount(new BigDecimal(columns[5].trim()))
-                    .billStatus(columns[6].trim())
-                    .billTime(parseBillTime(columns[7].trim()))
-                    .rawLine(line)
-                    .build());
-        }
+        List<ThirdPartyBill> billList = thirdPartyBillCsvParser.parse(csvText);
         if (billList.isEmpty()) {
             return 0;
         }
         return thirdPartyBillDao.insertIgnoreBatch(billList);
-    }
-
-    private String resolveRoutingKey(String queueName) {
-        if (isBlank(queueName)) {
-            return null;
-        }
-        if (queueName.startsWith("routing:")) {
-            return queueName.substring("routing:".length());
-        }
-        if (queueName.contains("topic_team_success")) {
-            return "topic.team_success";
-        }
-        if (queueName.contains("topic_team_refund")) {
-            return "topic.team_refund";
-        }
-        if (queueName.contains("order_pay_success")) {
-            return "topic.order_pay_success";
-        }
-        return null;
     }
 
     private boolean isBlank(String value) {
@@ -231,21 +158,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         }
         int count = 0;
         for (PayOrder payOrder : payOrderList) {
-            ReconcileCase reconcileCase = ReconcileCase.builder()
-                    .caseNo(caseType + ":" + payOrder.getOrderId())
-                    .bizType("PAY_ORDER")
-                    .bizId(payOrder.getOrderId())
-                    .userId(payOrder.getUserId())
-                    .caseType(caseType)
-                    .caseStatus(0)
-                    .severity(severity)
-                    .sourceStatus(null == payOrder.getStatus() ? sourceStatus : payOrder.getStatus())
-                    .targetStatus(targetStatus)
-                    .summary(summary)
-                    .detail("productId=" + payOrder.getProductId() + ", marketType=" + payOrder.getMarketType() + ", payAmount=" + payOrder.getPayAmount())
-                    .retryCount(0)
-                    .build();
-            count += reconcileCaseDao.upsert(reconcileCase);
+            count += reconcileCaseDao.upsert(reconcileCaseFactory.orderCase(payOrder, caseType, severity, sourceStatus, targetStatus, summary));
         }
         return count;
     }
@@ -256,21 +169,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         }
         int count = 0;
         for (PaymentFlowEntity paymentFlow : paymentFlowList) {
-            ReconcileCase reconcileCase = ReconcileCase.builder()
-                    .caseNo("PAY_FLOW_MISS_BILL:" + paymentFlow.getFlowNo())
-                    .bizType("PAY_FLOW")
-                    .bizId(paymentFlow.getFlowNo())
-                    .userId(paymentFlow.getUserId())
-                    .caseType("PAY_FLOW_MISS_BILL")
-                    .caseStatus(0)
-                    .severity("warning")
-                    .sourceStatus(paymentFlow.getPayStatus())
-                    .targetStatus("THIRD_PARTY_BILL")
-                    .summary("本地支付流水成功，但未匹配到三方支付账单")
-                    .detail("orderId=" + paymentFlow.getOrderId() + ", amount=" + paymentFlow.getPayAmount() + ", channel=" + paymentFlow.getPayChannel())
-                    .retryCount(0)
-                    .build();
-            count += reconcileCaseDao.upsert(reconcileCase);
+            count += reconcileCaseDao.upsert(reconcileCaseFactory.paymentFlowMissBillCase(paymentFlow));
         }
         return count;
     }
@@ -281,21 +180,7 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         }
         int count = 0;
         for (RefundFlowEntity refundFlow : refundFlowList) {
-            ReconcileCase reconcileCase = ReconcileCase.builder()
-                    .caseNo("REFUND_FLOW_MISS_BILL:" + refundFlow.getFlowNo())
-                    .bizType("REFUND_FLOW")
-                    .bizId(refundFlow.getFlowNo())
-                    .userId(refundFlow.getUserId())
-                    .caseType("REFUND_FLOW_MISS_BILL")
-                    .caseStatus(0)
-                    .severity("warning")
-                    .sourceStatus(refundFlow.getRefundStatus())
-                    .targetStatus("THIRD_PARTY_BILL")
-                    .summary("本地退款流水成功，但未匹配到三方退款账单")
-                    .detail("orderId=" + refundFlow.getOrderId() + ", amount=" + refundFlow.getRefundAmount() + ", channel=" + refundFlow.getRefundChannel())
-                    .retryCount(0)
-                    .build();
-            count += reconcileCaseDao.upsert(reconcileCase);
+            count += reconcileCaseDao.upsert(reconcileCaseFactory.refundFlowMissBillCase(refundFlow));
         }
         return count;
     }
@@ -306,83 +191,9 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
         }
         int count = 0;
         for (ThirdPartyBill bill : billList) {
-            ReconcileCase reconcileCase = ReconcileCase.builder()
-                    .caseNo("BILL_MISS_LOCAL_FLOW:" + bill.getBillNo())
-                    .bizType("THIRD_PARTY_BILL")
-                    .bizId(bill.getBillNo())
-                    .caseType("BILL_MISS_LOCAL_FLOW")
-                    .caseStatus(0)
-                    .severity("critical")
-                    .sourceStatus(bill.getBillType() + ":" + bill.getBillStatus())
-                    .targetStatus("LOCAL_FLOW")
-                    .summary("三方账单存在，但本地支付或退款流水缺失")
-                    .detail("orderId=" + bill.getOrderId() + ", billType=" + bill.getBillType() + ", amount=" + bill.getAmount() + ", channel=" + bill.getChannel())
-                    .retryCount(0)
-                    .build();
-            count += reconcileCaseDao.upsert(reconcileCase);
+            count += reconcileCaseDao.upsert(reconcileCaseFactory.thirdPartyBillMissLocalCase(bill));
         }
         return count;
-    }
-
-    private OrderEntity toOrderEntity(PayOrder payOrder) {
-        return OrderEntity.builder()
-                .id(payOrder.getId())
-                .userId(payOrder.getUserId())
-                .productId(payOrder.getProductId())
-                .productName(payOrder.getProductName())
-                .orderId(payOrder.getOrderId())
-                .orderTime(payOrder.getOrderTime())
-                .totalAmount(payOrder.getTotalAmount())
-                .orderStatusVO(OrderStatusVO.valueOf(payOrder.getStatus()))
-                .payUrl(payOrder.getPayUrl())
-                .payTime(payOrder.getPayTime())
-                .marketType(payOrder.getMarketType())
-                .marketDeductionAmount(payOrder.getMarketDeductionAmount())
-                .payAmount(payOrder.getPayAmount())
-                .build();
-    }
-
-    private ReconcileCaseEntity toReconcileCaseEntity(ReconcileCase reconcileCase) {
-        return ReconcileCaseEntity.builder()
-                .id(reconcileCase.getId())
-                .caseNo(reconcileCase.getCaseNo())
-                .bizType(reconcileCase.getBizType())
-                .bizId(reconcileCase.getBizId())
-                .userId(reconcileCase.getUserId())
-                .caseType(reconcileCase.getCaseType())
-                .caseStatus(reconcileCase.getCaseStatus())
-                .severity(reconcileCase.getSeverity())
-                .sourceStatus(reconcileCase.getSourceStatus())
-                .targetStatus(reconcileCase.getTargetStatus())
-                .summary(reconcileCase.getSummary())
-                .detail(reconcileCase.getDetail())
-                .retryCount(reconcileCase.getRetryCount())
-                .createTime(reconcileCase.getCreateTime())
-                .updateTime(reconcileCase.getUpdateTime())
-                .handledTime(reconcileCase.getHandledTime())
-                .handler(reconcileCase.getHandler())
-                .handleNote(reconcileCase.getHandleNote())
-                .build();
-    }
-
-    private ReconcileOperationLogEntity toReconcileOperationLogEntity(ReconcileOperationLog operationLog) {
-        return ReconcileOperationLogEntity.builder()
-                .id(operationLog.getId())
-                .operator(operationLog.getOperator())
-                .operationType(operationLog.getOperationType())
-                .bizId(operationLog.getBizId())
-                .requestBody(operationLog.getRequestBody())
-                .result(operationLog.getResult())
-                .createTime(operationLog.getCreateTime())
-                .build();
-    }
-
-    private Date parseBillTime(String billTime) {
-        try {
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(billTime);
-        } catch (ParseException e) {
-            return new Date();
-        }
     }
 
 }

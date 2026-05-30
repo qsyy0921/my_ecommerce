@@ -421,6 +421,50 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mallOrderReconcileRepositoryShouldDelegateCaseReplayCsvAndMappingDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path reconcileRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderReconcileRepository.java");
+        String source = new String(Files.readAllBytes(reconcileRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "EventPublisher",
+                "publishToExchange",
+                "resolveRoutingKey",
+                "new BigDecimal",
+                "SimpleDateFormat",
+                "ParseException",
+                "parseBillTime",
+                "line.split",
+                "ThirdPartyBill.builder",
+                "OrderEntity.builder",
+                "ReconcileCase.builder",
+                "ReconcileCaseEntity.builder",
+                "ReconcileOperationLogEntity.builder"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseFactory.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MqFailureReplaySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ThirdPartyBillCsvParser.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/OrderReconcileEntityMapper.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Mall OrderReconcileRepository must delegate case construction, MQ replay, CSV parsing and entity mapping details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallReconcileCaseShouldKeepExplicitClosedLoopOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");

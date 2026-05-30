@@ -122,6 +122,7 @@
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
 - [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。
 - [x] 商城支付/退款流水拆到 `IPaymentFlowPort` / `IRefundFlowPort`，对账仓储拆到独立 `OrderReconcileRepository`，`OrderRepository` 只保留订单持久化和订单事件。
+- [x] 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、CSV 解析和实体映射细节。
 - [x] 对账差错处理补齐 `ReconcileCaseStatusVO` 和终态保护，`reconcile_case` 终态不会被扫描重新打开，重放前先校验待处理状态。
 - [x] 对账重放契约测试已补齐，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 跳过和失败备注。
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
