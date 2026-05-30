@@ -101,7 +101,8 @@
 - [x] 秒杀库存流水拆到 `ISeckillStockFlowPort`，`SeckillRepository` 不再直接构建库存流水 PO。
 - [x] 秒杀结果缓存拆到 `ISeckillResultCachePort`，`SeckillRepository` 不再直接维护结果缓存 Key 和 Redis get/set。
 - [x] 秒杀订单分片路由拆到 `SeckillOrderShardRouter`，分片表名和路由规则从主仓储移出。
+- [x] 秒杀 Redis 库存预扣拆到 `ISeckillStockReservationPort`，`SeckillRepository` 不再直接依赖 `IRedisService`、库存桶 Key、用户占位 Key 和 Lua 预扣细节。
 - [x] `DomainPurityTest` 增加 `ITradeRepository` 通知任务、队伍库存和锁单请求缓存方法回流守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
-- [x] `DomainPurityTest` 增加 `SeckillRepository` 库存流水、结果缓存和分片路由细节回流守护。
+- [x] `DomainPurityTest` 增加 `SeckillRepository` 库存流水、结果缓存、分片路由和 Redis 库存预扣细节回流守护。
 - [~] 继续拆分大 Repository、补偿编排和更多领域用例测试，详细后续任务见 `docs/sdd/ddd-sdd-todo-list.md`。

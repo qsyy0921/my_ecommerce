@@ -17,7 +17,7 @@
   - 建议拆分：`GroupBuyOrderRepository`、`GroupBuySettlementRepository`、`GroupBuyRefundRepository`。
   - 验收：`ITradeRepository` 不再暴露结算和退单技术方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过。
 
-- [ ] 拆分 `SeckillRepository` 的 Redis 库存职责。
+- [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。
   - 验收：`SeckillRepository` 不直接拼 Redis stock key，不直接执行库存预扣 Lua；库存不足、重复参与、释放库存语义保持不变。

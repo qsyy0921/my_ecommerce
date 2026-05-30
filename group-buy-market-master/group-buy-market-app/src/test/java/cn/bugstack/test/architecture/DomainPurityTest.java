@@ -106,15 +106,23 @@ public class DomainPurityTest {
         String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
+                "IRedisService",
+                "redisService",
                 "ISeckillStockFlowDao",
                 "SeckillStockFlow.builder",
                 "SECKILL_RESULT_KEY",
+                "SECKILL_STOCK_KEY",
+                "SECKILL_USER_LOCK_KEY",
+                "reserveSeckillQualification",
                 "redisService.getValue(resultKey",
                 "redisService.setValue(resultKey",
                 "orderShardCount",
                 "orderTablePrefix",
                 "private String orderTableName",
-                "private boolean useOrderSharding"
+                "private boolean useOrderSharding",
+                "private String stockBucketKey",
+                "private String userLockKey",
+                "private int bucketOf"
         );
 
         List<String> violations = new ArrayList<>();

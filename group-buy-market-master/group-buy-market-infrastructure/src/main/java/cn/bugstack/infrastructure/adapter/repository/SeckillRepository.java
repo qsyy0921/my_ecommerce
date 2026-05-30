@@ -5,8 +5,10 @@ import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillResultCachePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockFlowPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillStockReservationPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
+import cn.bugstack.domain.seckill.model.entity.SeckillStockReservationEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillStockFlowEntity;
 import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
@@ -22,12 +24,10 @@ import cn.bugstack.infrastructure.event.EventPublisher;
 import cn.bugstack.infrastructure.event.SeckillFaultInjector;
 import cn.bugstack.infrastructure.event.SeckillOrderCreateBuffer;
 import cn.bugstack.infrastructure.event.SeckillStreamMetrics;
-import cn.bugstack.infrastructure.redis.IRedisService;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
@@ -39,8 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.CRC32;
 
 /**
  * Seckill repository adapter.
@@ -49,21 +47,12 @@ import java.util.zip.CRC32;
 @Repository
 public class SeckillRepository implements ISeckillRepository, ISeckillMaintenancePort {
 
-    private static final String SECKILL_STOCK_KEY = "seckill:stock:";
-    private static final String SECKILL_STOCK_INIT_LOCK_KEY = "seckill:stock:init:";
-    private static final String SECKILL_USER_LOCK_KEY = "seckill:user:lock:";
-    private static final long SECKILL_RESULT_TTL_HOURS = 24;
-
     @Value("${app.seckill.activity-cache-ttl-millis:3000}")
     private Long activityCacheTtlMillis;
     @Value("${app.seckill.sold-out-cache-ttl-millis:5000}")
     private Long soldOutCacheTtlMillis;
     @Value("${app.seckill.stock-init-lock-wait-millis:200}")
     private Long stockInitLockWaitMillis;
-    @Value("${app.seckill.stock-init-cache-ttl-millis:60000}")
-    private Long stockInitCacheTtlMillis;
-    @Value("${app.seckill.stock-bucket-count:64}")
-    private Integer stockBucketCount;
     @Value("${app.seckill.stock-bucket-try-count:64}")
     private Integer stockBucketTryCount;
     @Value("${spring.rabbitmq.config.producer.topic_seckill_order_create.routing_key}")
@@ -80,11 +69,11 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     @Resource
     private ISeckillResultCachePort seckillResultCachePort;
     @Resource
+    private ISeckillStockReservationPort seckillStockReservationPort;
+    @Resource
     private SeckillOrderShardRouter seckillOrderShardRouter;
     @Resource
     private ISkuDao skuDao;
-    @Resource
-    private IRedisService redisService;
     @Resource
     private EventPublisher eventPublisher;
     @Resource
@@ -98,7 +87,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
 
     private final ConcurrentHashMap<String, ActivityCacheEntry> activityCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, Long> soldOutCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, Long> stockInitializedCache = new ConcurrentHashMap<>();
 
     @Override
     public SeckillActivityEntity querySeckillActivity(Long activityId, String source, String channel, String goodsId) {
@@ -149,9 +137,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         if (isLocalSoldOut(activityId)) {
             return 0;
         }
-        if (redisService.isExists(stockBucketKey(activityId, 0))) {
-            markStockInitialized(activityId);
-            int stock = sumStockBuckets(activityId);
+        if (seckillStockReservationPort.isStockInitialized(activityId)) {
+            int stock = seckillStockReservationPort.queryStock(activityId);
             if (stock <= 0) {
                 markLocalSoldOut(activityId);
             } else {
@@ -160,28 +147,24 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
             return stock;
         }
 
-        RLock lock = redisService.getLock(SECKILL_STOCK_INIT_LOCK_KEY + activityId);
         boolean locked = false;
         try {
-            locked = lock.tryLock(stockInitLockWaitMillis, 10_000, TimeUnit.MILLISECONDS);
+            locked = seckillStockReservationPort.tryAcquireInitializationLock(activityId, stockInitLockWaitMillis, 10_000);
             if (!locked) {
-                if (redisService.isExists(stockBucketKey(activityId, 0))) {
-                    markStockInitialized(activityId);
-                    return sumStockBuckets(activityId);
+                if (seckillStockReservationPort.isStockInitialized(activityId)) {
+                    return seckillStockReservationPort.queryStock(activityId);
                 }
                 throw new AppException(ResponseCode.E0205);
             }
-            if (redisService.isExists(stockBucketKey(activityId, 0))) {
-                markStockInitialized(activityId);
-                return sumStockBuckets(activityId);
+            if (seckillStockReservationPort.isStockInitialized(activityId)) {
+                return seckillStockReservationPort.queryStock(activityId);
             }
 
             SeckillActivity seckillActivity = seckillActivityDao.querySeckillActivity(SeckillActivity.builder().activityId(activityId).build());
             if (null == seckillActivity) {
                 throw new AppException(ResponseCode.E0201);
             }
-            initializeStockBuckets(activityId, seckillActivity.getAvailableCount());
-            markStockInitialized(activityId);
+            seckillStockReservationPort.initializeStock(activityId, seckillActivity.getAvailableCount());
             if (seckillActivity.getAvailableCount() <= 0) {
                 markLocalSoldOut(activityId);
             } else {
@@ -192,8 +175,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
             Thread.currentThread().interrupt();
             throw new AppException(ResponseCode.E0205);
         } finally {
-            if (locked && lock.isHeldByCurrentThread()) {
-                lock.unlock();
+            if (locked) {
+                seckillStockReservationPort.releaseInitializationLock(activityId);
             }
         }
     }
@@ -238,8 +221,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     @Override
     public SeckillOrderEntity lockSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
         Long activityId = seckillOrderEntity.getActivityId();
-        String userLockKey = userLockKey(activityId, seckillOrderEntity.getUserId());
-        String resultKey = seckillResultCachePort.resultKey(activityId, seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         seckillOrderEntity.setTraceId(MDC.get("trace-id"));
         if (isLocalSoldOut(activityId)) {
             seckillMetricsPort.recordStockNotEnough();
@@ -247,37 +228,17 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         }
         ensureStockInitialized(activityId);
 
-        int startBucket = bucketOf(seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
-        int tryCount = Math.min(bucketCount(), Math.max(1, stockBucketTryCount));
-        for (int i = 0; i < tryCount; i++) {
-            int bucket = (startBucket + i) % bucketCount();
-            String stockKey = stockBucketKey(activityId, bucket);
-            setResult(seckillOrderEntity, SeckillOrderEntity.RESULT_PROCESSING, "qualification reserved, waiting for order creation");
-            seckillOrderEntity.setStockBucket(bucket);
-
-            seckillFaultInjector.beforeRedisReserve();
-            Long reserveResult = redisService.reserveSeckillQualification(
-                    stockKey,
-                    userLockKey,
-                    resultKey,
-                    JSON.toJSONString(seckillOrderEntity),
-                    SECKILL_RESULT_TTL_HOURS,
-                    TimeUnit.HOURS);
-            if (-2L == reserveResult) {
-                seckillMetricsPort.recordDuplicate();
-                throw new AppException(ResponseCode.E0204);
-            }
-            if (-1L == reserveResult) {
-                continue;
-            }
-            seckillOrderEntity.setStockBefore(reserveResult.intValue() + 1);
-            seckillOrderEntity.setStockAfter(reserveResult.intValue());
-
+        SeckillStockReservationEntity reservation = seckillStockReservationPort.reserve(seckillOrderEntity, stockBucketTryCount);
+        if (reservation.isDuplicate()) {
+            seckillMetricsPort.recordDuplicate();
+            throw new AppException(ResponseCode.E0204);
+        }
+        if (reservation.isSuccess()) {
             try {
                 enqueueOrderCreate(seckillOrderEntity);
                 return seckillOrderEntity;
             } catch (RuntimeException e) {
-                rollbackReservation(seckillOrderEntity, stockKey, userLockKey, true, "enqueue order create failed");
+                rollbackReservation(seckillOrderEntity, true, "enqueue order create failed");
                 throw e;
             }
         }
@@ -303,11 +264,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     }
 
     private void ensureStockInitialized(Long activityId) {
-        if (isStockInitialized(activityId)) {
-            return;
-        }
-        if (redisService.isExists(stockBucketKey(activityId, 0))) {
-            markStockInitialized(activityId);
+        if (seckillStockReservationPort.isStockInitialized(activityId)) {
             return;
         }
         queryAvailableStock(activityId);
@@ -316,10 +273,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     @Transactional(timeout = 5)
     @Override
     public void createSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
-        Long activityId = seckillOrderEntity.getActivityId();
-        String userLockKey = userLockKey(activityId, seckillOrderEntity.getUserId());
-        String stockKey = stockBucketKey(activityId, null == seckillOrderEntity.getStockBucket() ? 0 : seckillOrderEntity.getStockBucket());
-
         SeckillOrderEntity existsOrder = querySeckillOrderByOutTradeNo(seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         if (null != existsOrder) {
             seckillResultCachePort.cache(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order already created");
@@ -357,12 +310,12 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 return;
             }
             seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "duplicate seckill order");
-            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, false, "duplicate seckill order");
+            rollbackReservation(seckillOrderEntity, false, "duplicate seckill order");
         } catch (AppException e) {
             throw e;
         } catch (RuntimeException e) {
             seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_FAIL, e.getMessage());
-            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, false, e.getMessage());
+            rollbackReservation(seckillOrderEntity, false, e.getMessage());
             throw e;
         }
     }
@@ -394,8 +347,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "order create ignored by unique constraint");
                 rollbackReservation(
                         seckillOrderEntity,
-                        stockBucketKey(seckillOrderEntity.getActivityId(), null == seckillOrderEntity.getStockBucket() ? 0 : seckillOrderEntity.getStockBucket()),
-                        userLockKey(seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId()),
                         false,
                         "batch order create ignored by unique constraint");
                 continue;
@@ -592,11 +543,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
             }
             seckillActivityDao.updateReleaseStock(order.getActivityId());
             SeckillOrderEntity entity = buildSeckillOrderEntity(order);
-            entity.setStockBucket(bucketOf(order.getUserId(), order.getOutTradeNo()));
-            long stockAfter = redisService.incr(stockBucketKey(order.getActivityId(), entity.getStockBucket()));
-            entity.setStockBefore((int) stockAfter - 1);
-            entity.setStockAfter((int) stockAfter);
-            redisService.remove(userLockKey(order.getActivityId(), order.getUserId()));
+            seckillStockReservationPort.release(entity, 1);
             seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(entity, SeckillStockFlowEntity.ROLLBACK_TIMEOUT, 1, "timeout unpaid released"));
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillTimeoutClosed(
                     order.getOutTradeNo(),
@@ -624,11 +571,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         seckillActivityDao.updateReleaseStock(order.getActivityId());
         SeckillOrderEntity entity = buildSeckillOrderEntity(order);
         entity.setTraceId(MDC.get("trace-id"));
-        entity.setStockBucket(bucketOf(order.getUserId(), order.getOutTradeNo()));
-        long stockAfter = redisService.incr(stockBucketKey(order.getActivityId(), entity.getStockBucket()));
-        entity.setStockBefore((int) stockAfter - changeCount);
-        entity.setStockAfter((int) stockAfter);
-        redisService.remove(userLockKey(order.getActivityId(), order.getUserId()));
+        seckillStockReservationPort.release(entity, changeCount);
         seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(entity, changeType, changeCount, message));
         clearLocalSoldOut(order.getActivityId());
     }
@@ -691,74 +634,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         }
     }
 
-    private long crc32(String value) {
-        CRC32 crc32 = new CRC32();
-        crc32.update(String.valueOf(value).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return crc32.getValue();
-    }
-
-    private void initializeStockBuckets(Long activityId, int availableCount) {
-        int bucketCount = bucketCount();
-        int base = availableCount / bucketCount;
-        int remainder = availableCount % bucketCount;
-        for (int i = 0; i < bucketCount; i++) {
-            int stock = base + (i < remainder ? 1 : 0);
-            redisService.setAtomicLong(stockBucketKey(activityId, i), stock);
-        }
-    }
-
-    private boolean isStockInitialized(Long activityId) {
-        Long expireTime = stockInitializedCache.get(activityId);
-        if (null == expireTime) {
-            return false;
-        }
-        if (expireTime > System.currentTimeMillis()) {
-            return true;
-        }
-        stockInitializedCache.remove(activityId, expireTime);
-        return false;
-    }
-
-    private void markStockInitialized(Long activityId) {
-        if (stockInitCacheTtlMillis > 0) {
-            stockInitializedCache.put(activityId, System.currentTimeMillis() + stockInitCacheTtlMillis);
-        }
-    }
-
-    private int sumStockBuckets(Long activityId) {
-        long stock = 0;
-        for (int i = 0; i < bucketCount(); i++) {
-            stock += redisService.getAtomicLong(stockBucketKey(activityId, i));
-        }
-        if (stock > Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        }
-        return (int) stock;
-    }
-
     private String activityCacheKey(Long activityId, String source, String channel, String goodsId) {
         return String.valueOf(activityId) + ":" + source + ":" + channel + ":" + goodsId;
-    }
-
-    private String stockBucketKey(Long activityId, int bucket) {
-        return SECKILL_STOCK_KEY + activityId + ":" + bucket;
-    }
-
-    private String userLockKey(Long activityId, String userId) {
-        return SECKILL_USER_LOCK_KEY + activityId + ":" + userId;
-    }
-
-    private int bucketOf(String userId, String outTradeNo) {
-        return (int) (crc32(userId + ":" + outTradeNo) % bucketCount());
-    }
-
-    private int bucketCount() {
-        return Math.max(1, null == stockBucketCount ? 64 : stockBucketCount);
-    }
-
-    private void setResult(SeckillOrderEntity seckillOrderEntity, String resultStatus, String message) {
-        seckillOrderEntity.setResultStatus(resultStatus);
-        seckillOrderEntity.setMessage(message);
     }
 
     private boolean isLocalSoldOut(Long activityId) {
@@ -783,14 +660,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         soldOutCache.remove(activityId);
     }
 
-    private void rollbackReservation(SeckillOrderEntity seckillOrderEntity, String stockKey, String userLockKey, boolean removeResult, String reason) {
-        long stockAfter = redisService.incr(stockKey);
-        seckillOrderEntity.setStockBefore((int) stockAfter - 1);
-        seckillOrderEntity.setStockAfter((int) stockAfter);
-        redisService.remove(userLockKey);
-        if (removeResult) {
-            seckillResultCachePort.remove(seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
-        }
+    private void rollbackReservation(SeckillOrderEntity seckillOrderEntity, boolean removeResult, String reason) {
+        seckillStockReservationPort.rollback(seckillOrderEntity, removeResult);
         clearLocalSoldOut(seckillOrderEntity.getActivityId());
         try {
             seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(seckillOrderEntity, SeckillStockFlowEntity.ROLLBACK, 1, reason));
