@@ -69,6 +69,7 @@
 - [x] 商城订单、营销订单、支付渠道三方对账任务。
 - [x] 支付流水和退款流水独立端口化，订单状态不再替代支付/退款事实。
 - [x] 商城 `OrderService` 与 `OrderReconcileService` 拆分，订单主链路和对账差错处理分离。
+- [x] 商城 `OrderService` 支付成功和退款用例拆到 `OrderPaySuccessProcessor`、`OrderRefundProcessor`，订单服务不再直接编排支付流水、营销结算、营销退单和退款流水。
 - [x] 商城 `IOrderRepository` 与 `IOrderReconcileRepository` 拆分，订单主链路仓储端口不暴露对账台账能力。
 - [x] 对账差错单支持确认、重放、忽略、关闭、备注和操作日志查询。
 - [x] 超时未支付退单补偿。
@@ -92,6 +93,7 @@
 
 - [x] 明确商城服务和营销服务各自维护独立 DDD 分层，拼团和秒杀先作为营销上下文内的两个子域。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
+- [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。
 - [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。

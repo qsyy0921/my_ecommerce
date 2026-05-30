@@ -976,6 +976,47 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mallOrderServiceShouldDelegatePaySuccessAndRefundUsecases() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path orderService = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderService.java");
+        String source = new String(Files.readAllBytes(orderService), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IMarketSettlementPort",
+                "IMarketRefundPort",
+                "IPaymentFlowPort",
+                "IRefundFlowPort",
+                "IOrderPaySuccessMessagePort",
+                "IDomainTaskExecutor",
+                "asyncSettlement",
+                "recordPaySuccess",
+                "recordRefund",
+                "refundGroupBuyMarketPayOrder",
+                "refundSeckillPayOrder",
+                "publishAll"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderPaySuccessProcessor.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderRefundProcessor.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing processor:" + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Mall OrderService must delegate payment-success and refund usecase details to processors: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillMarketControllerShouldDelegateValidationClientIpAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillMarketController.java");

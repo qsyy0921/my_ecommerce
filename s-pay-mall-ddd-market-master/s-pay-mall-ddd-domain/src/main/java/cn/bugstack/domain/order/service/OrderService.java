@@ -1,57 +1,39 @@
 package cn.bugstack.domain.order.service;
 
-import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
-import cn.bugstack.domain.order.adapter.port.IMarketRefundPort;
-import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
-import cn.bugstack.domain.order.adapter.port.IOrderPaySuccessMessagePort;
 import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
-import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.MarketPayDiscountEntity;
-import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.PayOrderEntity;
 import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
-import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.order.service.processor.OrderPaySuccessProcessor;
+import cn.bugstack.domain.order.service.processor.OrderRefundProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 @Slf4j
 public class OrderService extends AbstractOrderService {
 
-    private final IDomainTaskExecutor domainTaskExecutor;
     private final IPayPort payPort;
-    private final IMarketSettlementPort marketSettlementPort;
-    private final IMarketRefundPort marketRefundPort;
-    private final IPaymentFlowPort paymentFlowPort;
-    private final IRefundFlowPort refundFlowPort;
-    private final IOrderPaySuccessMessagePort orderPaySuccessMessagePort;
+    private final OrderPaySuccessProcessor orderPaySuccessProcessor;
+    private final OrderRefundProcessor orderRefundProcessor;
 
     public OrderService(IOrderRepository repository,
                         IProductQueryPort productQueryPort,
                         IMarketOrderLockPort marketOrderLockPort,
-                        IMarketSettlementPort marketSettlementPort,
-                        IMarketRefundPort marketRefundPort,
                         IPayPort payPort,
-                        IPaymentFlowPort paymentFlowPort,
-                        IRefundFlowPort refundFlowPort,
-                        IOrderPaySuccessMessagePort orderPaySuccessMessagePort,
-                        IDomainTaskExecutor domainTaskExecutor) {
+                        OrderPaySuccessProcessor orderPaySuccessProcessor,
+                        OrderRefundProcessor orderRefundProcessor) {
         super(repository, productQueryPort, marketOrderLockPort);
         this.payPort = payPort;
-        this.marketSettlementPort = marketSettlementPort;
-        this.marketRefundPort = marketRefundPort;
-        this.paymentFlowPort = paymentFlowPort;
-        this.refundFlowPort = refundFlowPort;
-        this.orderPaySuccessMessagePort = orderPaySuccessMessagePort;
-        this.domainTaskExecutor = domainTaskExecutor;
+        this.orderPaySuccessProcessor = orderPaySuccessProcessor;
+        this.orderRefundProcessor = orderRefundProcessor;
     }
 
     @Override
@@ -93,59 +75,7 @@ public class OrderService extends AbstractOrderService {
 
     @Override
     public void changeOrderPaySuccess(String orderId, Date payTime, String payChannel, String channelTradeNo, String rawMessage) {
-        OrderEntity orderEntity = repository.queryOrderByOrderId(orderId);
-        if (null == orderEntity) return;
-
-        if (MarketTypeVO.GROUP_BUY_MARKET.getCode().equals(orderEntity.getMarketType())) {
-            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime);
-            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
-            if (changed) {
-                asyncSettlementMarketPayOrder(orderEntity, payTime);
-            } else {
-                log.info("payment callback idempotent hit, skip market settlement orderId:{}", orderId);
-            }
-        } else if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
-            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime);
-            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
-            if (changed) {
-                asyncSettlementSeckillPayOrder(orderEntity, payTime);
-            } else {
-                log.info("payment callback idempotent hit, skip seckill settlement orderId:{}", orderId);
-            }
-        } else {
-            boolean changed = repository.changeOrderPaySuccess(orderId, payTime);
-            if (changed) {
-                orderPaySuccessMessagePort.publish(orderId);
-            }
-            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
-            if (!changed) {
-                log.info("payment callback idempotent hit, skip normal order message orderId:{}", orderId);
-            }
-        }
-
-    }
-
-    private void asyncSettlementMarketPayOrder(OrderEntity orderEntity, Date payTime) {
-        domainTaskExecutor.execute(() -> {
-            try {
-                marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
-            } catch (Exception e) {
-                log.error("async market settlement failed, wait reconciliation job userId:{} orderId:{}",
-                        orderEntity.getUserId(), orderEntity.getOrderId(), e);
-            }
-        });
-    }
-
-    private void asyncSettlementSeckillPayOrder(OrderEntity orderEntity, Date payTime) {
-        domainTaskExecutor.execute(() -> {
-            try {
-                marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
-                changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
-            } catch (Exception e) {
-                log.error("async seckill settlement failed, wait reconciliation job userId:{} orderId:{}",
-                        orderEntity.getUserId(), orderEntity.getOrderId(), e);
-            }
-        });
+        orderPaySuccessProcessor.changeOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
     }
 
     @Override
@@ -165,87 +95,17 @@ public class OrderService extends AbstractOrderService {
 
     @Override
     public void changeOrderMarketSettlement(List<String> outTradeNoList) {
-        repository.changeOrderMarketSettlement(outTradeNoList);
-        orderPaySuccessMessagePort.publishAll(outTradeNoList);
+        orderPaySuccessProcessor.changeOrderMarketSettlement(outTradeNoList);
     }
 
     @Override
     public boolean refundMarketOrder(String userId, String orderId) {
-        // 1. 查询订单信息，验证订单是否存在且属于该用户
-        OrderEntity orderEntity = repository.queryOrderByUserIdAndOrderId(userId, orderId);
-        if (null == orderEntity) {
-            log.warn("退单失败，订单不存在或不属于该用户 userId:{} orderId:{}", userId, orderId);
-            return false;
-        }
-
-        // 2. 检查订单状态，只有create、pay_wait、pay_success、deal_done状态的订单可以退单
-        String status = orderEntity.getOrderStatusVO().getCode();
-        if (OrderStatusVO.CLOSE.getCode().equals(status)) {
-            log.warn("退单失败，订单已关闭 userId:{} orderId:{} status:{}", userId, orderId, status);
-            return false;
-        }
-
-        MarketTypeVO marketTypeVO = MarketTypeVO.valueOf(null == orderEntity.getMarketType() ? MarketTypeVO.NO_MARKET.getCode() : orderEntity.getMarketType());
-
-        // 3. 对于营销类型的单子，先调用营销侧恢复对应库存和订单状态
-        if (MarketTypeVO.GROUP_BUY_MARKET.equals(marketTypeVO)) {
-            marketRefundPort.refundGroupBuyMarketPayOrder(userId, orderId);
-        } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
-            marketRefundPort.refundSeckillPayOrder(userId, orderId);
-        }
-
-        // 4. 执行退单操作；CREATE 新创建订单，不需要退款
-        if (OrderStatusVO.CREATE.getCode().equals(status) || OrderStatusVO.PAY_WAIT.getCode().equals(status)) {
-            boolean result = repository.refundOrder(userId, orderId);
-            if (result) {
-                refundFlowPort.recordRefund(orderEntity, "SUCCESS", "refund order");
-            }
-            return result;
-        } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
-            boolean applied = OrderStatusVO.WAIT_REFUND.getCode().equals(status) || repository.refundMarketOrder(userId, orderId);
-            if (!applied) {
-                log.warn("秒杀退单申请失败 userId:{} orderId:{}", userId, orderId);
-                return false;
-            }
-            if (!OrderStatusVO.WAIT_REFUND.getCode().equals(status)) {
-                refundFlowPort.recordRefund(orderEntity, "APPLY", "market refund order");
-            }
-            return refundPayOrder(userId, orderId);
-        } else {
-            boolean result = repository.refundMarketOrder(userId, orderId);
-            if (result) {
-                refundFlowPort.recordRefund(orderEntity, "APPLY", "market refund order");
-                log.info("退单成功 userId:{} orderId:{}", userId, orderId);
-            } else {
-                log.warn("退单失败 userId:{} orderId:{}", userId, orderId);
-            }
-            return result;
-        }
-
+        return orderRefundProcessor.refundMarketOrder(userId, orderId);
     }
 
     @Override
     public boolean refundPayOrder(String userId, String orderId) {
-        // 1. 查询订单信息，验证订单是否存在且属于该用户
-        OrderEntity orderEntity = repository.queryOrderByUserIdAndOrderId(userId, orderId);
-        if (null == orderEntity) {
-            log.warn("退款失败，订单不存在或不属于该用户 userId:{} orderId:{}", userId, orderId);
-            return false;
-        }
-        if (OrderStatusVO.CLOSE.equals(orderEntity.getOrderStatusVO())) {
-            log.info("退款幂等返回，订单已关闭 userId:{} orderId:{}", userId, orderId);
-            return true;
-        }
-
-        if (!payPort.refund(orderEntity.getOrderId(), orderEntity.getPayAmount())) return false;
-
-        // 状态变更
-        boolean result = repository.refundOrder(userId, orderId);
-        if (result) {
-            refundFlowPort.recordRefund(orderEntity, "SUCCESS", "refund order");
-        }
-
-        return true;
+        return orderRefundProcessor.refundPayOrder(userId, orderId);
     }
 
 }

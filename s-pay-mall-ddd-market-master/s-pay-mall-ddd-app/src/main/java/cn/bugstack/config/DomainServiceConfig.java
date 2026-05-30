@@ -24,6 +24,8 @@ import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.domain.order.service.OrderService;
 import cn.bugstack.domain.order.service.OrderReconcileService;
+import cn.bugstack.domain.order.service.processor.OrderPaySuccessProcessor;
+import cn.bugstack.domain.order.service.processor.OrderRefundProcessor;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import com.google.common.cache.Cache;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -38,14 +40,27 @@ public class DomainServiceConfig {
     public IOrderService orderService(IOrderRepository orderRepository,
                                       IProductQueryPort productQueryPort,
                                       IMarketOrderLockPort marketOrderLockPort,
-                                      IMarketSettlementPort marketSettlementPort,
-                                      IMarketRefundPort marketRefundPort,
                                       IPayPort payPort,
-                                      IPaymentFlowPort paymentFlowPort,
-                                      IRefundFlowPort refundFlowPort,
-                                      IOrderPaySuccessMessagePort orderPaySuccessMessagePort,
-                                      IDomainTaskExecutor domainTaskExecutor) {
-        return new OrderService(orderRepository, productQueryPort, marketOrderLockPort, marketSettlementPort, marketRefundPort, payPort, paymentFlowPort, refundFlowPort, orderPaySuccessMessagePort, domainTaskExecutor);
+                                      OrderPaySuccessProcessor orderPaySuccessProcessor,
+                                      OrderRefundProcessor orderRefundProcessor) {
+        return new OrderService(orderRepository, productQueryPort, marketOrderLockPort, payPort, orderPaySuccessProcessor, orderRefundProcessor);
+    }
+
+    @Bean
+    public OrderPaySuccessProcessor orderPaySuccessProcessor(IOrderRepository orderRepository,
+                                                             IMarketSettlementPort marketSettlementPort,
+                                                             IPaymentFlowPort paymentFlowPort,
+                                                             IOrderPaySuccessMessagePort orderPaySuccessMessagePort,
+                                                             IDomainTaskExecutor domainTaskExecutor) {
+        return new OrderPaySuccessProcessor(orderRepository, marketSettlementPort, paymentFlowPort, orderPaySuccessMessagePort, domainTaskExecutor);
+    }
+
+    @Bean
+    public OrderRefundProcessor orderRefundProcessor(IOrderRepository orderRepository,
+                                                     IMarketRefundPort marketRefundPort,
+                                                     IRefundFlowPort refundFlowPort,
+                                                     IPayPort payPort) {
+        return new OrderRefundProcessor(orderRepository, marketRefundPort, refundFlowPort, payPort);
     }
 
     @Bean
