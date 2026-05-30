@@ -37,6 +37,7 @@
 - `2026-05-31-seckill-rate-limit-support-split.md`：记录秒杀限流端口内部拆出 Redis 固定窗口限流支撑组件。
 - `2026-05-30-rabbitmq-dlq-ops.md`：记录 RabbitMQ DLQ 失败台账、指标和人工处理入口方案。
 - `2026-05-30-mq-producer-outbox-retry.md`：记录 MQ 生产者 confirm 失败台账、定时重试和人工补偿入口方案。
+- `2026-05-31-mq-ops-controller-usecase-support-split.md`：记录营销 MQ 运维 Controller 拆出管理员认证、运维用例和响应 DTO 组装支撑组件。
 - `2026-05-31-message-record-repository-support-split.md`：记录 MQ 幂等记录仓储拆出 PO/Entity 映射和生产者失败重投支撑组件。
 - `2026-05-31-event-publisher-support-split.md`：记录 RabbitMQ 发布器拆出消息 ID 生成和生产者失败台账记录支撑组件。
 - `2026-05-31-mall-mq-support-split.md`：记录商城侧 MQ 发布器和消息记录仓储按营销侧同构拆出支撑组件。

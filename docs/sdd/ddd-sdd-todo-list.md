@@ -231,6 +231,11 @@
   - 实际拆分：`SeckillOpsAdminSupport`、`SeckillManualCompensationOpsSupport`、`SeckillManualCompensationResponseAssembler`、`ReplaySeckillManualRequestDTO`、`SeckillManualMessageResponseDTO`、`SeckillManualCompensationLogResponseDTO`。
   - 验收：补偿台接口路径保持不变；Controller 只保留 HTTP 路由委托；架构测试防止认证、审计、FastJSON 和领域实体回流。
 
+- [x] 拆分 MQ 运维 HTTP 用例编排。
+  - 目标：避免 `MqOpsController` 继续承担管理员 token 校验、失败消息查询、标记处理、生产者失败重试、操作人兜底和 `MessageRecordEntity` 响应契约。
+  - 实际拆分：`MqOpsAdminSupport`、`MqOpsSupport`、`MqOpsResponseAssembler`、`MarkMqMessageHandledRequestDTO`、`MqFailedMessageResponseDTO`。
+  - 验收：MQ 运维接口路径保持不变；Controller 只保留 HTTP 路由委托；架构测试防止认证、领域服务调用和领域实体响应回流；DTO 组装单元测试通过。
+
 - [x] 补齐 Stream 人工补偿治理。
   - 目标：人工补偿 Stream 不只是失败隔离，还要有可查询、可重放、可审计能力。
   - 本机已做：补偿查询接口、单条/批量重放接口、`seckill_manual_compensation_log` 操作日志表、操作记录查询接口和补偿台展示。

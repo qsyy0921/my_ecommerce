@@ -1211,6 +1211,50 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mqOpsControllerShouldDelegateAdminUsecasesAndDtoMappingDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MqOpsController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IMessageRecordService",
+                "MessageRecordEntity",
+                "@Value",
+                "StringUtils",
+                "adminToken",
+                "local-admin",
+                "consumeSuccess",
+                "retryProducerFailedMessages",
+                "queryFailedMessages",
+                "Response<List<MessageRecordEntity>>",
+                "MarkHandledRequest",
+                "log.warn"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsAdminSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsResponseAssembler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MarkMqMessageHandledRequestDTO.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MqFailedMessageResponseDTO.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing mq ops support/api file: " + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("MqOpsController must keep HTTP routing only and delegate admin, usecase and DTO mapping details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallOrderRepositoryShouldNotOwnReconcileOrFlowDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path orderRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderRepository.java");

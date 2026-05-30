@@ -146,6 +146,7 @@
 - [x] 秒杀 HTTP 入口 `SeckillMarketController` 拆出 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，Controller 不再直接维护校验矩阵、代理 IP 解析和 DTO 字段映射。
 - [x] 秒杀 HTTP 入口继续拆出活动查询、锁单、结果查询、结算、退款 5 个用例支撑组件，Controller 不再直接编排领域服务、限流、指标和结构化日志。
 - [x] 秒杀补偿台 HTTP 入口 `SeckillOpsController` 拆出管理员认证、补偿用例、审计记录和响应 DTO 组装，Controller 不再直接暴露人工补偿 domain entity。
+- [x] MQ 运维 HTTP 入口 `MqOpsController` 拆出管理员认证、失败消息查询、标记处理、生产者失败重试和响应 DTO 组装，Controller 不再直接暴露 `MessageRecordEntity`。
 - [x] 秒杀订单生命周期命令拆成创建、结算、退款三个端口，分片表访问、PO/Entity 转换、库存释放/回滚从主适配器移出。
 - [x] 秒杀库存纯单元测试已补齐，覆盖预扣成功、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - [x] 专业 MQ 演进方案已补齐到 `docs/sdd/mq-evolution.md`，明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、迁移步骤和回滚方案。
@@ -185,6 +186,7 @@
 - [x] `DomainPurityTest` 增强秒杀库存预扣端口边界守护，避免 Redis API、Lua 预扣和库存桶循环细节回流。
 - [x] `DomainPurityTest` 增加秒杀补偿台 Controller 边界守护，避免 trigger 直接依赖 Redis Stream 实现类。
 - [x] `DomainPurityTest` 增强秒杀补偿台 Controller 边界守护，避免管理员认证、审计记录、FastJSON 和 domain entity 响应契约回流到 HTTP 入口。
+- [x] `DomainPurityTest` 增加 MQ 运维 Controller 边界守护，避免管理员认证、领域服务调用、`MessageRecordEntity` 响应契约和手动处理编排回流到 HTTP 入口。
 - [x] `DomainPurityTest` 增加秒杀市场 Controller 边界守护，避免请求校验、客户端 IP 解析和 DTO 组装回流到 HTTP 入口。
 - [x] `DomainPurityTest` 增加拼团交易 Controller 边界守护，避免请求校验、通知类型解析、领域命令组装和 DTO 组装回流到 HTTP 入口。
 - [x] `DomainPurityTest` 增加商城对账 Controller 管理后台支撑守护，避免 token、操作人解析、审计写入和 CSV 预览截断回流到 HTTP 入口。
