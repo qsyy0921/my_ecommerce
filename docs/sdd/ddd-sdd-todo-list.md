@@ -176,6 +176,11 @@
   - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
   - 验收：Redis Stream、RabbitMQ、Redis Queue、本地队列投递选择收敛到消息 Adapter；锁单适配器不再感知具体中间件。
 
+- [x] 拆分 MQ 记录仓储内部支撑。
+  - 目标：避免 `MessageRecordRepository` 同时承担 MQ 幂等记录、PO/Entity 映射、生产者失败消息重投、routing key 解析和错误截断。
+  - 实际拆分：`MessageRecordMapper`、`MessageProducerRetrySupport`。
+  - 验收：`MessageRecordRepository` 只保留记录读写和状态更新门面；生产者失败重试由支撑组件处理；架构测试防止重投和映射细节回流。
+
 - [x] 拆分秒杀限流端口内部固定窗口支撑。
   - 目标：避免 `SeckillRateLimitPort` 同时承担三维限流策略、Redis Key、Lua、固定窗口计数和 Redisson 调用。
   - 实际拆分：`SeckillFixedWindowRateLimitSupport`。

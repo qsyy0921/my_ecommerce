@@ -48,6 +48,7 @@
 
 - [x] 已有 RabbitMQ 结算通知能力。
 - [x] 生产者 confirms 已接入，发送失败会落台账并由补偿任务重试。
+- [x] MQ 幂等记录仓储已拆出 `MessageRecordMapper` 和 `MessageProducerRetrySupport`，仓储门面不再直接持有生产者重投、routing key 解析和 PO/Entity builder 细节。
 - [x] 消费幂等表 `mq_message_record`。
 - [x] 消费者手动 ACK。
 - [x] 失败 NACK 后进入 DLQ。
@@ -185,4 +186,5 @@
 - [x] `DomainPurityTest` 增加商城对账查询 API DTO 边界守护，避免 domain entity 重新成为 HTTP 响应契约。
 - [x] `DomainPurityTest` 增加商城 `AliPayController` 边界守护，避免支付宝 SDK、验签解析和 DTO 映射回流到 HTTP Controller。
 - [x] `DomainPurityTest` 增强商城 `OrderRepository` 边界守护，避免 PO/Entity builder 和列表映射细节回流。
+- [x] `DomainPurityTest` 增加营销 MQ 记录仓储边界守护，避免 `EventPublisher`、routing key 解析、错误截断和 PO/Entity builder 回流到 `MessageRecordRepository`。
 - [x] 当前本机可验证的 DDD 大仓储治理项已完成，后续继续按 `docs/sdd/ddd-sdd-todo-list.md` 做增量审计，不再保留泛化未完成项。

@@ -1240,6 +1240,43 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void messageRecordRepositoryShouldDelegateMappingAndProducerRetryDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path repository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/MessageRecordRepository.java");
+        String source = new String(Files.readAllBytes(repository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "EventPublisher",
+                "StringUtils",
+                "resolveRoutingKey",
+                "producer retry failed",
+                "routing:",
+                "left(",
+                "MessageRecordEntity.builder",
+                "MqMessageRecord.builder"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageRecordMapper.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageProducerRetrySupport.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing message record support file: " + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("MessageRecordRepository must delegate mapping and producer retry details to support components: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallProductPortShouldStaySplitFromMarketTradePorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path productPort = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductPort.java");
