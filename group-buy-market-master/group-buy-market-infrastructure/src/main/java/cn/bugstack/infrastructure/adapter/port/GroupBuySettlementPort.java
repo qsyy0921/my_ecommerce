@@ -4,7 +4,7 @@ import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.shared.model.entity.OrderStateTransitionEntity;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuySettlementPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskCreatePort;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
@@ -33,7 +33,7 @@ public class GroupBuySettlementPort implements IGroupBuySettlementPort {
     @Resource
     private IOrderStateFlowPort orderStateFlowPort;
     @Resource
-    private ITradeNotifyTaskPort tradeNotifyTaskPort;
+    private ITradeNotifyTaskCreatePort tradeNotifyTaskCreatePort;
     @Resource
     private ITradeLockRequestPort tradeLockRequestPort;
 
@@ -74,7 +74,7 @@ public class GroupBuySettlementPort implements IGroupBuySettlementPort {
                     MDC.get("trace-id")));
 
             List<String> outTradeNoList = groupBuyOrderListDao.queryGroupBuyCompleteOrderOutTradeNoListByTeamId(groupBuyTeamEntity.getTeamId());
-            return tradeNotifyTaskPort.createSettlementTask(
+            return tradeNotifyTaskCreatePort.createSettlementTask(
                     groupBuyTeamEntity.getActivityId(),
                     groupBuyTeamEntity.getTeamId(),
                     notifyConfigVO,

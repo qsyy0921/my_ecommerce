@@ -96,7 +96,7 @@
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
 - [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍和售后流程的合法/非法状态迁移。
 - [x] 抽象 `IDomainTaskExecutor`，domain 不再直接依赖 `ThreadPoolExecutor`。
-- [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
+- [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskExecutionPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
 - [x] 拼团队伍库存占位拆到 `IGroupBuyTeamStockPort`，`ITradeRepository` 不再暴露 Redis 队伍名额占用和退单恢复方法。
 - [x] 拼团锁单请求锁和结果缓存拆到 `ITradeLockRequestPort`，`ITradeRepository` 不再暴露 Redis 请求锁和缓存方法。
 - [x] 拼团锁单落库拆到 `IGroupBuyOrderPort`，`ITradeRepository` 不再暴露锁单写方法。
@@ -107,6 +107,7 @@
 - [x] 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
 - [x] 拼团首页 HTTP 入口 `MarketIndexController` 已拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
 - [x] 拼团通知任务发送已从泛化 `ITradePort` / `TradePort` 拆到显式 `ITradeNotificationPort`，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑组件。
+- [x] 拼团通知任务端口已从通用 `ITradeNotifyTaskPort` 拆成创建端口和执行端口，并拆出 payload 工厂与 PO/Entity 映射组件。
 - [x] 拼团锁单纯单元测试已补齐，覆盖重复请求、队伍满员、活动不可用、人群标签试算拦截、Redis 占位失败和 DB 唯一索引兜底回滚。
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
 - [x] 秒杀库存流水拆到 `ISeckillStockFlowPort`，`SeckillRepository` 不再直接构建库存流水 PO。

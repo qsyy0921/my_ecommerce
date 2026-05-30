@@ -23,7 +23,7 @@ import cn.bugstack.domain.trade.adapter.port.IGroupBuyTimeoutOrderPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuySettlementPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeNotificationPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskExecutionPort;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.bugstack.domain.trade.model.entity.TradeRefundBehaviorEntity;
@@ -76,8 +76,8 @@ public class DomainServiceConfig {
     }
 
     @Bean
-    public ITradeTaskService tradeTaskService(ITradeNotifyTaskPort tradeNotifyTaskPort, ITradeNotificationPort tradeNotificationPort) {
-        return new TradeTaskService(tradeNotifyTaskPort, tradeNotificationPort);
+    public ITradeTaskService tradeTaskService(ITradeNotifyTaskExecutionPort tradeNotifyTaskExecutionPort, ITradeNotificationPort tradeNotificationPort) {
+        return new TradeTaskService(tradeNotifyTaskExecutionPort, tradeNotificationPort);
     }
 
     @Bean

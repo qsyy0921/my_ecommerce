@@ -97,6 +97,77 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void tradeNotifyTaskPortShouldStaySplitByCreateAndExecution() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path oldPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskPort.java");
+        Path oldAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskPort.java");
+
+        Assert.assertFalse("Generic ITradeNotifyTaskPort should stay deleted; split notify-task create and execution ports.", Files.exists(oldPort));
+        Assert.assertFalse("Generic TradeNotifyTaskPort adapter should stay deleted; split notify-task create and execution adapters.", Files.exists(oldAdapter));
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskFactory.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskMapper.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            Assert.assertTrue("Missing trade notify task split file: " + requiredFile.getFileName(), Files.exists(requiredFile));
+        }
+
+        List<String> violations = new ArrayList<>();
+        Path createPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java");
+        Path executionPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java");
+        Path createAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java");
+        Path executionAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java");
+        Path taskService = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
+        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
+        Path refundSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyRefundSupport.java");
+
+        assertSourceDoesNotContain(createPort, violations, Arrays.asList(
+                "queryUnExecutedNotifyTaskList",
+                "updateNotifyTaskStatus"
+        ));
+        assertSourceDoesNotContain(executionPort, violations, Arrays.asList(
+                "createSettlementTask",
+                "createRefundTask",
+                "TradeRefundOrderEntity",
+                "NotifyConfigVO"
+        ));
+        assertSourceDoesNotContain(createAdapter, violations, Arrays.asList(
+                "JSON.toJSONString",
+                "new HashMap",
+                "TaskNotifyCategoryEnumVO",
+                "NotifyTypeEnumVO",
+                "NotifyTask.builder",
+                "NotifyTaskEntity.builder",
+                "switch (refundTypeEnumVO)"
+        ));
+        assertSourceDoesNotContain(executionAdapter, violations, Arrays.asList(
+                "createSettlementTask",
+                "createRefundTask",
+                "JSON.toJSONString",
+                "TaskNotifyCategoryEnumVO"
+        ));
+        assertSourceDoesNotContain(taskService, violations, Arrays.asList(
+                "ITradeNotifyTaskPort",
+                "ITradeNotifyTaskCreatePort"
+        ));
+        assertSourceDoesNotContain(settlementAdapter, violations, Arrays.asList(
+                "ITradeNotifyTaskPort",
+                "ITradeNotifyTaskExecutionPort"
+        ));
+        assertSourceDoesNotContain(refundSupport, violations, Arrays.asList(
+                "ITradeNotifyTaskPort",
+                "ITradeNotifyTaskExecutionPort"
+        ));
+
+        Assert.assertTrue("Trade notify task ports must stay split by create and execution responsibilities: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void genericActivityRepositoryShouldStaySplitIntoSemanticPorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path activityRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/repository/IActivityRepository.java");

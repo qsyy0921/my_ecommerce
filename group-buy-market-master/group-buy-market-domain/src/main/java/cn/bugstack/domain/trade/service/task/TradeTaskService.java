@@ -1,7 +1,7 @@
 package cn.bugstack.domain.trade.service.task;
 
 import cn.bugstack.domain.trade.adapter.port.ITradeNotificationPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskExecutionPort;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.service.ITradeTaskService;
 import cn.bugstack.types.enums.NotifyTaskHTTPEnumVO;
@@ -22,11 +22,11 @@ import java.util.Map;
 @Slf4j
 public class TradeTaskService implements ITradeTaskService {
 
-    private final ITradeNotifyTaskPort notifyTaskPort;
+    private final ITradeNotifyTaskExecutionPort notifyTaskExecutionPort;
     private final ITradeNotificationPort notificationPort;
 
-    public TradeTaskService(ITradeNotifyTaskPort notifyTaskPort, ITradeNotificationPort notificationPort) {
-        this.notifyTaskPort = notifyTaskPort;
+    public TradeTaskService(ITradeNotifyTaskExecutionPort notifyTaskExecutionPort, ITradeNotificationPort notificationPort) {
+        this.notifyTaskExecutionPort = notifyTaskExecutionPort;
         this.notificationPort = notificationPort;
     }
     
@@ -35,7 +35,7 @@ public class TradeTaskService implements ITradeTaskService {
         log.info("拼团交易-执行回调通知任务");
 
         // 查询未执行任务
-        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskPort.queryUnExecutedNotifyTaskList();
+        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskExecutionPort.queryUnExecutedNotifyTaskList();
 
         return execNotifyJob(notifyTaskEntityList);
     }
@@ -43,7 +43,7 @@ public class TradeTaskService implements ITradeTaskService {
     @Override
     public Map<String, Integer> execNotifyJob(String teamId) throws Exception {
         log.info("拼团交易-执行回调通知回调，指定 teamId:{}", teamId);
-        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskPort.queryUnExecutedNotifyTaskList(teamId);
+        List<NotifyTaskEntity> notifyTaskEntityList = notifyTaskExecutionPort.queryUnExecutedNotifyTaskList(teamId);
         return execNotifyJob(notifyTaskEntityList);
     }
 
@@ -61,18 +61,18 @@ public class TradeTaskService implements ITradeTaskService {
 
             // 更新状态判断&变更数据库表回调任务状态
             if (NotifyTaskHTTPEnumVO.SUCCESS.getCode().equals(response)) {
-                int updateCount = notifyTaskPort.updateNotifyTaskStatusSuccess(notifyTask);
+                int updateCount = notifyTaskExecutionPort.updateNotifyTaskStatusSuccess(notifyTask);
                 if (1 == updateCount) {
                     successCount += 1;
                 }
             } else if (NotifyTaskHTTPEnumVO.ERROR.getCode().equals(response)) {
                 if (notifyTask.getNotifyCount() > 4) {
-                    int updateCount = notifyTaskPort.updateNotifyTaskStatusError(notifyTask);
+                    int updateCount = notifyTaskExecutionPort.updateNotifyTaskStatusError(notifyTask);
                     if (1 == updateCount) {
                         errorCount += 1;
                     }
                 } else {
-                    int updateCount = notifyTaskPort.updateNotifyTaskStatusRetry(notifyTask);
+                    int updateCount = notifyTaskExecutionPort.updateNotifyTaskStatusRetry(notifyTask);
                     if (1 == updateCount) {
                         retryCount += 1;
                     }

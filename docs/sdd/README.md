@@ -57,6 +57,7 @@
 - `2026-05-30-activity-repository-port-split.md`：记录营销活动通用仓储拆成试算查询、人群标签、DCC 开关和队伍展示四类语义端口。
 - `2026-05-30-group-buy-index-controller-support-split.md`：记录 `MarketIndexController` 拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
 - `2026-05-30-trade-notification-port-split.md`：记录拼团通知发送从泛化 `ITradePort` 拆到语义通知端口，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑。
+- `2026-05-30-trade-notify-task-port-split.md`：记录拼团通知任务通用端口拆成创建端口和执行端口，并拆出 payload 工厂与 PO/Entity 映射。
 - `2026-05-30-group-buy-lock-unit-tests.md`：记录拼团锁单纯单元测试，覆盖幂等、活动、队伍、库存占位、唯一索引兜底和人群标签试算边界。
 - `2026-05-30-seckill-stock-unit-tests.md`：记录秒杀库存纯单元测试，覆盖库存不足、重复参与、异步入队失败回滚、pending 重试策略和库存流水幂等。
 - `2026-05-30-refund-strategy-unit-tests.md`：记录拼团退单策略单元测试，覆盖未支付释放、已支付未成团、已支付已成团、重复退款和非法状态退款。

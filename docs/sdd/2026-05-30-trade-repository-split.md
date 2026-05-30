@@ -9,8 +9,8 @@
 ## 规格
 
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
-- 通知任务由 `ITradeNotifyTaskPort` 表达，基础设施适配器负责构建 `notify_task` PO 并落库。
-- `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort` 查询和更新通知任务状态，不再依赖 `ITradeRepository`。
+- 通知任务当时先由 `ITradeNotifyTaskPort` 表达；后续已继续拆成 `ITradeNotifyTaskCreatePort` 和 `ITradeNotifyTaskExecutionPort`，分别负责创建通知任务和扫描/更新执行状态。
+- `TradeTaskService` 后续已改为直接依赖 `ITradeNotifyTaskExecutionPort` 查询和更新通知任务状态，不再依赖 `ITradeRepository`。
 - `ITradeRepository` 不再暴露通知任务查询和状态更新方法，只保留交易主链路需要的锁单、结算、退款和库存占位方法。本条是本次拆分时的阶段边界，后续锁单、结算、退款和库存占位已继续拆到独立端口。
 - 拼团队伍库存占位由 `IGroupBuyTeamStockPort` 表达，Redis Lua 占位、用户占位释放和退单恢复量写入不再挂在 `ITradeRepository` 上。
 - 拼团锁单请求锁和锁单结果缓存由 `ITradeLockRequestPort` 表达，`ITradeRepository` 不再暴露 Redis 请求锁、缓存写入和缓存清理方法。
@@ -22,12 +22,12 @@
 
 ```mermaid
 flowchart LR
-    A["TradeRepository"] --> B["ITradeNotifyTaskPort"]
+    A["TradeRepository"] --> B["ITradeNotifyTaskCreatePort / ITradeNotifyTaskExecutionPort"]
     A --> C["IGroupBuyStockFlowPort"]
     A --> D["IOrderStateFlowPort"]
     I["TradeLockOrderService / Rule / Refund Strategy"] --> J["IGroupBuyTeamStockPort"]
     I --> M["ITradeLockRequestPort"]
-    B --> E["TradeNotifyTaskPort"]
+    B --> E["TradeNotifyTaskCreatePort / TradeNotifyTaskExecutionPort"]
     C --> F["GroupBuyStockFlowPort"]
     J --> K["GroupBuyTeamStockPort"]
     M --> N["TradeLockRequestPort"]
@@ -39,10 +39,13 @@ flowchart LR
 
 端口职责：
 
-- `ITradeNotifyTaskPort`
+- `ITradeNotifyTaskCreatePort`
   - 创建成团结算通知任务。
   - 创建三类退单通知任务。
-  - 查询和更新通知任务状态。
+
+- `ITradeNotifyTaskExecutionPort`
+  - 查询未执行通知任务。
+  - 更新通知任务成功、重试、失败状态。
 
 - `IGroupBuyStockFlowPort`
   - 记录锁单预占流水。
@@ -73,9 +76,9 @@ flowchart LR
 
 - 新增 `GroupBuyStockFlowEntity`，用领域语义表达拼团锁单预占、未支付退单释放、已支付未成团退单释放、已支付已成团退单流水。
 - 新增 `IGroupBuyStockFlowPort`，由 `GroupBuyStockFlowPort` 适配 `group_buy_stock_flow` 表。
-- 新增 `ITradeNotifyTaskPort`，由 `TradeNotifyTaskPort` 适配 `notify_task` 本地消息表。
+- 阶段性新增的 `ITradeNotifyTaskPort` 后续已删除，改为 `ITradeNotifyTaskCreatePort` / `ITradeNotifyTaskExecutionPort`，由 `TradeNotifyTaskCreatePort` / `TradeNotifyTaskExecutionPort` 适配 `notify_task` 本地消息表。
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
-- 通知任务查询和状态更新不再挂在 `ITradeRepository` 上，`TradeTaskService` 直接通过 `ITradeNotifyTaskPort` 完成任务扫描和状态推进。
+- 通知任务查询和状态更新不再挂在 `ITradeRepository` 上，`TradeTaskService` 直接通过 `ITradeNotifyTaskExecutionPort` 完成任务扫描和状态推进。
 - 新增 `IGroupBuyTeamStockPort` 和 `GroupBuyTeamStockPort`，锁单规则、锁单失败补偿和退单策略通过专用端口处理 Redis 队伍库存占位。
 - 新增 `ITradeLockRequestPort` 和 `TradeLockRequestPort`，锁单请求锁、结果缓存和缓存清理通过专用端口处理。
 - `DomainPurityTest` 增加回归用例，后续已升级为防止通用 `ITradeRepository` / `TradeRepository` 重新出现。

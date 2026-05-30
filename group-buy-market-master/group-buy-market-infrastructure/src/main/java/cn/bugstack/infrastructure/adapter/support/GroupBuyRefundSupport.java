@@ -3,7 +3,7 @@ package cn.bugstack.infrastructure.adapter.support;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyStockFlowPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskCreatePort;
 import cn.bugstack.domain.trade.model.entity.GroupBuyStockFlowEntity;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.model.entity.TradeRefundOrderEntity;
@@ -26,7 +26,7 @@ public class GroupBuyRefundSupport {
     @Resource
     private IOrderStateFlowPort orderStateFlowPort;
     @Resource
-    private ITradeNotifyTaskPort tradeNotifyTaskPort;
+    private ITradeNotifyTaskCreatePort tradeNotifyTaskCreatePort;
     @Resource
     private IGroupBuyStockFlowPort groupBuyStockFlowPort;
     @Resource
@@ -63,7 +63,7 @@ public class GroupBuyRefundSupport {
     }
 
     public NotifyTaskEntity createRefundTask(TradeRefundOrderEntity tradeRefundOrderEntity, RefundTypeEnumVO refundType) {
-        return tradeNotifyTaskPort.createRefundTask(tradeRefundOrderEntity, refundType, topicTeamRefund);
+        return tradeNotifyTaskCreatePort.createRefundTask(tradeRefundOrderEntity, refundType, topicTeamRefund);
     }
 
     public void recordStockFlow(GroupBuyStockFlowEntity groupBuyStockFlowEntity) {

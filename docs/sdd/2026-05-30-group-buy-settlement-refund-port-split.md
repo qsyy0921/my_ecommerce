@@ -23,7 +23,7 @@ flowchart LR
     RefundStrategy --> QueryRepo["ITradeRepository"]
     SettlementPort --> DB["MySQL order/team"]
     RefundPort --> DB
-    SettlementPort --> Notify["ITradeNotifyTaskPort"]
+    SettlementPort --> Notify["ITradeNotifyTaskCreatePort"]
     RefundPort --> Notify
     SettlementPort --> StateFlow["IOrderStateFlowPort"]
     RefundPort --> StateFlow
