@@ -99,6 +99,34 @@ public class DomainPurityTest {
         Assert.assertTrue("ISeckillRepository must keep maintenance job operations behind ISeckillMaintenancePort: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void seckillRepositoryShouldKeepCacheFlowAndShardDetailsBehindAdapters() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
+        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "ISeckillStockFlowDao",
+                "SeckillStockFlow.builder",
+                "SECKILL_RESULT_KEY",
+                "redisService.getValue(resultKey",
+                "redisService.setValue(resultKey",
+                "orderShardCount",
+                "orderTablePrefix",
+                "private String orderTableName",
+                "private boolean useOrderSharding"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Assert.assertTrue("SeckillRepository must keep stock flow, result cache and order shard details behind dedicated adapters: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

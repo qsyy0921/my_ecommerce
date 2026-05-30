@@ -22,17 +22,17 @@
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。
   - 验收：`SeckillRepository` 不直接拼 Redis stock key，不直接执行库存预扣 Lua；库存不足、重复参与、释放库存语义保持不变。
 
-- [ ] 拆分 `SeckillRepository` 的结果缓存职责。
+- [x] 拆分 `SeckillRepository` 的结果缓存职责。
   - 目标：把秒杀结果缓存、DB 回源后的结果补缓存、缓存失效从主仓储移出。
   - 建议端口：`ISeckillResultCachePort`。
   - 验收：查询秒杀结果仍支持 Redis 快查和 DB 回源；主仓储不再直接维护 result cache key。
 
-- [ ] 拆分 `SeckillRepository` 的库存流水职责。
+- [x] 拆分 `SeckillRepository` 的库存流水职责。
   - 目标：把 `seckill_stock_flow` 构建和落库从主仓储移出，统一用领域语义记录 `RESERVE/ROLLBACK`。
   - 建议端口：`ISeckillStockFlowPort`。
   - 验收：库存流水具备幂等 `flowNo`，支持压测后审计；主仓储不直接依赖库存流水 DAO/PO。
 
-- [ ] 抽象秒杀订单分片路由组件。
+- [x] 抽象秒杀订单分片路由组件。
   - 目标：把 `seckill_order_00` 到 `seckill_order_15` 的路由规则从仓储编排中独立出来。
   - 建议组件：`SeckillOrderShardRouter`。
   - 验收：分片数可配置；路由规则稳定；后续接 ShardingSphere/TDDL 时改动范围可控。

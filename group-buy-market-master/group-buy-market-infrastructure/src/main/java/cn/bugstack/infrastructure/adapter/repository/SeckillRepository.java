@@ -3,18 +3,20 @@ package cn.bugstack.infrastructure.adapter.repository;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillResultCachePort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillStockFlowPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
+import cn.bugstack.domain.seckill.model.entity.SeckillStockFlowEntity;
 import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.shared.model.entity.OrderStateTransitionEntity;
 import cn.bugstack.infrastructure.dao.ISeckillActivityDao;
 import cn.bugstack.infrastructure.dao.ISeckillOrderDao;
-import cn.bugstack.infrastructure.dao.ISeckillStockFlowDao;
 import cn.bugstack.infrastructure.dao.ISkuDao;
+import cn.bugstack.infrastructure.adapter.support.SeckillOrderShardRouter;
 import cn.bugstack.infrastructure.dao.po.SeckillActivity;
 import cn.bugstack.infrastructure.dao.po.SeckillOrder;
-import cn.bugstack.infrastructure.dao.po.SeckillStockFlow;
 import cn.bugstack.infrastructure.dao.po.Sku;
 import cn.bugstack.infrastructure.event.EventPublisher;
 import cn.bugstack.infrastructure.event.SeckillFaultInjector;
@@ -34,7 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,13 +52,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     private static final String SECKILL_STOCK_KEY = "seckill:stock:";
     private static final String SECKILL_STOCK_INIT_LOCK_KEY = "seckill:stock:init:";
     private static final String SECKILL_USER_LOCK_KEY = "seckill:user:lock:";
-    private static final String SECKILL_RESULT_KEY = "seckill:result:";
-    private static final String STOCK_FLOW_RESERVE = "RESERVE";
-    private static final String STOCK_FLOW_ROLLBACK = "ROLLBACK";
-    private static final String STOCK_FLOW_ROLLBACK_TIMEOUT = "ROLLBACK_TIMEOUT";
-    private static final String STOCK_FLOW_ROLLBACK_CANCEL = "ROLLBACK_CANCEL";
-    private static final String STOCK_FLOW_ROLLBACK_REFUND = "ROLLBACK_REFUND";
-    private static final long SECKILL_USER_LOCK_TTL_HOURS = 24;
     private static final long SECKILL_RESULT_TTL_HOURS = 24;
 
     @Value("${app.seckill.activity-cache-ttl-millis:3000}")
@@ -72,10 +66,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     private Integer stockBucketCount;
     @Value("${app.seckill.stock-bucket-try-count:64}")
     private Integer stockBucketTryCount;
-    @Value("${app.seckill.order-shard-count:1}")
-    private Integer orderShardCount;
-    @Value("${app.seckill.order-table-prefix:seckill_order}")
-    private String orderTablePrefix;
     @Value("${spring.rabbitmq.config.producer.topic_seckill_order_create.routing_key}")
     private String topicSeckillOrderCreate;
 
@@ -84,9 +74,13 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     @Resource
     private ISeckillOrderDao seckillOrderDao;
     @Resource
-    private ISeckillStockFlowDao seckillStockFlowDao;
-    @Resource
     private IOrderStateFlowPort orderStateFlowPort;
+    @Resource
+    private ISeckillStockFlowPort seckillStockFlowPort;
+    @Resource
+    private ISeckillResultCachePort seckillResultCachePort;
+    @Resource
+    private SeckillOrderShardRouter seckillOrderShardRouter;
     @Resource
     private ISkuDao skuDao;
     @Resource
@@ -211,8 +205,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 .outTradeNo(outTradeNo)
                 .build();
         SeckillOrder seckillOrder;
-        if (useOrderSharding()) {
-            seckillOrder = seckillOrderDao.querySeckillOrderByOutTradeNoFromTable(orderTableName(userId, outTradeNo), seckillOrderReq);
+        if (seckillOrderShardRouter.useSharding()) {
+            seckillOrder = seckillOrderDao.querySeckillOrderByOutTradeNoFromTable(seckillOrderShardRouter.tableName(userId, outTradeNo), seckillOrderReq);
         } else {
             seckillOrder = seckillOrderDao.querySeckillOrderByOutTradeNo(seckillOrderReq);
         }
@@ -221,16 +215,14 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
 
     @Override
     public SeckillOrderEntity querySeckillResult(String userId, Long activityId, String outTradeNo) {
-        String resultKey = resultKey(activityId, userId, outTradeNo);
-        String result = redisService.getValue(resultKey);
+        SeckillOrderEntity result = seckillResultCachePort.query(activityId, userId, outTradeNo);
         if (null != result) {
-            return JSON.parseObject(result, SeckillOrderEntity.class);
+            return result;
         }
 
         SeckillOrderEntity existsOrder = querySeckillOrderByOutTradeNo(userId, outTradeNo);
         if (null != existsOrder) {
-            setResult(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order created");
-            redisService.setValue(resultKey, JSON.toJSONString(existsOrder), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+            seckillResultCachePort.cache(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order created");
             return existsOrder;
         }
 
@@ -247,7 +239,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     public SeckillOrderEntity lockSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
         Long activityId = seckillOrderEntity.getActivityId();
         String userLockKey = userLockKey(activityId, seckillOrderEntity.getUserId());
-        String resultKey = resultKey(activityId, seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
+        String resultKey = seckillResultCachePort.resultKey(activityId, seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         seckillOrderEntity.setTraceId(MDC.get("trace-id"));
         if (isLocalSoldOut(activityId)) {
             seckillMetricsPort.recordStockNotEnough();
@@ -285,7 +277,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 enqueueOrderCreate(seckillOrderEntity);
                 return seckillOrderEntity;
             } catch (RuntimeException e) {
-                rollbackReservation(seckillOrderEntity, stockKey, userLockKey, resultKey, true, "enqueue order create failed");
+                rollbackReservation(seckillOrderEntity, stockKey, userLockKey, true, "enqueue order create failed");
                 throw e;
             }
         }
@@ -326,13 +318,11 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
     public void createSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
         Long activityId = seckillOrderEntity.getActivityId();
         String userLockKey = userLockKey(activityId, seckillOrderEntity.getUserId());
-        String resultKey = resultKey(activityId, seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         String stockKey = stockBucketKey(activityId, null == seckillOrderEntity.getStockBucket() ? 0 : seckillOrderEntity.getStockBucket());
 
         SeckillOrderEntity existsOrder = querySeckillOrderByOutTradeNo(seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         if (null != existsOrder) {
-            setResult(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order already created");
-            redisService.setValue(resultKey, JSON.toJSONString(existsOrder), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+            seckillResultCachePort.cache(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order already created");
             return;
         }
 
@@ -352,31 +342,27 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                     .status(seckillOrderEntity.getStatus())
                     .build();
             insertSeckillOrder(seckillOrder);
-            seckillStockFlowDao.insertIgnore(buildStockFlow(seckillOrderEntity, STOCK_FLOW_RESERVE, -1, "order created"));
+            seckillStockFlowPort.record(SeckillStockFlowEntity.reserved(seckillOrderEntity, "order created"));
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillOrderCreated(
                     seckillOrderEntity.getOutTradeNo(),
                     seckillOrderEntity.getOrderId(),
                     seckillOrderEntity.getUserId(),
                     seckillOrderEntity.getTraceId(),
                     seckillOrderEntity.getSourceMessageId()));
-            setResult(seckillOrderEntity, SeckillOrderEntity.RESULT_SUCCESS, "order created");
-            redisService.setValue(resultKey, JSON.toJSONString(seckillOrderEntity), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+            seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_SUCCESS, "order created");
         } catch (DuplicateKeyException e) {
             SeckillOrderEntity duplicateOrder = querySeckillOrderByOutTradeNo(seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
             if (null != duplicateOrder) {
-                setResult(duplicateOrder, SeckillOrderEntity.RESULT_SUCCESS, "order already created");
-                redisService.setValue(resultKey, JSON.toJSONString(duplicateOrder), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+                seckillResultCachePort.cache(duplicateOrder, SeckillOrderEntity.RESULT_SUCCESS, "order already created");
                 return;
             }
-            setResult(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "duplicate seckill order");
-            redisService.setValue(resultKey, JSON.toJSONString(seckillOrderEntity), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
-            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, null, false, "duplicate seckill order");
+            seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "duplicate seckill order");
+            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, false, "duplicate seckill order");
         } catch (AppException e) {
             throw e;
         } catch (RuntimeException e) {
-            setResult(seckillOrderEntity, SeckillOrderEntity.RESULT_FAIL, e.getMessage());
-            redisService.setValue(resultKey, JSON.toJSONString(seckillOrderEntity), TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
-            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, null, false, e.getMessage());
+            seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_FAIL, e.getMessage());
+            rollbackReservation(seckillOrderEntity, stockKey, userLockKey, false, e.getMessage());
             throw e;
         }
     }
@@ -401,40 +387,31 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
             seckillStreamMetrics.recordBatchInsert(System.nanoTime() - startNanos, seckillOrderEntities.size());
         }
 
-        List<SeckillStockFlow> stockFlows = new ArrayList<>(seckillOrderEntities.size());
+        List<SeckillStockFlowEntity> stockFlows = new ArrayList<>(seckillOrderEntities.size());
         for (SeckillOrderEntity seckillOrderEntity : seckillOrderEntities) {
             SeckillOrderEntity existsOrder = querySeckillOrderByOutTradeNo(seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
             if (null == existsOrder) {
-                setResult(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "order create ignored by unique constraint");
-                redisService.setValue(
-                        resultKey(seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo()),
-                        JSON.toJSONString(seckillOrderEntity),
-                        TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+                seckillResultCachePort.cache(seckillOrderEntity, SeckillOrderEntity.RESULT_DUPLICATE, "order create ignored by unique constraint");
                 rollbackReservation(
                         seckillOrderEntity,
                         stockBucketKey(seckillOrderEntity.getActivityId(), null == seckillOrderEntity.getStockBucket() ? 0 : seckillOrderEntity.getStockBucket()),
                         userLockKey(seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId()),
-                        null,
                         false,
                         "batch order create ignored by unique constraint");
                 continue;
             }
 
-            stockFlows.add(buildStockFlow(seckillOrderEntity, STOCK_FLOW_RESERVE, -1, "order created"));
+            stockFlows.add(SeckillStockFlowEntity.reserved(seckillOrderEntity, "order created"));
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillOrderCreated(
                     seckillOrderEntity.getOutTradeNo(),
                     seckillOrderEntity.getOrderId(),
                     seckillOrderEntity.getUserId(),
                     seckillOrderEntity.getTraceId(),
                     seckillOrderEntity.getSourceMessageId()));
-            setResult(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order created");
-            redisService.setValue(
-                    resultKey(existsOrder.getActivityId(), existsOrder.getUserId(), existsOrder.getOutTradeNo()),
-                    JSON.toJSONString(existsOrder),
-                    TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
+            seckillResultCachePort.cache(existsOrder, SeckillOrderEntity.RESULT_SUCCESS, "order created");
         }
         if (!stockFlows.isEmpty()) {
-            seckillStockFlowDao.insertIgnoreBatch(stockFlows);
+            seckillStockFlowPort.recordBatch(stockFlows);
         }
     }
 
@@ -449,21 +426,21 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         SeckillOrderStatusEnumVO status = SeckillOrderStatusEnumVO.valueOf(seckillOrder.getStatus());
         if (SeckillOrderStatusEnumVO.COMPLETE.equals(status)) {
             SeckillOrderEntity entity = buildSeckillOrderEntity(seckillOrder);
-            cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
+            seckillResultCachePort.cache(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
             return entity;
         }
         if (!status.canPay()) {
             throw new AppException(ResponseCode.E0207);
         }
 
-        int updated = useOrderSharding()
-                ? seckillOrderDao.paySuccessOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+        int updated = seckillOrderShardRouter.useSharding()
+                ? seckillOrderDao.paySuccessOrderFromTable(seckillOrderShardRouter.tableName(userId, outTradeNo), seckillOrder.getOrderId())
                 : seckillOrderDao.paySuccessOrder(seckillOrder.getOrderId());
         if (updated <= 0) {
             SeckillOrder latest = querySeckillOrderPo(userId, outTradeNo);
             if (null != latest && SeckillOrderStatusEnumVO.COMPLETE.equals(SeckillOrderStatusEnumVO.valueOf(latest.getStatus()))) {
                 SeckillOrderEntity entity = buildSeckillOrderEntity(latest);
-                cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
+                seckillResultCachePort.cache(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order already paid");
                 return entity;
             }
             throw new AppException(ResponseCode.UPDATE_ZERO);
@@ -476,7 +453,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 MDC.get("trace-id")));
         SeckillOrder updatedOrder = querySeckillOrderPo(userId, outTradeNo);
         SeckillOrderEntity entity = buildSeckillOrderEntity(updatedOrder);
-        cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order paid");
+        seckillResultCachePort.cache(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill order paid");
         return entity;
     }
 
@@ -491,19 +468,19 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         SeckillOrderStatusEnumVO status = SeckillOrderStatusEnumVO.valueOf(seckillOrder.getStatus());
         if (SeckillOrderStatusEnumVO.REFUND.equals(status) || SeckillOrderStatusEnumVO.CLOSE.equals(status)) {
             SeckillOrderEntity entity = buildSeckillOrderEntity(seckillOrder);
-            cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund already handled");
+            seckillResultCachePort.cache(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund already handled");
             return entity;
         }
 
         if (SeckillOrderStatusEnumVO.CREATE.equals(status)) {
-            int updated = useOrderSharding()
-                    ? seckillOrderDao.closeUnpaidOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+            int updated = seckillOrderShardRouter.useSharding()
+                    ? seckillOrderDao.closeUnpaidOrderFromTable(seckillOrderShardRouter.tableName(userId, outTradeNo), seckillOrder.getOrderId())
                     : seckillOrderDao.closeUnpaidOrder(seckillOrder.getOrderId());
             if (updated <= 0) {
                 throw new AppException(ResponseCode.UPDATE_ZERO);
             }
             String message = null == refundReason ? "unpaid seckill order canceled" : refundReason;
-            releaseSeckillStock(seckillOrder, STOCK_FLOW_ROLLBACK_CANCEL, 1, message);
+            releaseSeckillStock(seckillOrder, SeckillStockFlowEntity.ROLLBACK_CANCEL, 1, message);
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillUnpaidCanceled(
                     seckillOrder.getOutTradeNo(),
                     seckillOrder.getOrderId(),
@@ -511,14 +488,14 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                     MDC.get("trace-id"),
                     message));
         } else if (SeckillOrderStatusEnumVO.COMPLETE.equals(status)) {
-            int updated = useOrderSharding()
-                    ? seckillOrderDao.refundPaidOrderFromTable(orderTableName(userId, outTradeNo), seckillOrder.getOrderId())
+            int updated = seckillOrderShardRouter.useSharding()
+                    ? seckillOrderDao.refundPaidOrderFromTable(seckillOrderShardRouter.tableName(userId, outTradeNo), seckillOrder.getOrderId())
                     : seckillOrderDao.refundPaidOrder(seckillOrder.getOrderId());
             if (updated <= 0) {
                 throw new AppException(ResponseCode.UPDATE_ZERO);
             }
             String message = null == refundReason ? "paid seckill order refunded" : refundReason;
-            releaseSeckillStock(seckillOrder, STOCK_FLOW_ROLLBACK_REFUND, 1, message);
+            releaseSeckillStock(seckillOrder, SeckillStockFlowEntity.ROLLBACK_REFUND, 1, message);
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillOrderRefunded(
                     seckillOrder.getOutTradeNo(),
                     seckillOrder.getOrderId(),
@@ -531,7 +508,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
 
         SeckillOrder updatedOrder = querySeckillOrderPo(userId, outTradeNo);
         SeckillOrderEntity entity = buildSeckillOrderEntity(updatedOrder);
-        cacheResult(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund handled");
+        seckillResultCachePort.cache(entity, SeckillOrderEntity.RESULT_SUCCESS, "seckill refund handled");
         return entity;
     }
 
@@ -543,13 +520,13 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         }
         for (Long activityId : activityIds) {
             try {
-                if (!useOrderSharding()) {
+                if (!seckillOrderShardRouter.useSharding()) {
                     seckillActivityDao.syncStockByOrderCount(activityId);
                     continue;
                 }
                 int activeCount = 0;
-                for (int shardIndex = 0; shardIndex < orderShardCount(); shardIndex++) {
-                    activeCount += seckillOrderDao.countActiveOrdersFromTable(orderTableName(shardIndex), activityId);
+                for (int shardIndex = 0; shardIndex < seckillOrderShardRouter.shardCount(); shardIndex++) {
+                    activeCount += seckillOrderDao.countActiveOrdersFromTable(seckillOrderShardRouter.tableName(shardIndex), activityId);
                 }
                 seckillActivityDao.syncStockByActiveCount(activityId, activeCount);
             } catch (Exception e) {
@@ -560,13 +537,13 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
 
     @Override
     public int releaseTimeoutUnpaidOrders() {
-        if (!useOrderSharding()) {
+        if (!seckillOrderShardRouter.useSharding()) {
             return releaseTimeoutUnpaidOrders(seckillOrderDao.queryTimeoutUnpaidOrders(), null);
         }
 
         int count = 0;
-        for (int shardIndex = 0; shardIndex < orderShardCount(); shardIndex++) {
-            String tableName = orderTableName(shardIndex);
+        for (int shardIndex = 0; shardIndex < seckillOrderShardRouter.shardCount(); shardIndex++) {
+            String tableName = seckillOrderShardRouter.tableName(shardIndex);
             count += releaseTimeoutUnpaidOrders(seckillOrderDao.queryTimeoutUnpaidOrdersFromTable(tableName), tableName);
         }
         return count;
@@ -620,7 +597,7 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
             entity.setStockBefore((int) stockAfter - 1);
             entity.setStockAfter((int) stockAfter);
             redisService.remove(userLockKey(order.getActivityId(), order.getUserId()));
-            seckillStockFlowDao.insertIgnore(buildStockFlow(entity, STOCK_FLOW_ROLLBACK_TIMEOUT, 1, "timeout unpaid released"));
+            seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(entity, SeckillStockFlowEntity.ROLLBACK_TIMEOUT, 1, "timeout unpaid released"));
             orderStateFlowPort.record(OrderStateTransitionEntity.seckillTimeoutClosed(
                     order.getOutTradeNo(),
                     order.getOrderId(),
@@ -637,8 +614,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 .userId(userId)
                 .outTradeNo(outTradeNo)
                 .build();
-        if (useOrderSharding()) {
-            return seckillOrderDao.querySeckillOrderByOutTradeNoFromTable(orderTableName(userId, outTradeNo), seckillOrderReq);
+        if (seckillOrderShardRouter.useSharding()) {
+            return seckillOrderDao.querySeckillOrderByOutTradeNoFromTable(seckillOrderShardRouter.tableName(userId, outTradeNo), seckillOrderReq);
         }
         return seckillOrderDao.querySeckillOrderByOutTradeNo(seckillOrderReq);
     }
@@ -652,19 +629,8 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         entity.setStockBefore((int) stockAfter - changeCount);
         entity.setStockAfter((int) stockAfter);
         redisService.remove(userLockKey(order.getActivityId(), order.getUserId()));
-        seckillStockFlowDao.insertIgnore(buildStockFlow(entity, changeType, changeCount, message));
+        seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(entity, changeType, changeCount, message));
         clearLocalSoldOut(order.getActivityId());
-    }
-
-    private void cacheResult(SeckillOrderEntity entity, String resultStatus, String message) {
-        if (null == entity) {
-            return;
-        }
-        setResult(entity, resultStatus, message);
-        redisService.setValue(
-                resultKey(entity.getActivityId(), entity.getUserId(), entity.getOutTradeNo()),
-                JSON.toJSONString(entity),
-                TimeUnit.HOURS.toMillis(SECKILL_RESULT_TTL_HOURS));
     }
 
     private SeckillOrderEntity buildSeckillOrderEntity(SeckillOrder seckillOrder) {
@@ -705,88 +671,30 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
                 .build();
     }
 
-    private SeckillStockFlow buildStockFlow(SeckillOrderEntity seckillOrderEntity, String changeType, int changeCount, String message) {
-        return SeckillStockFlow.builder()
-                .flowNo(stockFlowNo(seckillOrderEntity, changeType))
-                .userId(seckillOrderEntity.getUserId())
-                .activityId(seckillOrderEntity.getActivityId())
-                .orderId(seckillOrderEntity.getOrderId())
-                .outTradeNo(seckillOrderEntity.getOutTradeNo())
-                .stockBucket(seckillOrderEntity.getStockBucket())
-                .changeType(changeType)
-                .changeCount(changeCount)
-                .stockBefore(seckillOrderEntity.getStockBefore())
-                .stockAfter(seckillOrderEntity.getStockAfter())
-                .bizEvent(changeType)
-                .traceId(seckillOrderEntity.getTraceId())
-                .sourceMessageId(seckillOrderEntity.getSourceMessageId())
-                .source("seckill")
-                .message(message)
-                .build();
-    }
-
     private void insertSeckillOrder(SeckillOrder seckillOrder) {
-        if (useOrderSharding()) {
-            seckillOrderDao.insertToTable(orderTableName(seckillOrder.getUserId(), seckillOrder.getOutTradeNo()), seckillOrder);
+        if (seckillOrderShardRouter.useSharding()) {
+            seckillOrderDao.insertToTable(seckillOrderShardRouter.tableName(seckillOrder.getUserId(), seckillOrder.getOutTradeNo()), seckillOrder);
             return;
         }
         seckillOrderDao.insert(seckillOrder);
     }
 
     private void insertSeckillOrders(List<SeckillOrder> seckillOrders) {
-        if (!useOrderSharding()) {
+        if (!seckillOrderShardRouter.useSharding()) {
             seckillOrderDao.insertIgnoreBatch(seckillOrders);
             return;
         }
 
-        Map<String, List<SeckillOrder>> orderMap = new HashMap<>();
-        for (SeckillOrder seckillOrder : seckillOrders) {
-            String tableName = orderTableName(seckillOrder.getUserId(), seckillOrder.getOutTradeNo());
-            orderMap.computeIfAbsent(tableName, key -> new ArrayList<>()).add(seckillOrder);
-        }
+        Map<String, List<SeckillOrder>> orderMap = seckillOrderShardRouter.groupByTable(seckillOrders);
         for (Map.Entry<String, List<SeckillOrder>> entry : orderMap.entrySet()) {
             seckillOrderDao.insertIgnoreShardBatch(entry.getKey(), entry.getValue());
         }
-    }
-
-    private boolean useOrderSharding() {
-        return orderShardCount() > 1;
-    }
-
-    private int orderShardCount() {
-        return Math.max(1, null == orderShardCount ? 1 : orderShardCount);
-    }
-
-    private String orderTableName(String userId, String outTradeNo) {
-        String tablePrefix = tablePrefix();
-        if (!useOrderSharding()) {
-            return tablePrefix;
-        }
-        int shardIndex = (int) (crc32(String.valueOf(userId) + ":" + String.valueOf(outTradeNo)) % orderShardCount());
-        return orderTableName(shardIndex);
-    }
-
-    private String orderTableName(int shardIndex) {
-        String tablePrefix = tablePrefix();
-        return tablePrefix + "_" + String.format("%02d", shardIndex);
     }
 
     private long crc32(String value) {
         CRC32 crc32 = new CRC32();
         crc32.update(String.valueOf(value).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return crc32.getValue();
-    }
-
-    private String tablePrefix() {
-        String tablePrefix = null == orderTablePrefix || orderTablePrefix.trim().isEmpty() ? "seckill_order" : orderTablePrefix.trim();
-        if (!tablePrefix.matches("[a-zA-Z0-9_]+")) {
-            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "illegal seckill order table prefix");
-        }
-        return tablePrefix;
-    }
-
-    private String stockFlowNo(SeckillOrderEntity seckillOrderEntity, String changeType) {
-        return seckillOrderEntity.getActivityId() + ":" + seckillOrderEntity.getUserId() + ":" + seckillOrderEntity.getOutTradeNo() + ":" + changeType;
     }
 
     private void initializeStockBuckets(Long activityId, int availableCount) {
@@ -840,10 +748,6 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         return SECKILL_USER_LOCK_KEY + activityId + ":" + userId;
     }
 
-    private String resultKey(Long activityId, String userId, String outTradeNo) {
-        return SECKILL_RESULT_KEY + activityId + ":" + userId + ":" + outTradeNo;
-    }
-
     private int bucketOf(String userId, String outTradeNo) {
         return (int) (crc32(userId + ":" + outTradeNo) % bucketCount());
     }
@@ -879,17 +783,17 @@ public class SeckillRepository implements ISeckillRepository, ISeckillMaintenanc
         soldOutCache.remove(activityId);
     }
 
-    private void rollbackReservation(SeckillOrderEntity seckillOrderEntity, String stockKey, String userLockKey, String resultKey, boolean removeResult, String reason) {
+    private void rollbackReservation(SeckillOrderEntity seckillOrderEntity, String stockKey, String userLockKey, boolean removeResult, String reason) {
         long stockAfter = redisService.incr(stockKey);
         seckillOrderEntity.setStockBefore((int) stockAfter - 1);
         seckillOrderEntity.setStockAfter((int) stockAfter);
         redisService.remove(userLockKey);
-        if (removeResult && null != resultKey) {
-            redisService.remove(resultKey);
+        if (removeResult) {
+            seckillResultCachePort.remove(seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo());
         }
         clearLocalSoldOut(seckillOrderEntity.getActivityId());
         try {
-            seckillStockFlowDao.insertIgnore(buildStockFlow(seckillOrderEntity, STOCK_FLOW_ROLLBACK, 1, reason));
+            seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(seckillOrderEntity, SeckillStockFlowEntity.ROLLBACK, 1, reason));
         } catch (Exception e) {
             log.error("record seckill stock rollback flow failed activityId:{} userId:{} outTradeNo:{}",
                     seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo(), e);

@@ -98,6 +98,10 @@
 - [x] 拼团队伍库存占位拆到 `IGroupBuyTeamStockPort`，`ITradeRepository` 不再暴露 Redis 队伍名额占用和退单恢复方法。
 - [x] 拼团锁单请求锁和结果缓存拆到 `ITradeLockRequestPort`，`ITradeRepository` 不再暴露 Redis 请求锁和缓存方法。
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
+- [x] 秒杀库存流水拆到 `ISeckillStockFlowPort`，`SeckillRepository` 不再直接构建库存流水 PO。
+- [x] 秒杀结果缓存拆到 `ISeckillResultCachePort`，`SeckillRepository` 不再直接维护结果缓存 Key 和 Redis get/set。
+- [x] 秒杀订单分片路由拆到 `SeckillOrderShardRouter`，分片表名和路由规则从主仓储移出。
 - [x] `DomainPurityTest` 增加 `ITradeRepository` 通知任务、队伍库存和锁单请求缓存方法回流守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
+- [x] `DomainPurityTest` 增加 `SeckillRepository` 库存流水、结果缓存和分片路由细节回流守护。
 - [~] 继续拆分大 Repository、补偿编排和更多领域用例测试，详细后续任务见 `docs/sdd/ddd-sdd-todo-list.md`。
