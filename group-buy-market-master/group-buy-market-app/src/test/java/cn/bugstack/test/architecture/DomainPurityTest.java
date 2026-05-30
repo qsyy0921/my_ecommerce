@@ -551,6 +551,57 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillRedisStreamBufferShouldDelegateLifecycleDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path buffer = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java");
+        String source = new String(Files.readAllBytes(buffer), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "RedissonClient",
+                "RStream",
+                "AutoClaimResult",
+                "StreamReadGroupArgs",
+                "StreamCreateGroupArgs",
+                "RedisException",
+                "StringCodec",
+                "ConcurrentHashMap",
+                "AtomicInteger",
+                "SeckillPendingRetryPolicy",
+                "SeckillManualCompensationStream",
+                "claimPending",
+                "readNeverDelivered",
+                "createGroupIfAbsent",
+                "nextShardCursor",
+                "removeDeadMessages",
+                "removeIsolatedMessages",
+                "pendingMaxRetry",
+                "pendingIdleMillis"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamRegistry.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamPublisher.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamReader.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamAcknowledger.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamFailureIsolator.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Seckill Redis Stream buffer must delegate stream registry, reader, ack and failure isolation details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOrderLockPortShouldNotOwnMessageMiddlewareRouting() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");

@@ -111,6 +111,11 @@
   - 实际拆分：`SeckillLocalOrderCreateBuffer`、`SeckillRedisQueueOrderCreateBuffer`、`SeckillRedisStreamOrderCreateBuffer`。
   - 验收：`SeckillOrderCreateBuffer` 只保留模式选择和委托；架构测试防止 Redis Stream API、BlockingQueue、Redis Queue 和 pending retry 细节回流。
 
+- [x] 拆分 Redis Stream 缓冲策略生命周期。
+  - 目标：避免 `SeckillRedisStreamOrderCreateBuffer` 自身继续承担 Stream 初始化、投递、读取、ACK、pending 回收和失败隔离。
+  - 实际拆分：`SeckillRedisStreamRegistry`、`SeckillRedisStreamPublisher`、`SeckillRedisStreamReader`、`SeckillRedisStreamAcknowledger`、`SeckillRedisStreamFailureIsolator`。
+  - 验收：`SeckillRedisStreamOrderCreateBuffer` 只保留策略门面委托；架构测试防止 Redisson/Stream API、consumer 游标、pending retry 和人工补偿隔离细节回流。
+
 - [x] 拆分秒杀人工补偿 Stream 端口实现。
   - 目标：避免 `SeckillOrderCreateBuffer` 同时承担缓冲队列和人工补偿台领域端口实现。
   - 实际拆分：`SeckillManualCompensationStream`、`SeckillManualCompensationPort`。

@@ -46,6 +46,7 @@
 - `2026-05-30-seckill-order-message-port.md`：记录秒杀下单消息投递从锁单适配器拆到 `ISeckillOrderMessagePort`。
 - `2026-05-30-seckill-buffer-internal-split.md`：记录 `SeckillOrderCreateBuffer` 内部拆出 Stream 分片路由、消息映射和指标采样组件。
 - `2026-05-30-seckill-buffer-strategy-split.md`：记录秒杀缓冲队列继续拆出本地队列、Redis Queue 和 Redis Stream 三种策略组件。
+- `2026-05-30-seckill-redis-stream-lifecycle-split.md`：记录 Redis Stream 策略继续拆出 registry、publisher、reader、acknowledger 和 failure isolator。
 - `2026-05-30-seckill-manual-compensation-port-split.md`：记录秒杀人工补偿 Stream 从缓冲队列大类中拆出，改为专门支撑组件和端口 Adapter。
 - `2026-05-30-seckill-controller-support-split.md`：记录 `SeckillMarketController` 拆出请求校验、客户端 IP 解析和响应 DTO 组装组件。
 - `2026-05-30-seckill-controller-usecase-support-split.md`：记录 `SeckillMarketController` 继续拆出 5 个 HTTP 用例支撑组件，入口层只保留路由和限流注解。
