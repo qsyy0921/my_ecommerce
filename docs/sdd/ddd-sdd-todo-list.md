@@ -111,6 +111,11 @@
   - 实际拆分：`SeckillRequestValidator`、`ClientIpResolver`、`SeckillResponseAssembler`。
   - 验收：`DomainPurityTest` 防止 `StringUtils.isBlank` 校验、`X-Forwarded-For`/`X-Real-IP`/`getRemoteAddr` 解析和秒杀响应 DTO builder 回流到 Controller。
 
+- [x] 拆分秒杀 HTTP 用例编排。
+  - 目标：避免 `SeckillMarketController` 继续承担活动查询、锁单幂等、限流、指标、结算、退款和结构化日志编排。
+  - 实际拆分：`SeckillMarketConfigQuerySupport`、`SeckillLockOrderSupport`、`SeckillOrderResultQuerySupport`、`SeckillSettlementSupport`、`SeckillRefundSupport`。
+  - 验收：`SeckillMarketController` 不再直接依赖秒杀领域服务、限流端口、指标端口、结构化日志、请求校验器、响应组装器和实体对象；架构测试防止这些用例编排细节回流。
+
 - [x] 补齐 Stream 人工补偿治理。
   - 目标：人工补偿 Stream 不只是失败隔离，还要有可查询、可重放、可审计能力。
   - 本机已做：补偿查询接口、单条/批量重放接口、`seckill_manual_compensation_log` 操作日志表、操作记录查询接口和补偿台展示。

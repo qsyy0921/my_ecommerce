@@ -880,7 +880,20 @@ public class DomainPurityTest {
                 "SettlementSeckillOrderResponseDTO.builder()",
                 "RefundSeckillOrderResponseDTO.builder()",
                 "private LockSeckillOrderResponseDTO buildLockSeckillOrderResponse",
-                "private String getClientIp"
+                "private String getClientIp",
+                "ISeckillService",
+                "ISeckillRateLimitPort",
+                "ISeckillMetricsPort",
+                "StructuredBusinessLogger",
+                "SeckillRequestValidator",
+                "SeckillResponseAssembler",
+                "SeckillActivityEntity",
+                "SeckillOrderEntity",
+                "JSON.toJSONString",
+                "querySeckillOrderByOutTradeNo",
+                "tryAcquire",
+                "recordLock",
+                "businessLogger."
         );
 
         List<String> violations = new ArrayList<>();
@@ -893,7 +906,12 @@ public class DomainPurityTest {
         List<Path> requiredSupportFiles = Arrays.asList(
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRequestValidator.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/ClientIpResolver.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillResponseAssembler.java")
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillResponseAssembler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillMarketConfigQuerySupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillLockOrderSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOrderResultQuerySupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillSettlementSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRefundSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -901,7 +919,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("SeckillMarketController must delegate request validation, client IP resolution and DTO mapping details: " + violations, violations.isEmpty());
+        Assert.assertTrue("SeckillMarketController must delegate request validation, usecase orchestration, client IP resolution, metrics, logs and DTO mapping details: " + violations, violations.isEmpty());
     }
 
     @Test
