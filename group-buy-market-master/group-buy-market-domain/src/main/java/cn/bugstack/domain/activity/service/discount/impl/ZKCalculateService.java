@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.discount.impl;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.bugstack.domain.activity.service.discount.AbstractDiscountCalculateService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +16,8 @@ import java.math.RoundingMode;
 @Slf4j
 public class ZKCalculateService extends AbstractDiscountCalculateService {
 
-    public ZKCalculateService(IActivityRepository repository) {
-        super(repository);
+    public ZKCalculateService(ICrowdTagPort crowdTagPort) {
+        super(crowdTagPort);
     }
 
     @Override

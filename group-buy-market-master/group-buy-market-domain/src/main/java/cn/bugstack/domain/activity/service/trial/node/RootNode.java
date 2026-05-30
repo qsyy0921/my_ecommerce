@@ -1,6 +1,5 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
 import cn.bugstack.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
@@ -22,8 +21,8 @@ public class RootNode extends AbstractGroupBuyMarketSupport<MarketProductEntity,
 
     private final SwitchNode switchNode;
 
-    public RootNode(IActivityRepository repository, SwitchNode switchNode) {
-        super(repository);
+    public RootNode(SwitchNode switchNode) {
+        super();
         this.switchNode = switchNode;
     }
 

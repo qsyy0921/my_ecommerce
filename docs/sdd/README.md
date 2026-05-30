@@ -53,6 +53,7 @@
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-mall-alipay-controller-support-split.md`：记录商城 `AliPayController` 拆出支付宝回调、主动查询和订单列表响应组装支撑组件。
+- `2026-05-30-activity-repository-port-split.md`：记录营销活动通用仓储拆成试算查询、人群标签、DCC 开关和队伍展示四类语义端口。
 - `2026-05-30-group-buy-lock-unit-tests.md`：记录拼团锁单纯单元测试，覆盖幂等、活动、队伍、库存占位、唯一索引兜底和人群标签试算边界。
 - `2026-05-30-seckill-stock-unit-tests.md`：记录秒杀库存纯单元测试，覆盖库存不足、重复参与、异步入队失败回滚、pending 重试策略和库存流水幂等。
 - `2026-05-30-refund-strategy-unit-tests.md`：记录拼团退单策略单元测试，覆盖未支付释放、已支付未成团、已支付已成团、重复退款和非法状态退款。

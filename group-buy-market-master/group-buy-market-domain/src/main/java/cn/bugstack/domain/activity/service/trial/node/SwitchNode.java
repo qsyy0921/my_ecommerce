@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IActivitySwitchPort;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
 import cn.bugstack.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
@@ -19,10 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SwitchNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> {
 
+    private final IActivitySwitchPort activitySwitchPort;
     private final MarketNode marketNode;
 
-    public SwitchNode(IActivityRepository repository, MarketNode marketNode) {
-        super(repository);
+    public SwitchNode(IActivitySwitchPort activitySwitchPort, MarketNode marketNode) {
+        super();
+        this.activitySwitchPort = activitySwitchPort;
         this.marketNode = marketNode;
     }
 
@@ -34,13 +36,13 @@ public class SwitchNode extends AbstractGroupBuyMarketSupport<MarketProductEntit
         String userId = requestParameter.getUserId();
 
         // 判断是否降级
-        if (repository.downgradeSwitch()) {
+        if (activitySwitchPort.downgradeSwitch()) {
             log.info("拼团活动降级拦截 {}", userId);
             throw new AppException(ResponseCode.E0003.getCode(), ResponseCode.E0003.getInfo());
         }
 
         // 切量范围判断
-        if (!repository.cutRange(userId)) {
+        if (!activitySwitchPort.cutRange(userId)) {
             log.info("拼团活动切量拦截 {}", userId);
             throw new AppException(ResponseCode.E0004.getCode(), ResponseCode.E0004.getInfo());
         }

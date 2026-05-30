@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IActivityTrialQueryPort;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.bugstack.domain.activity.model.valobj.SCSkuActivityVO;
@@ -23,12 +23,12 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class MarketNode2CompletableFuture extends MarketNode {
 
-    public MarketNode2CompletableFuture(IActivityRepository repository,
+    public MarketNode2CompletableFuture(IActivityTrialQueryPort activityTrialQueryPort,
                                         IDomainTaskExecutor domainTaskExecutor,
                                         Map<String, IDiscountCalculateService> discountCalculateServiceMap,
                                         ErrorNode errorNode,
                                         TagNode tagNode) {
-        super(repository, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
+        super(activityTrialQueryPort, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
     }
 
     @Override
@@ -39,12 +39,12 @@ public class MarketNode2CompletableFuture extends MarketNode {
                 Long availableActivityId = requestParameter.getActivityId();
                 if (null == requestParameter.getActivityId()) {
                     // 查询渠道商品活动配置关联配置
-                    SCSkuActivityVO scSkuActivityVO = repository.querySCSkuActivityBySCGoodsId(requestParameter.getSource(), requestParameter.getChannel(), requestParameter.getGoodsId());
+                    SCSkuActivityVO scSkuActivityVO = activityTrialQueryPort.querySCSkuActivityBySCGoodsId(requestParameter.getSource(), requestParameter.getChannel(), requestParameter.getGoodsId());
                     if (null == scSkuActivityVO) return null;
                     availableActivityId = scSkuActivityVO.getActivityId();
                 }
                 // 查询活动配置
-                return repository.queryGroupBuyActivityDiscountVO(availableActivityId);
+                return activityTrialQueryPort.queryGroupBuyActivityDiscountVO(availableActivityId);
             } catch (Exception e) {
                 log.error("异步查询活动配置异常", e);
                 return null;
@@ -54,7 +54,7 @@ public class MarketNode2CompletableFuture extends MarketNode {
         // 异步查询商品信息 - 在实际生产中，商品有同步库或者调用接口查询。这里暂时使用DB方式查询。
         CompletableFuture<SkuVO> skuVOCompletableFuture = CompletableFuture.supplyAsync(() -> {
             try {
-                return repository.querySkuByGoodsId(requestParameter.getGoodsId());
+                return activityTrialQueryPort.querySkuByGoodsId(requestParameter.getGoodsId());
             } catch (Exception e) {
                 log.error("异步查询商品信息异常", e);
                 return null;

@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.discount;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
 import cn.bugstack.domain.activity.model.valobj.DiscountTypeEnum;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +15,10 @@ import java.math.BigDecimal;
 @Slf4j
 public abstract class AbstractDiscountCalculateService implements IDiscountCalculateService {
 
-    protected final IActivityRepository repository;
+    protected final ICrowdTagPort crowdTagPort;
 
-    protected AbstractDiscountCalculateService(IActivityRepository repository) {
-        this.repository = repository;
+    protected AbstractDiscountCalculateService(ICrowdTagPort crowdTagPort) {
+        this.crowdTagPort = crowdTagPort;
     }
 
     @Override
@@ -37,7 +37,7 @@ public abstract class AbstractDiscountCalculateService implements IDiscountCalcu
 
     // 人群过滤 - 限定人群优惠
     private boolean filterTagId(String userId, String tagId) {
-        return repository.isTagCrowdRange(tagId, userId);
+        return crowdTagPort.isTagCrowdRange(tagId, userId);
     }
 
     protected abstract BigDecimal doCalculate(BigDecimal originalPrice, GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount);

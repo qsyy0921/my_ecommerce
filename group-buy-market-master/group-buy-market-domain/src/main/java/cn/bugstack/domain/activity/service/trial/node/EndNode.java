@@ -1,6 +1,5 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
@@ -21,8 +20,8 @@ import java.math.BigDecimal;
 @Slf4j
 public class EndNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> {
 
-    public EndNode(IActivityRepository repository) {
-        super(repository);
+    public EndNode() {
+        super();
     }
 
     @Override

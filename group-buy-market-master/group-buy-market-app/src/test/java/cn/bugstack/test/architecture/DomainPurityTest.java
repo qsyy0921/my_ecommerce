@@ -57,6 +57,79 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void genericActivityRepositoryShouldStaySplitIntoSemanticPorts() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path activityRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/repository/IActivityRepository.java");
+        Path activityRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/ActivityRepository.java");
+
+        Assert.assertFalse("Generic IActivityRepository should stay deleted; use activity semantic ports instead.", Files.exists(activityRepositoryPort));
+        Assert.assertFalse("Generic ActivityRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(activityRepositoryAdapter));
+
+        List<Path> requiredPorts = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java")
+        );
+        for (Path requiredPort : requiredPorts) {
+            Assert.assertTrue("Missing activity semantic port: " + requiredPort.getFileName(), Files.exists(requiredPort));
+        }
+
+        List<Path> requiredAdapters = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/CrowdTagPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivitySwitchPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java")
+        );
+        for (Path requiredAdapter : requiredAdapters) {
+            Assert.assertTrue("Missing activity semantic adapter: " + requiredAdapter.getFileName(), Files.exists(requiredAdapter));
+        }
+    }
+
+    @Test
+    public void activitySemanticPortsShouldNotLeakOtherResponsibilities() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path trialQueryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java");
+        Path crowdTagPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java");
+        Path switchPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java");
+        Path displayPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java");
+        Path config = workspaceRoot.resolve("group-buy-market-master/group-buy-market-app/src/main/java/cn/bugstack/config/ActivityDomainConfig.java");
+
+        List<String> violations = new ArrayList<>();
+        assertSourceDoesNotContain(trialQueryPort, violations, Arrays.asList(
+                "isTagCrowdRange",
+                "downgradeSwitch",
+                "cutRange",
+                "queryInProgressUserGroupBuyOrderDetailList",
+                "queryTeamStatisticByActivityId"
+        ));
+        assertSourceDoesNotContain(crowdTagPort, violations, Arrays.asList(
+                "queryGroupBuyActivityDiscountVO",
+                "querySkuByGoodsId",
+                "downgradeSwitch",
+                "queryInProgressUserGroupBuyOrderDetailList"
+        ));
+        assertSourceDoesNotContain(switchPort, violations, Arrays.asList(
+                "queryGroupBuyActivityDiscountVO",
+                "querySkuByGoodsId",
+                "isTagCrowdRange",
+                "queryInProgressUserGroupBuyOrderDetailList"
+        ));
+        assertSourceDoesNotContain(displayPort, violations, Arrays.asList(
+                "queryGroupBuyActivityDiscountVO",
+                "querySkuByGoodsId",
+                "isTagCrowdRange",
+                "downgradeSwitch",
+                "cutRange"
+        ));
+        assertSourceDoesNotContain(config, violations, Arrays.asList(
+                "IActivityRepository"
+        ));
+
+        Assert.assertTrue("Activity semantic ports must stay responsibility-specific: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyQueryPortShouldNotExposeWriteOrCompensationOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path queryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/IGroupBuyQueryPort.java");
@@ -701,6 +774,15 @@ public class DomainPurityTest {
         try (Stream<Path> files = Files.walk(domainPath)) {
             files.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".java"))
                     .forEach(path -> collectFileViolations(path, violations));
+        }
+    }
+
+    private static void assertSourceDoesNotContain(Path path, List<String> violations, List<String> forbiddenSnippets) throws IOException {
+        String source = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(path.getFileName() + ":" + snippet);
+            }
         }
     }
 

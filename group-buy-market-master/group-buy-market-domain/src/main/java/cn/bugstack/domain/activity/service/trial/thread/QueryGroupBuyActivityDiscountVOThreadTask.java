@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.trial.thread;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IActivityTrialQueryPort;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.bugstack.domain.activity.model.valobj.SCSkuActivityVO;
 
@@ -36,14 +36,14 @@ public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<Group
     /**
      * 活动仓储
      */
-    private final IActivityRepository activityRepository;
+    private final IActivityTrialQueryPort activityTrialQueryPort;
 
-    public QueryGroupBuyActivityDiscountVOThreadTask(Long activityId, String source, String channel, String goodsId, IActivityRepository activityRepository) {
+    public QueryGroupBuyActivityDiscountVOThreadTask(Long activityId, String source, String channel, String goodsId, IActivityTrialQueryPort activityTrialQueryPort) {
         this.activityId = activityId;
         this.source = source;
         this.channel = channel;
         this.goodsId = goodsId;
-        this.activityRepository = activityRepository;
+        this.activityTrialQueryPort = activityTrialQueryPort;
     }
 
     @Override
@@ -52,12 +52,12 @@ public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<Group
         Long availableActivityId = activityId;
         if (null == activityId){
             // 查询渠道商品活动配置关联配置
-            SCSkuActivityVO scSkuActivityVO = activityRepository.querySCSkuActivityBySCGoodsId(source, channel, goodsId);
+            SCSkuActivityVO scSkuActivityVO = activityTrialQueryPort.querySCSkuActivityBySCGoodsId(source, channel, goodsId);
             if (null == scSkuActivityVO) return null;
             availableActivityId = scSkuActivityVO.getActivityId();
         }
         // 查询活动配置
-        return activityRepository.queryGroupBuyActivityDiscountVO(availableActivityId);
+        return activityTrialQueryPort.queryGroupBuyActivityDiscountVO(availableActivityId);
     }
 
 }

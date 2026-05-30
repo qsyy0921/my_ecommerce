@@ -23,6 +23,11 @@
   - 实际拆分：`IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort`、`ITradePolicyPort`。
   - 验收：`ITradeRepository` / `TradeRepository` 已删除，架构测试防止通用交易仓储回流。
 
+- [x] 拆分营销活动通用仓储端口。
+  - 目标：避免 `IActivityRepository` 同时承载首页试算、商品查询、人群标签、DCC 开关和拼团队伍展示统计。
+  - 实际拆分：`IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort`。
+  - 验收：`IActivityRepository` / `ActivityRepository` 已删除；试算节点、折扣策略、开关节点、队伍展示服务只依赖各自最小语义端口；架构测试防止通用活动仓储回流。
+
 - [x] 拆分拼团交易 HTTP Controller 支撑逻辑。
   - 目标：避免 `MarketTradeController` 继续承担请求校验矩阵、通知类型解析、API DTO 到领域命令转换和响应 DTO 组装。
   - 实际拆分：`GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler`、`GroupBuyTradeResponseAssembler`。

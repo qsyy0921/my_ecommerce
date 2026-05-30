@@ -1,6 +1,9 @@
 package cn.bugstack.config;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IActivitySwitchPort;
+import cn.bugstack.domain.activity.adapter.port.IActivityTrialQueryPort;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
+import cn.bugstack.domain.activity.adapter.port.IGroupBuyDisplayPort;
 import cn.bugstack.domain.activity.service.IIndexGroupBuyMarketService;
 import cn.bugstack.domain.activity.service.IndexGroupBuyMarketServiceImpl;
 import cn.bugstack.domain.activity.service.discount.IDiscountCalculateService;
@@ -25,57 +28,57 @@ import java.util.Map;
 public class ActivityDomainConfig {
 
     @Bean("N")
-    public IDiscountCalculateService nCalculateService(IActivityRepository activityRepository) {
-        return new NCalculateService(activityRepository);
+    public IDiscountCalculateService nCalculateService(ICrowdTagPort crowdTagPort) {
+        return new NCalculateService(crowdTagPort);
     }
 
     @Bean("MJ")
-    public IDiscountCalculateService mjCalculateService(IActivityRepository activityRepository) {
-        return new MJCalculateService(activityRepository);
+    public IDiscountCalculateService mjCalculateService(ICrowdTagPort crowdTagPort) {
+        return new MJCalculateService(crowdTagPort);
     }
 
     @Bean("ZK")
-    public IDiscountCalculateService zkCalculateService(IActivityRepository activityRepository) {
-        return new ZKCalculateService(activityRepository);
+    public IDiscountCalculateService zkCalculateService(ICrowdTagPort crowdTagPort) {
+        return new ZKCalculateService(crowdTagPort);
     }
 
     @Bean("ZJ")
-    public IDiscountCalculateService zjCalculateService(IActivityRepository activityRepository) {
-        return new ZJCalculateService(activityRepository);
+    public IDiscountCalculateService zjCalculateService(ICrowdTagPort crowdTagPort) {
+        return new ZJCalculateService(crowdTagPort);
     }
 
     @Bean
-    public ErrorNode errorNode(IActivityRepository activityRepository) {
-        return new ErrorNode(activityRepository);
+    public ErrorNode errorNode() {
+        return new ErrorNode();
     }
 
     @Bean
-    public EndNode endNode(IActivityRepository activityRepository) {
-        return new EndNode(activityRepository);
+    public EndNode endNode() {
+        return new EndNode();
     }
 
     @Bean
-    public TagNode tagNode(IActivityRepository activityRepository, EndNode endNode) {
-        return new TagNode(activityRepository, endNode);
+    public TagNode tagNode(ICrowdTagPort crowdTagPort, EndNode endNode) {
+        return new TagNode(crowdTagPort, endNode);
     }
 
     @Bean
-    public MarketNode marketNode(IActivityRepository activityRepository,
+    public MarketNode marketNode(IActivityTrialQueryPort activityTrialQueryPort,
                                  IDomainTaskExecutor domainTaskExecutor,
                                  Map<String, IDiscountCalculateService> discountCalculateServiceMap,
                                  ErrorNode errorNode,
                                  TagNode tagNode) {
-        return new MarketNode(activityRepository, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
+        return new MarketNode(activityTrialQueryPort, domainTaskExecutor, discountCalculateServiceMap, errorNode, tagNode);
     }
 
     @Bean
-    public SwitchNode switchNode(IActivityRepository activityRepository, MarketNode marketNode) {
-        return new SwitchNode(activityRepository, marketNode);
+    public SwitchNode switchNode(IActivitySwitchPort activitySwitchPort, MarketNode marketNode) {
+        return new SwitchNode(activitySwitchPort, marketNode);
     }
 
     @Bean
-    public RootNode rootNode(IActivityRepository activityRepository, SwitchNode switchNode) {
-        return new RootNode(activityRepository, switchNode);
+    public RootNode rootNode(SwitchNode switchNode) {
+        return new RootNode(switchNode);
     }
 
     @Bean
@@ -85,8 +88,8 @@ public class ActivityDomainConfig {
 
     @Bean
     public IIndexGroupBuyMarketService indexGroupBuyMarketService(DefaultActivityStrategyFactory defaultActivityStrategyFactory,
-                                                                  IActivityRepository activityRepository) {
-        return new IndexGroupBuyMarketServiceImpl(defaultActivityStrategyFactory, activityRepository);
+                                                                  IGroupBuyDisplayPort groupBuyDisplayPort) {
+        return new IndexGroupBuyMarketServiceImpl(defaultActivityStrategyFactory, groupBuyDisplayPort);
     }
 
 }

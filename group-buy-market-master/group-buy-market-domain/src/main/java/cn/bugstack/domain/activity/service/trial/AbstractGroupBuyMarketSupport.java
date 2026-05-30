@@ -1,6 +1,5 @@
 package cn.bugstack.domain.activity.service.trial;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
 import cn.bugstack.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.bugstack.wrench.design.framework.tree.AbstractMultiThreadStrategyRouter;
 
@@ -16,10 +15,7 @@ public abstract class AbstractGroupBuyMarketSupport<MarketProductEntity, Dynamic
 
     protected long timeout = 5000;
 
-    protected final IActivityRepository repository;
-
-    protected AbstractGroupBuyMarketSupport(IActivityRepository repository) {
-        this.repository = repository;
+    protected AbstractGroupBuyMarketSupport() {
     }
 
     @Override

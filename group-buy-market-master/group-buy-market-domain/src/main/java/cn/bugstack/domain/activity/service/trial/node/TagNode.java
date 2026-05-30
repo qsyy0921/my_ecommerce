@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
@@ -18,10 +18,12 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class TagNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> {
 
+    private final ICrowdTagPort crowdTagPort;
     private final EndNode endNode;
 
-    public TagNode(IActivityRepository repository, EndNode endNode) {
-        super(repository);
+    public TagNode(ICrowdTagPort crowdTagPort, EndNode endNode) {
+        super();
+        this.crowdTagPort = crowdTagPort;
         this.endNode = endNode;
     }
 
@@ -42,7 +44,7 @@ public class TagNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, 
         }
 
         // 是否在人群范围内；visible、enable 如果值为 ture 则表示没有配置拼团限制，那么就直接保证为 true 即可
-        boolean isWithin = repository.isTagCrowdRange(tagId, requestParameter.getUserId());
+        boolean isWithin = crowdTagPort.isTagCrowdRange(tagId, requestParameter.getUserId());
         dynamicContext.setVisible(visible || isWithin);
         dynamicContext.setEnable(enable || isWithin);
 

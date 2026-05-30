@@ -1,13 +1,10 @@
 package cn.bugstack.test.domain.trade;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
-import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
-import cn.bugstack.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.bugstack.domain.activity.model.valobj.SkuVO;
-import cn.bugstack.domain.activity.model.valobj.TeamStatisticVO;
 import cn.bugstack.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.bugstack.domain.activity.service.trial.node.EndNode;
 import cn.bugstack.domain.activity.service.trial.node.TagNode;
@@ -40,9 +37,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 public class TradeLockOrderServiceUnitTest {
 
@@ -190,8 +185,8 @@ public class TradeLockOrderServiceUnitTest {
 
     @Test
     public void tagMismatchShouldDisableTrialResultBeforeLockFlow() throws Exception {
-        FakeActivityRepository repository = new FakeActivityRepository();
-        TestableTagNode tagNode = new TestableTagNode(repository, new EndNode(repository));
+        FakeCrowdTagPort crowdTagPort = new FakeCrowdTagPort();
+        TestableTagNode tagNode = new TestableTagNode(crowdTagPort, new EndNode());
         DefaultActivityStrategyFactory.DynamicContext context = DefaultActivityStrategyFactory.DynamicContext.builder()
                 .groupBuyActivityDiscountVO(GroupBuyActivityDiscountVO.builder()
                         .activityId(ACTIVITY_ID)
@@ -223,8 +218,8 @@ public class TradeLockOrderServiceUnitTest {
 
         Assert.assertFalse(result.getIsVisible());
         Assert.assertFalse(result.getIsEnable());
-        Assert.assertEquals("vip_only", repository.lastTagId);
-        Assert.assertEquals(USER_ID, repository.lastUserId);
+        Assert.assertEquals("vip_only", crowdTagPort.lastTagId);
+        Assert.assertEquals(USER_ID, crowdTagPort.lastUserId);
     }
 
     private static void assertAppException(ResponseCode responseCode, ThrowingRunnable runnable) {
@@ -467,8 +462,8 @@ public class TradeLockOrderServiceUnitTest {
     }
 
     private static class TestableTagNode extends TagNode {
-        private TestableTagNode(IActivityRepository repository, EndNode endNode) {
-            super(repository, endNode);
+        private TestableTagNode(ICrowdTagPort crowdTagPort, EndNode endNode) {
+            super(crowdTagPort, endNode);
         }
 
         private TrialBalanceEntity applyDirect(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws Exception {
@@ -476,55 +471,15 @@ public class TradeLockOrderServiceUnitTest {
         }
     }
 
-    private static class FakeActivityRepository implements IActivityRepository {
+    private static class FakeCrowdTagPort implements ICrowdTagPort {
         private String lastTagId;
         private String lastUserId;
-
-        @Override
-        public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
-            return null;
-        }
-
-        @Override
-        public SkuVO querySkuByGoodsId(String goodsId) {
-            return null;
-        }
-
-        @Override
-        public SCSkuActivityVO querySCSkuActivityBySCGoodsId(String source, String channel, String goodsId) {
-            return null;
-        }
 
         @Override
         public boolean isTagCrowdRange(String tagId, String userId) {
             lastTagId = tagId;
             lastUserId = userId;
             return false;
-        }
-
-        @Override
-        public boolean downgradeSwitch() {
-            return false;
-        }
-
-        @Override
-        public boolean cutRange(String userId) {
-            return false;
-        }
-
-        @Override
-        public List<UserGroupBuyOrderDetailEntity> queryInProgressUserGroupBuyOrderDetailListByOwner(Long activityId, String userId, Integer ownerCount) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<UserGroupBuyOrderDetailEntity> queryInProgressUserGroupBuyOrderDetailListByRandom(Long activityId, String userId, Integer randomCount) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public TeamStatisticVO queryTeamStatisticByActivityId(Long activityId) {
-            return null;
         }
     }
 }

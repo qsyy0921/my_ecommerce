@@ -116,6 +116,7 @@ types           异常、枚举、常量、通用类型
 - 新增 `TradeLockOrderServiceUnitTest`，用 fake port 纯单元测试固化拼团锁单幂等、活动校验、队伍容量、Redis 占位失败、DB 唯一索引兜底和人群标签试算边界。
 - 新增 `IDomainTaskExecutor` 端口，domain 不再直接依赖具体 `ThreadPoolExecutor`。
 - 状态迁移已抽成 `OrderStateMachine`、`OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，Repository 不再直接拼接状态流水 PO。
+- 营销活动通用仓储已拆成 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort` 和 `IGroupBuyDisplayPort`，首页试算、折扣人群标签、DCC 开关和队伍展示不再共用 `IActivityRepository`。
 - 拼团锁单落库、支付结算、三类退单写操作已分别拆到 `IGroupBuyOrderPort`、`IGroupBuySettlementPort` 和 `IGroupBuyRefundPort`。
 - `GroupBuyRefundPort` 基础设施实现继续拆成三类退单处理器，未支付释放、已支付未成团、已支付已成团不再堆在一个大实现类里。
 - 拼团读模型查询、超时未支付扫描、渠道黑名单策略已分别拆到 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
@@ -161,6 +162,10 @@ types           异常、枚举、常量、通用类型
 - 拼团锁单：`group-buy-market-domain/.../trade/service/lock`
 - 拼团结算：`group-buy-market-domain/.../trade/service/settlement`
 - 退单策略：`group-buy-market-domain/.../trade/service/refund`
+- 首页试算查询端口：`group-buy-market-domain/.../activity/adapter/port/IActivityTrialQueryPort.java`
+- 人群标签端口：`group-buy-market-domain/.../activity/adapter/port/ICrowdTagPort.java`
+- 活动开关端口：`group-buy-market-domain/.../activity/adapter/port/IActivitySwitchPort.java`
+- 队伍展示端口：`group-buy-market-domain/.../activity/adapter/port/IGroupBuyDisplayPort.java`
 - 拼团锁单落库端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuyOrderPort.java`
 - 拼团交易 HTTP 支撑组件：`group-buy-market-trigger/.../support/GroupBuyTradeRequestValidator.java`、`GroupBuyTradeCommandAssembler.java`、`GroupBuyTradeResponseAssembler.java`
 - 拼团读模型端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuyQueryPort.java`
@@ -741,11 +746,11 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
 - 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
-- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试、对账重放契约测试和异步执行端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单创建、支付结算、退款都收敛到业务语义端口。
+- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试、对账重放契约测试和异步执行端口；营销活动侧通用 `IActivityRepository` 已删除，首页试算、人群标签、DCC 开关、队伍展示分别收敛到语义端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单创建、支付结算、退款都收敛到业务语义端口。
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；秒杀下单消息也已经抽成 `ISeckillOrderMessagePort`，订单生命周期命令也拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及专业 MQ Adapter 的契约测试。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及专业 MQ Adapter 的契约测试。
 
 ## 六、当前已修复的问题
 
@@ -956,6 +961,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-30：治理商城对账查询 API DTO 边界，新增 `ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler` 和 `ReconcileQuerySupport`，对账查询接口不再直接返回 domain entity，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-api-dto-boundary.md`。
+- 2026-05-30：删除营销活动通用 `IActivityRepository` / `ActivityRepository`，新增 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort` 及对应基础设施适配器，首页试算、折扣人群标签、DCC 开关和队伍展示不再依赖过宽仓储，并新增 SDD 记录 `docs/sdd/2026-05-30-activity-repository-port-split.md`。
 - 2026-05-30：继续拆分商城对账后台入口，新增 `ReconcileAdminSupport`，管理员 token 校验、操作人解析、操作审计写入和导入账单请求预览截断不再堆在 `ReconcileCaseController`，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-admin-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口，新增 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder 不再堆在 `MarketTradeController`，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-support-split.md`。
 - 2026-05-30：继续拆分秒杀 HTTP 入口，新增 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，请求校验矩阵、代理 IP 解析和秒杀响应 DTO 字段映射不再堆在 `SeckillMarketController`，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-controller-support-split.md`。

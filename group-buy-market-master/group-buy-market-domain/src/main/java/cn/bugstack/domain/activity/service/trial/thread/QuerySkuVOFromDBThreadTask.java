@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.trial.thread;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IActivityTrialQueryPort;
 import cn.bugstack.domain.activity.model.valobj.SkuVO;
 
 import java.util.concurrent.Callable;
@@ -14,16 +14,16 @@ public class QuerySkuVOFromDBThreadTask implements Callable<SkuVO> {
 
     private final String goodsId;
 
-    private final IActivityRepository activityRepository;
+    private final IActivityTrialQueryPort activityTrialQueryPort;
 
-    public QuerySkuVOFromDBThreadTask(String goodsId, IActivityRepository activityRepository) {
+    public QuerySkuVOFromDBThreadTask(String goodsId, IActivityTrialQueryPort activityTrialQueryPort) {
         this.goodsId = goodsId;
-        this.activityRepository = activityRepository;
+        this.activityTrialQueryPort = activityTrialQueryPort;
     }
 
     @Override
     public SkuVO call() throws Exception {
-        return activityRepository.querySkuByGoodsId(goodsId);
+        return activityTrialQueryPort.querySkuByGoodsId(goodsId);
     }
 
 }

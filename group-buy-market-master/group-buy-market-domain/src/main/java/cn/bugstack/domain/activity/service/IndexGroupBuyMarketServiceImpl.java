@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.IGroupBuyDisplayPort;
 import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
@@ -19,12 +19,12 @@ import java.util.List;
 public class IndexGroupBuyMarketServiceImpl implements IIndexGroupBuyMarketService {
 
     private final DefaultActivityStrategyFactory defaultActivityStrategyFactory;
-    private final IActivityRepository repository;
+    private final IGroupBuyDisplayPort groupBuyDisplayPort;
 
     public IndexGroupBuyMarketServiceImpl(DefaultActivityStrategyFactory defaultActivityStrategyFactory,
-                                          IActivityRepository repository) {
+                                          IGroupBuyDisplayPort groupBuyDisplayPort) {
         this.defaultActivityStrategyFactory = defaultActivityStrategyFactory;
-        this.repository = repository;
+        this.groupBuyDisplayPort = groupBuyDisplayPort;
     }
 
     @Override
@@ -41,7 +41,7 @@ public class IndexGroupBuyMarketServiceImpl implements IIndexGroupBuyMarketServi
 
         // 查询个人拼团数据
         if (0 != ownerCount) {
-            List<UserGroupBuyOrderDetailEntity> ownerList = repository.queryInProgressUserGroupBuyOrderDetailListByOwner(activityId, userId, ownerCount);
+            List<UserGroupBuyOrderDetailEntity> ownerList = groupBuyDisplayPort.queryInProgressUserGroupBuyOrderDetailListByOwner(activityId, userId, ownerCount);
             if (null != ownerList && !ownerList.isEmpty()){
                 unionAllList.addAll(ownerList);
             }
@@ -49,7 +49,7 @@ public class IndexGroupBuyMarketServiceImpl implements IIndexGroupBuyMarketServi
 
         // 查询其他非个人拼团
         if (0 != randomCount) {
-            List<UserGroupBuyOrderDetailEntity> randomList = repository.queryInProgressUserGroupBuyOrderDetailListByRandom(activityId, userId, randomCount);
+            List<UserGroupBuyOrderDetailEntity> randomList = groupBuyDisplayPort.queryInProgressUserGroupBuyOrderDetailListByRandom(activityId, userId, randomCount);
             if (null != randomList && !randomList.isEmpty()){
                 unionAllList.addAll(randomList);
             }
@@ -60,7 +60,7 @@ public class IndexGroupBuyMarketServiceImpl implements IIndexGroupBuyMarketServi
 
     @Override
     public TeamStatisticVO queryTeamStatisticByActivityId(Long activityId) {
-        return repository.queryTeamStatisticByActivityId(activityId);
+        return groupBuyDisplayPort.queryTeamStatisticByActivityId(activityId);
     }
 
 }

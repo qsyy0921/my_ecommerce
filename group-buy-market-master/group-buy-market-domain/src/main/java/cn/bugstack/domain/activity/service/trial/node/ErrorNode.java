@@ -1,6 +1,5 @@
 package cn.bugstack.domain.activity.service.trial.node;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
 import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
 import cn.bugstack.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
@@ -19,8 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ErrorNode extends AbstractGroupBuyMarketSupport<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> {
 
-    public ErrorNode(IActivityRepository repository) {
-        super(repository);
+    public ErrorNode() {
+        super();
     }
 
     @Override

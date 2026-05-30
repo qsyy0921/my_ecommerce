@@ -1,6 +1,6 @@
 package cn.bugstack.domain.activity.service.discount.impl;
 
-import cn.bugstack.domain.activity.adapter.repository.IActivityRepository;
+import cn.bugstack.domain.activity.adapter.port.ICrowdTagPort;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.bugstack.domain.activity.service.discount.AbstractDiscountCalculateService;
 import cn.bugstack.types.common.Constants;
@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 @Slf4j
 public class MJCalculateService extends AbstractDiscountCalculateService {
 
-    public MJCalculateService(IActivityRepository repository) {
-        super(repository);
+    public MJCalculateService(ICrowdTagPort crowdTagPort) {
+        super(crowdTagPort);
     }
 
     @Override
