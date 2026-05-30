@@ -32,6 +32,10 @@ public class ActivePayNotifySupport {
     @Resource
     private StructuredBusinessLogger businessLogger;
 
+    public Response<String> handle(String outTradeNo) {
+        return handle(outTradeNo, System.currentTimeMillis());
+    }
+
     public Response<String> handle(String outTradeNo, long startMillis) {
         try {
             if (mockPayEnabled) {

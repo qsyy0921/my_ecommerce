@@ -172,6 +172,11 @@
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
   - 验收：`DomainPurityTest` 防止 `AlipayClient`、`AlipaySignature`、`AlipayTradeQueryModel`、`JSONObject`、`SimpleDateFormat`、`getParameterMap`、`Collectors.toList` 和 `QueryOrderListResponseDTO.OrderInfo` 构造回流到 Controller。
 
+- [x] 拆分商城支付 Controller 用例编排。
+  - 目标：避免 `AliPayController` 继续承担创建支付单、拼团通知结算、用户订单分页和营销退单编排。
+  - 实际拆分：`MallPayOrderCreateSupport`、`MallGroupBuyNotifySupport`、`MallOrderQuerySupport`、`MallRefundOrderSupport`。
+  - 验收：`AliPayController` 不再直接依赖 `IOrderService`、领域实体构建、结构化业务日志、FastJSON 和响应组装；`DomainPurityTest` 防止这些编排细节回流。
+
 ## P3 测试和容量验证
 
 - [x] 补拼团锁单纯单元测试。

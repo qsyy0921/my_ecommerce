@@ -4,6 +4,7 @@ import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.trigger.metrics.PaymentCallbackMetrics;
 import com.alibaba.fastjson.JSON;
 import com.alipay.api.internal.util.AlipaySignature;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class AlipayNotifySupport {
 
@@ -28,7 +30,24 @@ public class AlipayNotifySupport {
     @Resource
     private StructuredBusinessLogger businessLogger;
 
-    public String handle(HttpServletRequest request, long startMillis) throws Exception {
+    public String handle(HttpServletRequest request) {
+        return handle(request, System.currentTimeMillis());
+    }
+
+    public String handle(HttpServletRequest request, long startMillis) {
+        try {
+            return handleChecked(request, startMillis);
+        } catch (Exception e) {
+            log.error("支付回调处理失败 outTradeNo:{}", null == request ? null : request.getParameter("out_trade_no"), e);
+            businessLogger.error("mall_pay_notify", "system_error", businessLogger.fields(
+                    "tradeStatus", null == request ? null : request.getParameter("trade_status"),
+                    "outTradeNo", null == request ? null : request.getParameter("out_trade_no"),
+                    "costMs", System.currentTimeMillis() - startMillis), e);
+            return "false";
+        }
+    }
+
+    private String handleChecked(HttpServletRequest request, long startMillis) throws Exception {
         String tradeStatus = request.getParameter("trade_status");
         if (!"TRADE_SUCCESS".equals(tradeStatus)) {
             paymentCallbackMetrics.recordFail("trade_status");

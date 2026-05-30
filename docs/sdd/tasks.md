@@ -137,6 +137,7 @@
 - [x] 商城 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件，Controller 不再直接编排对账服务、审计、批量循环和 JSON 请求快照。
 - [x] 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，`ReconcileCaseController` 不再把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 作为 HTTP 响应契约。
 - [x] 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和订单列表 DTO 映射细节。
+- [x] 商城 `AliPayController` 继续拆出创建支付单、拼团通知、订单列表查询和营销退单 4 个用例支撑组件，HTTP 入口不再直接依赖 `IOrderService`、领域实体构建、结构化业务日志和响应组装。
 - [x] 营销活动通用仓储已拆成 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort`，通用 `IActivityRepository` / `ActivityRepository` 已删除，首页试算、折扣人群标签、DCC 开关和队伍展示不再共用过宽端口。
 - [x] 对账差错处理补齐 `ReconcileCaseStatusVO` 和终态保护，`reconcile_case` 终态不会被扫描重新打开，重放前先校验待处理状态。
 - [x] 对账重放契约测试已补齐，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 跳过和失败备注。

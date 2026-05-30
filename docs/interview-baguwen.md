@@ -136,6 +136,7 @@ types           异常、枚举、常量、通用类型
 - 商城 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件，入口类不再直接编排对账服务、审计、批量循环和 JSON 请求快照。
 - 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，通过 `ReconcileQuerySupport` 和 `ReconcileResponseAssembler` 转换，HTTP API 不再直接暴露 domain entity。
 - 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和用户订单 DTO 映射细节。
+- 商城 `AliPayController` 继续拆出 `MallPayOrderCreateSupport`、`MallGroupBuyNotifySupport`、`MallOrderQuerySupport`、`MallRefundOrderSupport`，HTTP 入口不再直接编排创建支付单、拼团通知结算、订单分页和营销退单。
 - 商城商品查询和营销交易能力已拆开，通用 `IProductPort` 删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
 - 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort` / `OrderPaySuccessMessagePort`，订单仓储不再直接依赖 `PaySuccessMessageEvent`、`EventPublisher` 和 JSON 序列化。
 - 新增 `SeckillOrderLockPortUnitTest` 和 `SeckillPendingRetryPolicy`，用 fake port 覆盖秒杀库存预扣、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
@@ -229,6 +230,7 @@ types           异常、枚举、常量、通用类型
 - 支付适配：`s-pay-mall-ddd-infrastructure/.../port/PayPort.java`
 - 支付 HTTP 入口：`s-pay-mall-ddd-trigger/.../AliPayController.java`
 - 支付回调/主动查询支撑：`s-pay-mall-ddd-trigger/.../support/AlipayNotifySupport.java`、`ActivePayNotifySupport.java`
+- 支付入口用例支撑：`s-pay-mall-ddd-trigger/.../support/MallPayOrderCreateSupport.java`、`MallGroupBuyNotifySupport.java`、`MallOrderQuerySupport.java`、`MallRefundOrderSupport.java`
 - 用户订单响应组装：`s-pay-mall-ddd-trigger/.../support/OrderListResponseAssembler.java`
 - 对账中心：`s-pay-mall-ddd-trigger/.../ReconcileCaseController.java`
 - 对账后台管理支撑：`s-pay-mall-ddd-trigger/.../support/ReconcileAdminSupport.java`
@@ -1038,6 +1040,7 @@ MQ：
 - 2026-05-30：补齐核心交易入口结构化 JSON 日志和补偿/对账 Job 执行审计，新增 SDD 记录 `docs/sdd/2026-05-30-structured-logs-job-audit.md`。
 - 2026-05-30：补齐拼团锁单强幂等和用户维度 Redis 占位，新增请求幂等锁、锁单结果缓存、队伍用户占位 Key、DB 唯一索引迁移和 SDD 文档 `docs/sdd/2026-05-30-group-buy-lock-idempotency.md`。
 - 2026-05-30：补齐支付回调独立幂等流水，普通订单 MQ 和拼团营销结算只在订单首次支付成功时触发，并记录 SDD 文档 `docs/sdd/2026-05-30-payment-callback-idempotency.md`。
+- 2026-05-30：继续拆分商城支付入口，新增 `MallPayOrderCreateSupport`、`MallGroupBuyNotifySupport`、`MallOrderQuerySupport`、`MallRefundOrderSupport`，`AliPayController` 不再直接编排创建支付单、拼团通知、订单分页和营销退单，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-alipay-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分 `TradeRepository`，阶段性新增通知任务端口和 `IGroupBuyStockFlowPort`，把通知任务 Outbox、拼团库存流水审计从仓储中移到端口适配器；通知任务端口后续已拆成创建/执行两个端口，并记录 SDD 文档 `docs/sdd/2026-05-30-trade-repository-split.md`。
 - 2026-05-30：补充 DDD 边界治理，抽取 `OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，移除 Repository 内重复状态流水拼接，并新增 SDD 审核记录 `docs/sdd/2026-05-30-ddd-boundary-audit.md`。
 - 2026-05-30：补齐秒杀活动预热、活动/用户/IP 三维 Redis 限流和入口业务指标，新增 SDD 记录 `docs/sdd/2026-05-30-seckill-prewarm-rate-limit.md`。

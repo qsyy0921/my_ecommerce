@@ -68,6 +68,7 @@
 - `2026-05-30-refund-strategy-unit-tests.md`：记录拼团退单策略单元测试，覆盖未支付释放、已支付未成团、已支付已成团、重复退款和非法状态退款。
 - `2026-05-30-reconcile-replay-contract-tests.md`：记录商城对账差错重放契约测试和 surefire 测试门禁修复。
 - `2026-05-30-production-capacity-boundary.md`：记录本机压测和生产容量证明之间的边界，避免面试和文档夸大。
+- `2026-05-30-mall-alipay-controller-usecase-support-split.md`：记录商城支付入口继续拆出创建支付单、拼团通知、订单查询和退单用例支撑组件。
 
 ## SDD 工作流
 

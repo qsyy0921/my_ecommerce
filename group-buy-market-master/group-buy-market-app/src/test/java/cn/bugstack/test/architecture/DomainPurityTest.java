@@ -861,7 +861,20 @@ public class DomainPurityTest {
                 "new HashMap",
                 "getParameterMap",
                 "Collectors.toList",
-                "new QueryOrderListResponseDTO.OrderInfo"
+                "new QueryOrderListResponseDTO.OrderInfo",
+                "IOrderService",
+                "PayOrderEntity",
+                "ShopCartEntity",
+                "OrderEntity",
+                "MarketTypeVO",
+                "StructuredBusinessLogger",
+                "Constants.ResponseCode",
+                "JSON.toJSONString",
+                "orderService.",
+                "businessLogger.",
+                "Response.<RefundOrderResponseDTO>builder()",
+                "new RefundOrderResponseDTO()",
+                "System.currentTimeMillis()"
         );
 
         List<String> violations = new ArrayList<>();
@@ -874,7 +887,11 @@ public class DomainPurityTest {
         List<Path> requiredSupportFiles = Arrays.asList(
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/AlipayNotifySupport.java"),
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ActivePayNotifySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/OrderListResponseAssembler.java")
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/OrderListResponseAssembler.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallPayOrderCreateSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallGroupBuyNotifySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallOrderQuerySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallRefundOrderSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
