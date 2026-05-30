@@ -48,6 +48,7 @@
 - `2026-05-30-seckill-order-command-port-split.md`：记录秒杀订单创建、批量落库、支付结算和退款状态更新从 `ISeckillRepository` 拆到 `ISeckillOrderCommandPort`。
 - `2026-05-30-seckill-order-command-decomposition.md`：记录继续删除 `ISeckillOrderCommandPort`，把秒杀订单创建、支付结算、退款拆到三个生命周期端口。
 - `2026-05-31-seckill-order-create-support-split.md`：记录秒杀订单创建端口内部拆出单条创建和批量创建支撑组件。
+- `2026-05-31-seckill-settlement-support-split.md`：记录秒杀结算端口内部拆出已支付结算状态支撑组件。
 - `2026-05-31-seckill-refund-support-split.md`：记录秒杀退款端口内部拆出未支付取消和已支付退款支撑组件。
 - `2026-05-30-seckill-repository-delete-port-split.md`：记录删除通用 `ISeckillRepository` / `SeckillRepository`，拆成查询、库存可用性、锁单和维护端口。
 - `2026-05-31-seckill-query-support-split.md`：记录秒杀查询端口内部拆出活动查询缓存和结果缓存回源支撑组件。

@@ -631,6 +631,34 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillSettlementPortShouldDelegatePaidStateDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillSettlementPort.java");
+        String source = new String(Files.readAllBytes(settlementAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IOrderStateFlowPort",
+                "OrderStateTransitionEntity",
+                "MDC",
+                "paySuccess("
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Path paidSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidSettlementSupport.java");
+        if (!Files.exists(paidSupport)) {
+            violations.add("missing support:" + paidSupport.getFileName());
+        }
+
+        Assert.assertTrue("SeckillSettlementPort must delegate paid settlement state details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillLockAndAvailabilityAdaptersShouldNotContainOrderLifecycleCommands() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> adapterPaths = Arrays.asList(

@@ -119,6 +119,11 @@
   - 实际拆分：`SeckillSingleOrderCreateSupport`、`SeckillBatchOrderCreateSupport`。
   - 验收：`SeckillOrderCreatePort` 只保留事务门面和单条/批量委托；架构测试防止落库、缓存、流水、指标和回滚细节回流。
 
+- [x] 拆分秒杀结算端口内部支撑。
+  - 目标：避免 `SeckillSettlementPort` 继续直接承担支付成功状态更新、并发更新兜底、状态流水和分片表回查。
+  - 实际拆分：`SeckillPaidSettlementSupport`。
+  - 验收：`SeckillSettlementPort` 只保留事务门面、订单查询、状态合法性校验和结果缓存；架构测试防止状态更新和状态流水细节回流。
+
 - [x] 拆分秒杀退款端口内部状态支撑。
   - 目标：避免 `SeckillRefundPort` 同时承担未支付取消、已支付退款、库存恢复、状态流水和状态更新 SQL 细节。
   - 实际拆分：`SeckillUnpaidCancelSupport`、`SeckillPaidRefundSupport`。
