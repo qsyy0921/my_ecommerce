@@ -181,6 +181,11 @@
   - 实际拆分：`MessageRecordMapper`、`MessageProducerRetrySupport`。
   - 验收：`MessageRecordRepository` 只保留记录读写和状态更新门面；生产者失败重试由支撑组件处理；架构测试防止重投和映射细节回流。
 
+- [x] 拆分 RabbitMQ 发布器内部支撑。
+  - 目标：避免 `EventPublisher` 同时承担 RabbitMQ 发布、消息 ID 生成、生产者失败台账落库、PO 构建和错误截断。
+  - 实际拆分：`MqMessageIdGenerator`、`MqProducerFailureRecorder`。
+  - 验收：`EventPublisher` 只保留 RabbitMQ 发送、confirm 和 returns callback；失败记录由支撑组件处理；架构测试防止 DAO/PO 和 MessageDigest 细节回流。
+
 - [x] 拆分秒杀限流端口内部固定窗口支撑。
   - 目标：避免 `SeckillRateLimitPort` 同时承担三维限流策略、Redis Key、Lua、固定窗口计数和 Redisson 调用。
   - 实际拆分：`SeckillFixedWindowRateLimitSupport`。

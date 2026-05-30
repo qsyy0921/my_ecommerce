@@ -1277,6 +1277,46 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void eventPublisherShouldDelegateMessageIdAndFailureRecordDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path eventPublisher = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/EventPublisher.java");
+        String source = new String(Files.readAllBytes(eventPublisher), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IMqMessageRecordDao",
+                "MqMessageRecord",
+                "DuplicateKeyException",
+                "MessageDigest",
+                "buildMessageId",
+                "private void recordPublishFailure",
+                "producer publish failed",
+                "queryByMessageId",
+                ".insert(",
+                "updateFail(",
+                "left("
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqMessageIdGenerator.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqProducerFailureRecorder.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing event publisher support file: " + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("EventPublisher must keep RabbitMQ publishing only and delegate id/failure record details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallProductPortShouldStaySplitFromMarketTradePorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path productPort = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductPort.java");

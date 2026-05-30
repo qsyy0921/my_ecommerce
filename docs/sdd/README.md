@@ -38,6 +38,7 @@
 - `2026-05-30-rabbitmq-dlq-ops.md`：记录 RabbitMQ DLQ 失败台账、指标和人工处理入口方案。
 - `2026-05-30-mq-producer-outbox-retry.md`：记录 MQ 生产者 confirm 失败台账、定时重试和人工补偿入口方案。
 - `2026-05-31-message-record-repository-support-split.md`：记录 MQ 幂等记录仓储拆出 PO/Entity 映射和生产者失败重投支撑组件。
+- `2026-05-31-event-publisher-support-split.md`：记录 RabbitMQ 发布器拆出消息 ID 生成和生产者失败台账记录支撑组件。
 - `2026-05-30-pressure-invariant-validation.md`：记录本机压测矩阵、秒杀库存不变量、拼团队伍统计不变量和分片库存同步修复。
 - `2026-05-30-structured-logs-job-audit.md`：记录结构化业务日志字段、核心事件覆盖、补偿任务分布式锁和执行审计。
 - `2026-05-30-local-opentelemetry-jaeger.md`：记录本机 OpenTelemetry Java agent、Jaeger、启动脚本和验证结果。
