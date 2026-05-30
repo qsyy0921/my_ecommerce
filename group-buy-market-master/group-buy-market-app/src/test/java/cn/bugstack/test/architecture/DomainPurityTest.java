@@ -501,7 +501,26 @@ public class DomainPurityTest {
                 "queryManualMessages",
                 "replayManualMessages",
                 "manualStreamKey",
-                "deadStreamKey"
+                "deadStreamKey",
+                "IRedisService",
+                "RedissonClient",
+                "RStream",
+                "AutoClaimResult",
+                "StreamReadGroupArgs",
+                "StreamCreateGroupArgs",
+                "StringCodec",
+                "RedisException",
+                "BlockingQueue",
+                "ArrayBlockingQueue",
+                "ConcurrentHashMap",
+                "AtomicInteger",
+                "SeckillPendingRetryPolicy",
+                "claimPending",
+                "readNeverDelivered",
+                "createGroupIfAbsent",
+                "nextShardCursor",
+                "pendingMaxRetry",
+                "pendingIdleMillis"
         );
 
         List<String> violations = new ArrayList<>();
@@ -517,7 +536,10 @@ public class DomainPurityTest {
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMessageMapper.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillManualCompensationStream.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillManualCompensationPort.java")
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillManualCompensationPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillLocalOrderCreateBuffer.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisQueueOrderCreateBuffer.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {

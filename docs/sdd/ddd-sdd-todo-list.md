@@ -106,6 +106,11 @@
   - 实际拆分：`SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler`。
   - 验收：`DomainPurityTest` 防止 CRC32、StreamAddArgs、JSON payload、指标 Lua 和内部 BufferMessage 回流到缓冲主类。
 
+- [x] 拆分秒杀缓冲队列策略。
+  - 目标：避免 `SeckillOrderCreateBuffer` 同时承载本地队列、Redis Queue、Redis Stream、ACK、pending 回收和失败隔离。
+  - 实际拆分：`SeckillLocalOrderCreateBuffer`、`SeckillRedisQueueOrderCreateBuffer`、`SeckillRedisStreamOrderCreateBuffer`。
+  - 验收：`SeckillOrderCreateBuffer` 只保留模式选择和委托；架构测试防止 Redis Stream API、BlockingQueue、Redis Queue 和 pending retry 细节回流。
+
 - [x] 拆分秒杀人工补偿 Stream 端口实现。
   - 目标：避免 `SeckillOrderCreateBuffer` 同时承担缓冲队列和人工补偿台领域端口实现。
   - 实际拆分：`SeckillManualCompensationStream`、`SeckillManualCompensationPort`。

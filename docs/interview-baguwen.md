@@ -128,6 +128,7 @@ types           异常、枚举、常量、通用类型
 - 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - `SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter` 和 `SeckillStockInitializationCache`，Redis Key、桶路由、本地初始化短缓存不再堆在预扣主适配器里。
 - `SeckillOrderCreateBuffer` 内部继续拆出 `SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper` 和 `SeckillStreamMetricsSampler`，Redis Stream 分片 hash、retry key、StreamAddArgs、DLQ payload、人工补偿消息解析和 pending/lag 采样 Lua 不再堆在缓冲主类里。
+- `SeckillOrderCreateBuffer` 继续拆出 `SeckillLocalOrderCreateBuffer`、`SeckillRedisQueueOrderCreateBuffer`、`SeckillRedisStreamOrderCreateBuffer`，主类只保留模式选择和委托，本地队列、Redis Queue、Redis Stream ACK/pending/失败隔离分别收敛到策略组件。
 - 秒杀人工补偿 Stream 查询/重放继续从 `SeckillOrderCreateBuffer` 拆到 `SeckillManualCompensationStream` 和 `SeckillManualCompensationPort`，缓冲队列类不再直接实现补偿台领域端口。
 - `SeckillMarketController` 拆出 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，HTTP 入口不再直接维护请求校验矩阵、代理 IP 解析和秒杀响应 DTO 字段映射。
 - `SeckillMarketController` 继续拆出活动查询、锁单、结果查询、结算、退款 5 个用例支撑组件，入口类不再直接编排领域服务、限流、指标和结构化日志。
@@ -209,6 +210,7 @@ types           异常、枚举、常量、通用类型
 - 秒杀库存流水端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillStockFlowPort.java`
 - 秒杀订单分片路由：`group-buy-market-infrastructure/.../adapter/support/SeckillOrderShardRouter.java`
 - 秒杀 Stream：`group-buy-market-infrastructure/.../SeckillOrderCreateBuffer.java`
+- 秒杀缓冲策略组件：`group-buy-market-infrastructure/.../SeckillLocalOrderCreateBuffer.java`、`SeckillRedisQueueOrderCreateBuffer.java`、`SeckillRedisStreamOrderCreateBuffer.java`
 - 秒杀 Stream 分片路由：`group-buy-market-infrastructure/.../SeckillStreamShardRouter.java`
 - 秒杀 Stream 消息映射：`group-buy-market-infrastructure/.../SeckillStreamMessageMapper.java`
 - 秒杀 Stream 指标采样：`group-buy-market-infrastructure/.../SeckillStreamMetricsSampler.java`
@@ -1041,6 +1043,7 @@ MQ：
 - 2026-05-30：补齐拼团锁单强幂等和用户维度 Redis 占位，新增请求幂等锁、锁单结果缓存、队伍用户占位 Key、DB 唯一索引迁移和 SDD 文档 `docs/sdd/2026-05-30-group-buy-lock-idempotency.md`。
 - 2026-05-30：补齐支付回调独立幂等流水，普通订单 MQ 和拼团营销结算只在订单首次支付成功时触发，并记录 SDD 文档 `docs/sdd/2026-05-30-payment-callback-idempotency.md`。
 - 2026-05-30：继续拆分商城支付入口，新增 `MallPayOrderCreateSupport`、`MallGroupBuyNotifySupport`、`MallOrderQuerySupport`、`MallRefundOrderSupport`，`AliPayController` 不再直接编排创建支付单、拼团通知、订单分页和营销退单，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-alipay-controller-usecase-support-split.md`。
+- 2026-05-30：继续拆分秒杀缓冲队列，新增 `SeckillLocalOrderCreateBuffer`、`SeckillRedisQueueOrderCreateBuffer`、`SeckillRedisStreamOrderCreateBuffer`，`SeckillOrderCreateBuffer` 只保留模式选择和委托，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-buffer-strategy-split.md`。
 - 2026-05-30：继续拆分 `TradeRepository`，阶段性新增通知任务端口和 `IGroupBuyStockFlowPort`，把通知任务 Outbox、拼团库存流水审计从仓储中移到端口适配器；通知任务端口后续已拆成创建/执行两个端口，并记录 SDD 文档 `docs/sdd/2026-05-30-trade-repository-split.md`。
 - 2026-05-30：补充 DDD 边界治理，抽取 `OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，移除 Repository 内重复状态流水拼接，并新增 SDD 审核记录 `docs/sdd/2026-05-30-ddd-boundary-audit.md`。
 - 2026-05-30：补齐秒杀活动预热、活动/用户/IP 三维 Redis 限流和入口业务指标，新增 SDD 记录 `docs/sdd/2026-05-30-seckill-prewarm-rate-limit.md`。
