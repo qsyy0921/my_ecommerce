@@ -271,6 +271,43 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void readModelAdaptersShouldStayReadOnlyAndCompensationFree() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        List<Path> readAdapters = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyQueryPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java")
+        );
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "insert",
+                "update",
+                "delete",
+                "refund",
+                "settlementMarketPayOrder",
+                "lockMarketPayOrder",
+                "createSettlementTask",
+                "createRefundTask",
+                "removeLockResult",
+                "IOrderStateFlowPort",
+                "OrderStateTransitionEntity",
+                "EventPublisher",
+                "IRedisService",
+                "RedissonClient",
+                "ITradeNotifyTaskCreatePort",
+                "ITradeLockRequestPort",
+                "IGroupBuyTeamStockPort"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (Path readAdapter : readAdapters) {
+            assertSourceDoesNotContain(readAdapter, violations, forbiddenSnippets);
+        }
+
+        Assert.assertTrue("Read-model adapters must stay read-only and compensation-free: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyOrderPortAdapterShouldStayTransactionalFacade() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path orderAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyOrderPort.java");

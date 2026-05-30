@@ -153,9 +153,11 @@
 - [x] 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和订单列表 DTO 映射细节。
 - [x] 商城 `AliPayController` 继续拆出创建支付单、拼团通知、订单列表查询和营销退单 4 个用例支撑组件，HTTP 入口不再直接依赖 `IOrderService`、领域实体构建、结构化业务日志和响应组装。
 - [x] 营销活动通用仓储已拆成 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort`，通用 `IActivityRepository` / `ActivityRepository` 已删除，首页试算、折扣人群标签、DCC 开关和队伍展示不再共用过宽端口。
+- [x] 读模型适配器已完成不拆边界审计，`GroupBuyQueryPort`、`GroupBuyDisplayPort`、`ActivityTrialQueryPort` 当前保持查询聚合职责，并由架构测试防止写操作和补偿逻辑回流。
 - [x] 对账差错处理补齐 `ReconcileCaseStatusVO` 和终态保护，`reconcile_case` 终态不会被扫描重新打开，重放前先校验待处理状态。
 - [x] 对账重放契约测试已补齐，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 跳过和失败备注。
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
+- [x] `DomainPurityTest` 增加读模型适配器只读守护，避免拼团/活动查询适配器混入写操作、状态流水、消息发送和补偿逻辑。
 - [x] `DomainPurityTest` 增加拼团锁单端口边界守护，避免队伍写入、订单明细、状态流水和库存流水细节回流。
 - [x] `DomainPurityTest` 增加拼团结算端口边界守护，避免订单支付完成、队伍成团、通知任务和锁单结果清理细节回流。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。

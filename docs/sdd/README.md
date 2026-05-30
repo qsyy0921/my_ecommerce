@@ -73,6 +73,7 @@
 - `2026-05-30-mall-product-market-port-split.md`：记录商城商品查询端口和营销交易锁单/结算/退款端口拆分。
 - `2026-05-30-mall-order-pay-success-message-port.md`：记录商城订单支付成功 MQ 发布从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`。
 - `2026-05-30-activity-repository-port-split.md`：记录营销活动通用仓储拆成试算查询、人群标签、DCC 开关和队伍展示四类语义端口。
+- `2026-05-31-read-model-adapter-boundary-audit.md`：记录拼团/活动读模型适配器本轮不拆的边界依据和架构守护。
 - `2026-05-30-group-buy-index-controller-support-split.md`：记录 `MarketIndexController` 拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
 - `2026-05-30-trade-notification-port-split.md`：记录拼团通知发送从泛化 `ITradePort` 拆到语义通知端口，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑。
 - `2026-05-30-trade-notify-task-port-split.md`：记录拼团通知任务通用端口拆成创建端口和执行端口，并拆出 payload 工厂与 PO/Entity 映射。

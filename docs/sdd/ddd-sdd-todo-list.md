@@ -53,6 +53,11 @@
   - 实际拆分：`IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort`。
   - 验收：`IActivityRepository` / `ActivityRepository` 已删除；试算节点、折扣策略、开关节点、队伍展示服务只依赖各自最小语义端口；架构测试防止通用活动仓储回流。
 
+- [x] 审计读模型适配器并记录不拆边界。
+  - 目标：避免为了行数机械拆分 `GroupBuyQueryPort`、`GroupBuyDisplayPort`、`ActivityTrialQueryPort`，同时防止后续把写操作和补偿塞回读模型。
+  - 本轮结论：这些适配器当前只承担查询聚合、缓存回源和 PO/Entity 映射，不混入状态更新、MQ、补偿或 Redis 锁，暂不拆生产代码。
+  - 验收：新增 SDD 审计文档和架构测试，读模型适配器禁止出现写操作、交易命令、状态流水、消息发送和补偿端口依赖。
+
 - [x] 拆分拼团交易 HTTP Controller 支撑逻辑。
   - 目标：避免 `MarketTradeController` 继续承担请求校验矩阵、通知类型解析、API DTO 到领域命令转换和响应 DTO 组装。
   - 实际拆分：`GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler`、`GroupBuyTradeResponseAssembler`。
