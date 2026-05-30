@@ -1171,7 +1171,19 @@ public class DomainPurityTest {
                 "RStream",
                 "Redisson",
                 "IRedisService",
-                "StreamMessageId"
+                "StreamMessageId",
+                "ISeckillManualCompensationPort",
+                "ISeckillManualCompensationAuditPort",
+                "SeckillManualMessageEntity",
+                "SeckillManualCompensationLogEntity",
+                "@Value",
+                "StringUtils",
+                "JSON",
+                "adminToken",
+                "local-admin",
+                "recordAudit",
+                "Response<List<SeckillManualMessageEntity>>",
+                "Response<List<SeckillManualCompensationLogEntity>>"
         );
 
         List<String> violations = new ArrayList<>();
@@ -1181,7 +1193,21 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("Seckill ops controller must operate through manual compensation domain ports only: " + violations, violations.isEmpty());
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOpsAdminSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationOpsSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationResponseAssembler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/ReplaySeckillManualRequestDTO.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualMessageResponseDTO.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualCompensationLogResponseDTO.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing seckill ops support/api file: " + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Seckill ops controller must keep HTTP routing only and delegate manual compensation operations: " + violations, violations.isEmpty());
     }
 
     @Test

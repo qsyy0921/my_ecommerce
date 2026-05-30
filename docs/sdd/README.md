@@ -68,6 +68,7 @@
 - `2026-05-30-seckill-controller-support-split.md`：记录 `SeckillMarketController` 拆出请求校验、客户端 IP 解析和响应 DTO 组装组件。
 - `2026-05-30-seckill-controller-usecase-support-split.md`：记录 `SeckillMarketController` 继续拆出 5 个 HTTP 用例支撑组件，入口层只保留路由和限流注解。
 - `2026-05-30-seckill-manual-compensation-audit.md`：记录秒杀人工补偿 Stream 查询、重放和操作审计闭环。
+- `2026-05-31-seckill-ops-controller-usecase-support-split.md`：记录秒杀补偿台 Controller 拆出管理员认证、补偿用例、审计和响应 DTO 组装支撑组件。
 - `2026-05-30-after-sale-state-machine.md`：记录售后状态机扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截。
 - `2026-05-30-mall-payment-refund-flow-port-split.md`：记录商城支付流水、退款流水和对账仓储从 `OrderRepository` 拆分出来。
 - `2026-05-31-mall-order-repository-mapper-split.md`：记录商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，复用订单 PO/Entity 映射。
