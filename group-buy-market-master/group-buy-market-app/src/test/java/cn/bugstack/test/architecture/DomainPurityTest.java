@@ -348,6 +348,50 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillQueryAdapterShouldDelegateCacheMappingAndShardDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path queryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillQueryPort.java");
+        String source = new String(Files.readAllBytes(queryAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "@Value",
+                "ISeckillActivityDao",
+                "ISeckillOrderDao",
+                "ISkuDao",
+                "ISeckillResultCachePort",
+                "SeckillOrderShardRouter",
+                "ConcurrentHashMap",
+                "ActivityCacheEntry",
+                "activityCacheKey",
+                "querySeckillOrderByOutTradeNoFromTable",
+                "SeckillActivity.builder",
+                "Sku",
+                "cache(existsOrder",
+                "RESULT_NOT_FOUND"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityQuerySupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillResultQuerySupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillOrderTableGateway.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillQueryPort adapter must delegate cache, mapping, result backfill and shard details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillMaintenancePortShouldDelegateScenarioDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path maintenancePort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillMaintenancePort.java");

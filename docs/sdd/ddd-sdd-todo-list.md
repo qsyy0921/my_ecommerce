@@ -94,6 +94,11 @@
   - 实际拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`。
   - 验收：`ISeckillRepository` / `SeckillRepository` 已删除，架构测试防止通用秒杀仓储回流。
 
+- [x] 拆分秒杀查询端口内部支撑。
+  - 目标：避免 `SeckillQueryPort` 同时承担活动短缓存、活动/SKU 映射、订单分片查询和结果缓存回源。
+  - 实际拆分：`SeckillActivityQuerySupport`、`SeckillResultQuerySupport`，订单查询复用 `SeckillOrderTableGateway`。
+  - 验收：`SeckillQueryPort` 只保留 `ISeckillQueryPort` 门面委托；架构测试防止 DAO、缓存 Map、分片路由和结果缓存回源细节回流。
+
 - [x] 拆分秒杀维护端口内部场景支撑。
   - 目标：避免 `SeckillMaintenancePort` 在删除通用仓储后继续膨胀成新的维护任务大类。
   - 实际拆分：`SeckillActivityStockSyncSupport`、`SeckillTimeoutUnpaidReleaseSupport`、`SeckillActivityPrewarmSupport`。

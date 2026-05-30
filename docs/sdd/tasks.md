@@ -122,6 +122,7 @@
 - [x] 秒杀库存预扣适配器内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，预扣主适配器不再直接持有 Key 常量、CRC32 和本地初始化缓存。
 - [x] 秒杀订单创建、批量落库、支付结算和退款状态更新先拆到订单命令端口，后续继续拆成 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，`ISeckillOrderCommandPort` 已删除。
 - [x] 秒杀查询、库存可用性、锁单预扣和维护任务分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
+- [x] 秒杀查询端口内部继续拆出活动查询缓存和结果缓存回源支撑组件，`SeckillQueryPort` 只保留读模型门面委托。
 - [x] 秒杀下单消息投递拆到 `ISeckillOrderMessagePort`，`SeckillOrderLockPort` 不再感知 Redis Stream、RabbitMQ、routing key 和 JSON 序列化。
 - [x] 秒杀 Redis Stream 缓冲队列内部继续拆出 `SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler` 和 `SeckillOrderBufferMessage`，缓冲主类不再直接持有分片 hash、StreamAddArgs、DLQ payload 和指标采样 Lua。
 - [x] 秒杀缓冲队列继续拆出本地队列、Redis Queue 和 Redis Stream 三种策略组件，`SeckillOrderCreateBuffer` 只保留模式选择和委托。
@@ -149,6 +150,7 @@
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
 - [x] `DomainPurityTest` 增加通用 `ISeckillRepository` / `SeckillRepository` 删除守护，以及秒杀查询、库存可用性、锁单端口职责守护。
+- [x] `DomainPurityTest` 增加秒杀查询适配器边界守护，避免活动缓存、分片查询、PO 映射和结果缓存回源细节回流。
 - [x] `DomainPurityTest` 增加秒杀维护端口边界守护，避免库存同步、超时释放、预热扫描和状态流水细节回流。
 - [x] `DomainPurityTest` 增加秒杀锁单适配器消息中间件路由回流守护。
 - [x] `DomainPurityTest` 增加秒杀补偿台 Controller 边界守护，避免 trigger 直接依赖 Redis Stream 实现类。
