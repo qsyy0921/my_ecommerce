@@ -106,6 +106,7 @@
 - [x] 拼团读模型查询拆到 `IGroupBuyQueryPort`，超时未支付扫描拆到 `IGroupBuyTimeoutOrderPort`，渠道黑名单策略拆到 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
 - [x] 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
 - [x] 拼团首页 HTTP 入口 `MarketIndexController` 已拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
+- [x] 拼团通知任务发送已从泛化 `ITradePort` / `TradePort` 拆到显式 `ITradeNotificationPort`，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑组件。
 - [x] 拼团锁单纯单元测试已补齐，覆盖重复请求、队伍满员、活动不可用、人群标签试算拦截、Redis 占位失败和 DB 唯一索引兜底回滚。
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
 - [x] 秒杀库存流水拆到 `ISeckillStockFlowPort`，`SeckillRepository` 不再直接构建库存流水 PO。

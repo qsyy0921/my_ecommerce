@@ -1,6 +1,6 @@
 package cn.bugstack.domain.trade.service.task;
 
-import cn.bugstack.domain.trade.adapter.port.ITradePort;
+import cn.bugstack.domain.trade.adapter.port.ITradeNotificationPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.service.ITradeTaskService;
@@ -23,11 +23,11 @@ import java.util.Map;
 public class TradeTaskService implements ITradeTaskService {
 
     private final ITradeNotifyTaskPort notifyTaskPort;
-    private final ITradePort port;
+    private final ITradeNotificationPort notificationPort;
 
-    public TradeTaskService(ITradeNotifyTaskPort notifyTaskPort, ITradePort port) {
+    public TradeTaskService(ITradeNotifyTaskPort notifyTaskPort, ITradeNotificationPort notificationPort) {
         this.notifyTaskPort = notifyTaskPort;
-        this.port = port;
+        this.notificationPort = notificationPort;
     }
     
     @Override
@@ -57,7 +57,7 @@ public class TradeTaskService implements ITradeTaskService {
         int successCount = 0, errorCount = 0, retryCount = 0;
         for (NotifyTaskEntity notifyTask : notifyTaskEntityList) {
             // 回调处理 success 成功，error 失败
-            String response = port.groupBuyNotify(notifyTask);
+            String response = notificationPort.notify(notifyTask);
 
             // 更新状态判断&变更数据库表回调任务状态
             if (NotifyTaskHTTPEnumVO.SUCCESS.getCode().equals(response)) {

@@ -57,6 +57,46 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void genericTradePortShouldStaySplitIntoNotificationPort() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path tradePort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradePort.java");
+        Path tradePortAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradePort.java");
+
+        Assert.assertFalse("Generic ITradePort should stay deleted; use ITradeNotificationPort instead.", Files.exists(tradePort));
+        Assert.assertFalse("Generic TradePort adapter should stay deleted; use TradeNotificationPort instead.", Files.exists(tradePortAdapter));
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotificationPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationLockSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationChannelDispatcher.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            Assert.assertTrue("Missing trade notification split file: " + requiredFile.getFileName(), Files.exists(requiredFile));
+        }
+
+        List<String> violations = new ArrayList<>();
+        Path notificationPortAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java");
+        Path taskService = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
+        Path config = workspaceRoot.resolve("group-buy-market-master/group-buy-market-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+        assertSourceDoesNotContain(notificationPortAdapter, violations, Arrays.asList(
+                "IRedisService",
+                "RLock",
+                "GroupBuyNotifyService",
+                "EventPublisher",
+                "NotifyTypeEnumVO.HTTP",
+                "NotifyTypeEnumVO.MQ",
+                "StringUtils",
+                "publisher.publish",
+                "groupBuyNotifyService"
+        ));
+        assertSourceDoesNotContain(taskService, violations, Arrays.asList("ITradePort"));
+        assertSourceDoesNotContain(config, violations, Arrays.asList("ITradePort"));
+
+        Assert.assertTrue("Trade notification port must keep lock and channel details delegated: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void genericActivityRepositoryShouldStaySplitIntoSemanticPorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path activityRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/repository/IActivityRepository.java");

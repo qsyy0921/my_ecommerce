@@ -38,6 +38,11 @@
   - 实际拆分：`GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler`、`GroupBuyMarketConfigResponseAssembler`。
   - 验收：`DomainPurityTest` 防止 `StringUtils` 校验、`MarketProductEntity.builder`、`GoodsMarketResponseDTO` builder 和队伍列表遍历回流到 Controller。
 
+- [x] 拆分拼团通知发送泛化端口。
+  - 目标：避免 `ITradePort` / `TradePort` 继续用泛化交易端口承载拼团通知发送、Redis 抢占锁、HTTP 回调和 MQ 投递。
+  - 实际拆分：`ITradeNotificationPort`、`TradeNotificationPort`、`TradeNotificationLockSupport`、`TradeNotificationChannelDispatcher`。
+  - 验收：删除 `ITradePort` / `TradePort`；`TradeTaskService` 只依赖通知发送语义端口；架构测试防止 Redis、HTTP、MQ 和通知类型判断回流到通知端口门面。
+
 - [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。

@@ -120,6 +120,7 @@ types           异常、枚举、常量、通用类型
 - 拼团锁单落库、支付结算、三类退单写操作已分别拆到 `IGroupBuyOrderPort`、`IGroupBuySettlementPort` 和 `IGroupBuyRefundPort`。
 - `GroupBuyRefundPort` 基础设施实现继续拆成三类退单处理器，未支付释放、已支付未成团、已支付已成团不再堆在一个大实现类里。
 - 拼团读模型查询、超时未支付扫描、渠道黑名单策略已分别拆到 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
+- 拼团通知发送已从泛化 `ITradePort` / `TradePort` 拆到 `ITradeNotificationPort` / `TradeNotificationPort`，Redis 抢占锁和 HTTP/MQ 渠道分发分别收敛到 `TradeNotificationLockSupport`、`TradeNotificationChannelDispatcher`。
 - 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
 - 拼团首页 HTTP 入口 `MarketIndexController` 拆出 `GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler` 和 `GroupBuyMarketConfigResponseAssembler`，Controller 不再直接维护请求校验、领域命令 builder、首页 DTO builder 和队伍列表遍历。
 - 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
@@ -164,6 +165,9 @@ types           异常、枚举、常量、通用类型
 - 拼团锁单：`group-buy-market-domain/.../trade/service/lock`
 - 拼团结算：`group-buy-market-domain/.../trade/service/settlement`
 - 退单策略：`group-buy-market-domain/.../trade/service/refund`
+- 拼团通知发送端口：`group-buy-market-domain/.../trade/adapter/port/ITradeNotificationPort.java`
+- 拼团通知发送适配器：`group-buy-market-infrastructure/.../adapter/port/TradeNotificationPort.java`
+- 拼团通知支撑组件：`group-buy-market-infrastructure/.../adapter/support/TradeNotificationLockSupport.java`、`TradeNotificationChannelDispatcher.java`
 - 拼团首页 HTTP 支撑组件：`group-buy-market-trigger/.../support/GroupBuyMarketConfigRequestValidator.java`、`GroupBuyMarketConfigCommandAssembler.java`、`GroupBuyMarketConfigResponseAssembler.java`
 - 首页试算查询端口：`group-buy-market-domain/.../activity/adapter/port/IActivityTrialQueryPort.java`
 - 人群标签端口：`group-buy-market-domain/.../activity/adapter/port/ICrowdTagPort.java`
@@ -872,7 +876,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
 - 现在已新增 `DomainPurityTest`、`OrderStateMachineTest`、`TradeLockOrderServiceUnitTest`、`SeckillOrderLockPortUnitTest`、`TradeRefundOrderServiceUnitTest` 和 `OrderReconcileServiceReplayContractTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过、通用交易仓储回流，或拼团锁单、秒杀库存、退款策略、对账重放规则被破坏。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；营销侧已把通知任务扫描移到 `ITradeNotifyTaskPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`；拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射和指标采样组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；后续还需要补专业 MQ 演进后的消息契约。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；营销侧已把通知任务扫描移到 `ITradeNotifyTaskPort`，把通知发送移到 `ITradeNotificationPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`、`ITradePort` / `TradePort`；拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射和指标采样组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；后续还需要补专业 MQ 演进后的消息契约。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -967,6 +971,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分拼团通知任务发送端口，删除泛化 `ITradePort` / `TradePort`，新增 `ITradeNotificationPort` / `TradeNotificationPort`，并把 Redis 抢占锁、HTTP/MQ 渠道分发拆到 `TradeNotificationLockSupport` 和 `TradeNotificationChannelDispatcher`；新增 SDD 记录 `docs/sdd/2026-05-30-trade-notification-port-split.md`。
 - 2026-05-30：继续拆分拼团首页 HTTP 入口，新增 `GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler` 和 `GroupBuyMarketConfigResponseAssembler`，请求校验、领域命令 builder、首页 DTO builder 和队伍列表遍历不再堆在 `MarketIndexController`，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-index-controller-support-split.md`。
 - 2026-05-30：治理商城对账查询 API DTO 边界，新增 `ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler` 和 `ReconcileQuerySupport`，对账查询接口不再直接返回 domain entity，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-api-dto-boundary.md`。
 - 2026-05-30：删除商城通用 `IProductPort`，新增 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort` 及对应基础设施适配器，商品查询、营销锁单、营销结算和营销退款不再共用过宽商品端口，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-product-market-port-split.md`。
