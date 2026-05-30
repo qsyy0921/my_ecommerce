@@ -1,79 +1,188 @@
 # 秒杀消息队列演进方案
 
-## 当前方案
+## 背景
 
-当前秒杀入口使用 Redis Lua 抢资格，抢到后写 Redis Stream 分片队列，再由 Consumer Group 批量落库。
+当前秒杀入口使用 Redis Lua 抢资格，抢到资格后通过 `ISeckillOrderMessagePort` 发布秒杀订单创建消息。基础设施默认仍使用 Redis Stream 分片队列，也支持 RabbitMQ、Redis Queue 和本地队列模式。
 
-适用范围：
+这套方案适合本机环境和课程项目演示，因为 Redis 已经承担库存预扣、用户防重和短期结果缓存，接入 Redis Stream 的链路短，pending-list、XAUTOCLAIM 和人工补偿 Stream 可以覆盖基本可靠消费。但它不应该被包装成无限扩展的大促最终方案。
 
-- 项目规模中等。
-- Redis 已经承担库存预扣，链路短。
-- 需要 pending-list、XAUTOCLAIM、人工补偿 Stream 做可靠消费。
+## 当前职责边界
 
-主要风险：
+```text
+Redis：
+  秒杀库存预扣、用户防重、售罄短路、短期结果缓存、当前本机 Redis Stream 削峰。
 
-- Redis 同时承担库存、结果缓存、用户防重和消息队列，热点活动下会资源争抢。
-- Stream 缺少 Kafka/RocketMQ 那样成熟的副本、分区治理、堆积治理和跨机房能力。
-- 大流量下 Redis 持久化和内存压力需要单独评估。
+RabbitMQ：
+  拼团成团通知、退单通知、普通跨服务业务通知。
+
+MySQL：
+  秒杀订单、库存流水、消费幂等、对账差错、后续 RocketMQ outbox 兜底。
+
+ISeckillOrderMessagePort：
+  秒杀领域侧只表达“发布订单创建消息”，不绑定 Redis Stream、RabbitMQ 或 RocketMQ。
+```
 
 ## 选型结论
 
-生产演进目标选择 **RocketMQ**，Redis Stream 保留为本地压测和课程项目可运行方案，RabbitMQ 保留为拼团成团、退单这类跨服务业务通知。
+生产演进目标选择 **RocketMQ** 承担秒杀订单创建消息。Redis Stream 保留为本机压测和轻量演示方案，RabbitMQ 保留为拼团成团、退单这类跨服务业务通知。
 
 选择 RocketMQ 的原因：
 
-- 秒杀订单创建是交易型消息，RocketMQ 的重试、DLQ、消费组、顺序/分区路由和事务消息能力更贴近订单流。
+- 秒杀订单创建是交易型消息，RocketMQ 的消费组、重试、DLQ、延迟消息、顺序/分区路由和事务消息能力更贴近订单流。
 - 相比 RabbitMQ，RocketMQ 更适合高吞吐订单创建、堆积恢复和按 key 路由到队列。
-- 相比 Kafka，RocketMQ 在交易消息、延迟消息、重试语义和 Java/Spring 交易系统表达上更直接。
-- Redis 应该收敛为库存资格预扣、用户防重和短期结果缓存，不继续承担长期订单消息队列职责。
+- 相比 Kafka，RocketMQ 的交易消息、延迟消息、失败重试和 Java 交易系统表达更直接。
+- Pulsar 适合更复杂的多租户、跨地域和云原生消息场景，但当前项目引入成本过高。
+- Redis 应收敛为库存资格预扣、用户防重和短期结果缓存，不长期承担大促订单消息队列职责。
 
-最终职责拆分：
+## MQ 对比
 
-```text
-Redis：库存预扣 / 用户防重 / 短期结果缓存
-RocketMQ：秒杀订单创建消息、延迟关闭、失败重试、DLQ
-RabbitMQ：拼团成团通知、退单通知等现有业务通知
-MySQL Outbox：RocketMQ 投递失败兜底和人工重放
+| 方案 | 适合场景 | 优点 | 本项目边界 |
+| --- | --- | --- | --- |
+| Redis Stream | 本机演示、小规模削峰、贴近 Redis 库存链路 | 接入简单，有 consumer group、pending-list | Redis 同时承担库存/缓存/队列会资源争抢，缺少成熟分区副本和堆积治理 |
+| RabbitMQ | 跨服务业务通知、可靠投递、路由灵活 | ACK、DLQ、路由模型成熟 | 高吞吐订单创建和大堆积恢复不是最优 |
+| RocketMQ | 交易订单流、秒杀异步下单、延迟关闭、重试/DLQ | 交易消息、延迟消息、消费组、重试和 DLQ 更贴近订单业务 | 需要引入 broker、namesrv、监控和运维 |
+| Kafka | 日志流、行为流、超高吞吐、数据管道 | 分区吞吐高、生态成熟 | 交易重试、延迟消息和业务 DLQ 需要更多封装 |
+| Pulsar | 多租户、跨地域、云原生大规模消息 | 存算分离、租户隔离、跨地域能力强 | 运维复杂度超过当前项目需求 |
+
+## 目标架构
+
+```mermaid
+flowchart LR
+    User["用户秒杀请求"] --> Guard["限流 / 活动缓存 / 售罄短路"]
+    Guard --> RedisLua["Redis Lua 资格预扣 + 用户防重"]
+    RedisLua --> MsgPort["ISeckillOrderMessagePort"]
+    MsgPort --> Adapter["RocketMQ Adapter 或 Redis Stream Adapter"]
+    Adapter --> MQ["RocketMQ Topic: seckill_order_create"]
+    MQ --> Consumer["消费组批量消费"]
+    Consumer --> DB["MySQL 分片订单 + 消费幂等 + 库存流水"]
+    Consumer --> Result["秒杀结果缓存"]
+    Adapter --> Outbox["MySQL seckill_order_outbox 兜底"]
+    Outbox --> Retry["投递重试 / 人工重放"]
 ```
 
-## 演进目标
+## 消息模型
 
-秒杀入口保持：
+秒杀订单创建消息必须有稳定 schema，避免后续 MQ 替换时改业务字段。
 
-```text
-限流 -> 活动缓存 -> Redis Lua 抢资格 -> 快速返回 PROCESSING
+```json
+{
+  "schemaVersion": "1.0",
+  "eventType": "SECKILL_ORDER_CREATE",
+  "messageId": "activityId:userId:outTradeNo",
+  "routeKey": "activityId:userId:outTradeNo",
+  "activityId": 100001,
+  "userId": "u10001",
+  "outTradeNo": "mall-order-10001",
+  "orderId": "202605301001",
+  "source": "s01",
+  "channel": "c01",
+  "goodsId": "10001",
+  "traceId": "trace-id",
+  "occurredAt": "2026-05-30T16:20:00+08:00"
+}
 ```
 
-订单创建消息从 Redis Stream 演进为专业 MQ：
+字段约束：
+
+- `messageId`：全局幂等键，建议使用 `activityId:userId:outTradeNo`。
+- `routeKey`：分区/队列路由键，同一用户同一外部订单稳定路由。
+- `schemaVersion`：消息兼容演进版本。
+- `traceId`：串联入口、MQ、消费落库和补偿台。
+- `activityId + userId + outTradeNo`：消费幂等、结果查询和补偿重放的核心业务键。
+
+## 路由策略
+
+当前 Redis Stream 分片和后续 RocketMQ 队列都使用相同路由语义：
 
 ```text
-Redis Lua 抢资格 -> Outbox/事务消息 -> RocketMQ -> 批量落库 -> 结果缓存
+routeKey = activityId + ":" + userId + ":" + outTradeNo
+queueIndex = hash(routeKey) % queueCount
 ```
 
-## 推荐路线
+这样做的原因：
 
-第一阶段：保留 Redis Stream。
+- 只按 `activityId` 会让单个热点活动打到固定队列。
+- 加上 `userId + outTradeNo` 可以把同一活动的流量分散到多个队列。
+- 同一笔订单的重试、补偿和查询仍然能稳定落到同一路由键。
 
-- 使用 Stream 分片。
-- 使用 pending-list 和人工补偿 Stream。
-- 使用消费幂等和库存流水。
-- 适合当前单机/小规模多实例演示。
+## Outbox 兜底
 
-第二阶段：引入可靠 Outbox。
+SQL 已准备 `docs/sql/2026-05-29-state-flow-stock-audit-rocketmq.sql` 中的 `seckill_order_outbox` 表，用于后续 RocketMQ 投递失败兜底。
 
-- 入口抢资格后写本地 outbox 或 Redis Stream。
-- 后台投递专业 MQ。
-- 投递失败由 outbox 状态重试。
-- 入口线程不等待 broker confirm。
+建议状态机：
 
-第三阶段：替换为 RocketMQ。
+```text
+INIT -> SENT -> CONFIRMED
+INIT -> FAILED -> INIT
+FAILED -> DEAD
+DEAD -> INIT
+```
 
-- 按 `activityId + userId + outTradeNo` 路由到分区。
-- 消费端按分区批量落库。
-- 保留唯一索引、库存流水、结果缓存和补偿台。
-- 使用 MQ 自带堆积、重试、DLQ、消费组和分区扩容能力。
-- 本地已提供 `docs/dev-ops/docker-compose-rocketmq.yml`，用于后续把 `seckill_order_outbox` 投递到 RocketMQ。
+最小字段：
+
+- `message_id`：唯一键，防止重复投递。
+- `route_key`：MQ 分区/队列路由。
+- `topic`：目标 Topic。
+- `message_body`：完整消息体。
+- `status`：INIT/SENT/FAILED/DEAD。
+- `retry_count`：重试次数。
+- `next_retry_time`：下次重试时间。
+- `trace_id`：链路追踪。
+
+## 迁移步骤
+
+第一阶段：当前状态，保留 Redis Stream。
+
+- `ISeckillOrderMessagePort` 已抽象出来。
+- Redis Stream 继续承担本机削峰、pending 接管和人工补偿。
+- 架构测试守住锁单适配器不回退到直接绑定中间件。
+
+第二阶段：引入 Outbox 投递兜底。
+
+- 抢到 Redis 资格后生成订单创建消息。
+- 先写 `seckill_order_outbox`，再由后台投递器投递 MQ。
+- 投递失败按 `retry_count + next_retry_time` 重试。
+- 入口线程仍不等待 broker confirm。
+
+第三阶段：新增 RocketMQ Adapter。
+
+- 新增 `RocketMqSeckillOrderMessagePort` 或通过 Spring profile 替换当前 `SeckillOrderMessagePort`。
+- Topic：`seckill_order_create`。
+- Tag：`create`。
+- Key：`messageId`。
+- Queue selector：使用 `routeKey`。
+- 消费端继续复用 `ISeckillOrderCommandPort.createSeckillOrders(...)` 批量落库。
+
+第四阶段：灰度双写和影子消费。
+
+- Redis Stream 和 RocketMQ 同时投递，但只让一个消费端真实落库。
+- 影子消费端只校验消息体、路由键、延迟和堆积，不落订单表。
+- 对比 Redis Stream 消费量、RocketMQ 消费量、outbox 成功量和订单落库量。
+
+第五阶段：切换主通道。
+
+- 秒杀下单消息主通道切到 RocketMQ。
+- Redis Stream 保留一段时间作为回滚通道。
+- 监控重点切到 RocketMQ lag、重试次数、DLQ、消费耗时和批量落库耗时。
+
+第六阶段：回滚方案。
+
+- 如果 RocketMQ broker 不可用，`ISeckillOrderMessagePort` 返回失败，锁单端口回滚 Redis 资格。
+- 如果 RocketMQ 投递失败但 outbox 成功，由 outbox 定时重试。
+- 如果 RocketMQ 消费失败，进入 MQ 重试和 DLQ，人工补偿台按 `messageId` 重放。
+- 如果整体切换失败，Spring profile 回切 Redis Stream Adapter。
+
+## 本机可验证项
+
+本机没有云服务器，不能证明生产容量，但可以验证架构闭环：
+
+- JDK 1.8 编译通过。
+- `DomainPurityTest` 确认 domain 不依赖具体 MQ。
+- `DomainPurityTest` 确认 `SeckillOrderLockPort` 不直接绑定消息中间件。
+- Redis Stream 模式压测验证库存不变量。
+- Docker Compose 可启动 RocketMQ 基础组件：`docs/dev-ops/docker-compose-rocketmq.yml`。
+- SQL 已准备 `seckill_order_outbox` 表结构。
 
 ## 面试说法
 
-当前项目本地仍使用 Redis Stream，是因为单机演示环境下它能覆盖可靠削峰和 pending 补偿。生产大促场景下，我会把 Redis 的职责收敛到库存资格预扣，把订单创建消息迁移到 RocketMQ，并通过 outbox、消费幂等、库存流水和补偿台保证最终一致。RabbitMQ 不下线，继续负责拼团成团和退单这类业务通知。
+当前项目本地仍使用 Redis Stream，是因为单机演示环境下它能覆盖可靠削峰和 pending 补偿。生产大促场景下，我会把 Redis 的职责收敛到库存资格预扣、用户防重和短期结果缓存，把订单创建消息迁移到 RocketMQ。为避免以后替换 MQ 改动锁单主流程，我已经把下单消息投递抽成 `ISeckillOrderMessagePort`，并用架构测试防止锁单适配器重新依赖具体中间件。RabbitMQ 不下线，继续负责拼团成团和退单这类业务通知；RocketMQ 专注秒杀订单创建、延迟关闭、重试和 DLQ。

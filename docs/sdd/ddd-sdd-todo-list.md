@@ -55,10 +55,10 @@
 
 ## P1 高并发与消息可靠性
 
-- [ ] 设计专业 MQ 演进方案。
+- [x] 设计专业 MQ 演进方案。
   - 目标：明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 的职责边界。
   - 当前策略：Redis 继续做资格预扣、防重和本机演示削峰；跨服务通知继续用 RabbitMQ；真正大促订单排队建议演进 RocketMQ 或 Kafka。
-  - 验收：补充 `docs/sdd/mq-evolution.md` 的选型结论、迁移步骤、消息模型和回滚方案。
+  - 验收：`docs/sdd/mq-evolution.md` 已补齐选型结论、MQ 对比、目标架构、消息模型、路由策略、Outbox 兜底、迁移步骤、回滚方案和本机可验证项。
 
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。

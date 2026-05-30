@@ -927,6 +927,7 @@ MQ：
 - 2026-05-30：删除通用拼团交易仓储，新增 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，读模型、超时扫描、渠道策略不再共用 `ITradeRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-group-buy-query-timeout-port-split.md`。
 - 2026-05-30：删除通用秒杀仓储，新增 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort` 和独立 `SeckillMaintenancePort` 适配器，活动查询、库存可用性、锁单预扣、维护任务不再共用 `ISeckillRepository` / `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-delete-port-split.md`。
 - 2026-05-30：继续拆分秒杀消息投递，新增 `ISeckillOrderMessagePort` 和 `SeckillOrderMessagePort`，RabbitMQ/Redis Stream/Redis Queue/本地队列投递选择不再挂在 `SeckillOrderLockPort`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-message-port.md`。
+- 2026-05-30：补齐专业 MQ 演进方案，`docs/sdd/mq-evolution.md` 明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、路由策略、Outbox 兜底、迁移步骤和回滚方案，并同步更新 TODO 状态。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillOrderCommandPort` 和 `SeckillOrderCommandPort`，订单创建、批量落库、支付结算和退款状态更新不再挂在 `ISeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-port-split.md`。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，库存流水、结果缓存和订单表分片路由不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-split.md`。
 - 2026-05-30：继续拆分秒杀 Redis 库存预扣，新增 `ISeckillStockReservationPort` 和 `SeckillStockReservationPort`，Redis 库存桶、Lua 预扣、用户占位、初始化锁和库存释放不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-stock-reservation-port.md`。
