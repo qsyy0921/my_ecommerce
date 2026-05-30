@@ -44,6 +44,7 @@
 - `2026-05-30-mall-payment-refund-flow-port-split.md`：记录商城支付流水、退款流水和对账仓储从 `OrderRepository` 拆分出来。
 - `2026-05-30-reconcile-case-closed-loop.md`：记录对账差错单确认、重放、忽略、关闭、备注和审计查询闭环。
 - `2026-05-30-group-buy-lock-unit-tests.md`：记录拼团锁单纯单元测试，覆盖幂等、活动、队伍、库存占位、唯一索引兜底和人群标签试算边界。
+- `2026-05-30-seckill-stock-unit-tests.md`：记录秒杀库存纯单元测试，覆盖库存不足、重复参与、异步入队失败回滚、pending 重试策略和库存流水幂等。
 
 ## SDD 工作流
 

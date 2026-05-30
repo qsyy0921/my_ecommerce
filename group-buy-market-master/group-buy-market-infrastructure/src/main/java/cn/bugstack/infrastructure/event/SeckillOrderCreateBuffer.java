@@ -110,6 +110,7 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
     private List<RStream<String, String>> streams = Collections.emptyList();
     private RStream<String, String> deadStream;
     private final ConcurrentHashMap<String, AtomicInteger> consumerCursor = new ConcurrentHashMap<>();
+    private final SeckillPendingRetryPolicy pendingRetryPolicy = new SeckillPendingRetryPolicy();
 
     @PostConstruct
     public void init() {
@@ -229,7 +230,7 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
             int shardIndex = message.getStreamIndex();
             long retryCount = redissonClient.getAtomicLong(retryKey(shardIndex, message.getStreamMessageId())).incrementAndGet();
             seckillStreamMetrics.recordFail(streamKey(shardIndex), 1);
-            if (retryCount >= maxRetry()) {
+            if (pendingRetryPolicy.shouldIsolate(retryCount, pendingMaxRetry)) {
                 deadMessages.computeIfAbsent(shardIndex, key -> new ArrayList<>()).add(message);
                 addToDeadStream(message, retryCount, exception);
                 seckillStreamMetrics.recordDlq(streamKey(shardIndex), 1);
@@ -504,7 +505,7 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
     }
 
     private int maxRetry() {
-        return Math.max(1, null == pendingMaxRetry ? 5 : pendingMaxRetry);
+        return pendingRetryPolicy.maxRetry(pendingMaxRetry);
     }
 
     private String streamKey(int shardIndex) {

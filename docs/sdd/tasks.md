@@ -112,6 +112,7 @@
 - [x] 秒杀订单创建、批量落库、支付结算和退款状态更新拆到 `ISeckillOrderCommandPort`，`ISeckillRepository` 不再暴露订单命令方法。
 - [x] 秒杀查询、库存可用性、锁单预扣和维护任务分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
 - [x] 秒杀下单消息投递拆到 `ISeckillOrderMessagePort`，`SeckillOrderLockPort` 不再感知 Redis Stream、RabbitMQ、routing key 和 JSON 序列化。
+- [x] 秒杀库存纯单元测试已补齐，覆盖预扣成功、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - [x] 专业 MQ 演进方案已补齐到 `docs/sdd/mq-evolution.md`，明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、迁移步骤和回滚方案。
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
 - [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。
