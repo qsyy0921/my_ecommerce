@@ -186,6 +186,11 @@
   - 实际拆分：`MqMessageIdGenerator`、`MqProducerFailureRecorder`。
   - 验收：`EventPublisher` 只保留 RabbitMQ 发送、confirm 和 returns callback；失败记录由支撑组件处理；架构测试防止 DAO/PO 和 MessageDigest 细节回流。
 
+- [x] 拆分商城 MQ 发布器和记录仓储内部支撑。
+  - 目标：避免商城服务继续保留 MQ 可靠性旧结构，导致支付成功消息和对账重放链路与营销侧架构不一致。
+  - 实际拆分：`MqMessageIdGenerator`、`MqProducerFailureRecorder`、`MessageRecordMapper`、`MessageProducerRetrySupport`。
+  - 验收：商城 `EventPublisher` 只保留 RabbitMQ 发布；商城 `MessageRecordRepository` 只保留记录读写门面；商城 app 单元测试和全局架构测试防止细节回流。
+
 - [x] 拆分秒杀限流端口内部固定窗口支撑。
   - 目标：避免 `SeckillRateLimitPort` 同时承担三维限流策略、Redis Key、Lua、固定窗口计数和 Redisson 调用。
   - 实际拆分：`SeckillFixedWindowRateLimitSupport`。
