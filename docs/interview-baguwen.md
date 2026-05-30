@@ -1,6 +1,6 @@
 # 拼团交易平台面试八股文
 
-更新时间：2026-05-30
+更新时间：2026-05-31
 
 适用项目：
 
@@ -59,6 +59,18 @@ flowchart LR
 面试可以这样评价当前成熟度：
 
 > 现在的系统已经从教学项目升级到本机可运行、可压测、可观测、可补偿的交易营销系统。核心链路有 Redis 快速失败、MySQL 唯一索引兜底、MQ 可靠通知、支付回调幂等、秒杀支付结算/退款库存恢复、DLQ、对账差错单、补偿台账、结构化日志和本地 Jaeger Trace。但我不会说它已经是生产满分，因为生产容量、多实例部署、正式三方账单、Trace 采样/存储、权限审批和长期运维治理还需要真实环境继续建设。
+
+### 3.1 当前仍存在的问题
+
+如果面试官继续追问“那现在还差什么”，建议分三层回答：
+
+- DDD 架构层：当前最主要的问题已经不是 domain 污染，而是少数 trigger/support 和 infrastructure 公共适配层仍然偏厚，例如拼团锁单入口、秒杀锁单入口、补偿台支撑类，以及 Redis 公共技术适配层。这些类还没有重新污染 domain，但继续扩展时要小心再次膨胀。
+- 业务完备度层：对账中心目前是最小闭环，已经有差错单、重放、忽略、关闭、备注和操作日志，但还没有完整权限、审批流、SLA 和运营报表。售后模型也已经覆盖交易闭环，但还不是完整电商售后系统。
+- 生产边界层：秒杀现在的主削峰链路仍以 Redis Stream 为主，适合本机和中小规模演示，不是大促终局 MQ；本机压测只能证明趋势，不能证明真实生产容量。
+
+面试可以直接这样说：
+
+> 这个项目最危险的 DDD 问题我已经治理掉了，比如 domain 去 Spring、大 Repository 删除、状态机和补偿链路独立、架构守护可执行。现在剩下的问题主要不是代码分层，而是业务完备度和生产边界：对账中心还是最小闭环、售后不是完整电商售后、秒杀消息系统仍以 Redis Stream 为主、本机压测不能代表真实生产容量。我会诚实说明这些边界，而不是继续为了拆类而拆类。
 
 ### 4. 限界上下文
 
@@ -992,6 +1004,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-31：新增 `docs/sdd/2026-05-31-current-ddd-business-gap-audit.md`，统一审计当前剩余 DDD 架构问题、业务完备度问题和本机环境边界，并同步“当前仍存在的问题”面试口径，明确后续不再做低收益机械拆分类。
 - 2026-05-30：继续拆分商城对账后台入口用例编排，新增 `ReconcileCaseQueryEndpointSupport`、`ReconcileCaseOperationSupport`、`ReconcileCaseReplaySupport`、`ReconcileBillImportSupport`、`ReconcileAlertWebhookSupport` 和独立请求体类，`ReconcileCaseController` 只保留路由和请求体类型，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口用例编排，新增 `GroupBuyLockOrderSupport`、`GroupBuySettlementSupport`、`GroupBuyRefundSupport`，`MarketTradeController` 只保留路由和接口实现，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分秒杀 HTTP 入口用例编排，新增 `SeckillMarketConfigQuerySupport`、`SeckillLockOrderSupport`、`SeckillOrderResultQuerySupport`、`SeckillSettlementSupport`、`SeckillRefundSupport`，`SeckillMarketController` 只保留路由、接口实现和限流注解，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-controller-usecase-support-split.md`。
