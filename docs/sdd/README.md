@@ -58,6 +58,7 @@
 - `2026-05-30-seckill-manual-compensation-audit.md`：记录秒杀人工补偿 Stream 查询、重放和操作审计闭环。
 - `2026-05-30-after-sale-state-machine.md`：记录售后状态机扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截。
 - `2026-05-30-mall-payment-refund-flow-port-split.md`：记录商城支付流水、退款流水和对账仓储从 `OrderRepository` 拆分出来。
+- `2026-05-31-mall-order-repository-mapper-split.md`：记录商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，复用订单 PO/Entity 映射。
 - `2026-05-30-reconcile-case-closed-loop.md`：记录对账差错单确认、重放、忽略、关闭、备注和审计查询闭环。
 - `2026-05-30-mall-reconcile-repository-internal-split.md`：记录 `OrderReconcileRepository` 内部拆出差错单工厂、MQ 重放、账单 CSV 解析和实体映射组件。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。

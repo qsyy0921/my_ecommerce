@@ -93,6 +93,7 @@
 
 - [x] 明确商城服务和营销服务各自维护独立 DDD 分层，拼团和秒杀先作为营销上下文内的两个子域。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
+- [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。
 - [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
@@ -163,4 +164,5 @@
 - [x] `DomainPurityTest` 增加商城对账 Controller 管理后台支撑守护，避免 token、操作人解析、审计写入和 CSV 预览截断回流到 HTTP 入口。
 - [x] `DomainPurityTest` 增加商城对账查询 API DTO 边界守护，避免 domain entity 重新成为 HTTP 响应契约。
 - [x] `DomainPurityTest` 增加商城 `AliPayController` 边界守护，避免支付宝 SDK、验签解析和 DTO 映射回流到 HTTP Controller。
+- [x] `DomainPurityTest` 增强商城 `OrderRepository` 边界守护，避免 PO/Entity builder 和列表映射细节回流。
 - [x] 当前本机可验证的 DDD 大仓储治理项已完成，后续继续按 `docs/sdd/ddd-sdd-todo-list.md` 做增量审计，不再保留泛化未完成项。

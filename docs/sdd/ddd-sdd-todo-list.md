@@ -17,6 +17,11 @@
   - 实际拆分：`IOrderPaySuccessMessagePort`、`OrderPaySuccessMessagePort`。
   - 验收：`OrderRepository` 不再依赖 `PaySuccessMessageEvent`、`EventPublisher`、`BaseEvent`、JSON 序列化和 MQ publish；普通订单支付成功、拼团/秒杀营销结算完成后仍通过统一端口发送支付成功消息。
 
+- [x] 拆分商城订单仓储映射支撑。
+  - 目标：避免 `OrderRepository` 和 `OrderReconcileEntityMapper` 重复维护 `PayOrder` 与 `OrderEntity` 字段映射。
+  - 实际拆分：`PayOrderEntityMapper`。
+  - 验收：`OrderRepository` 只负责 `IOrderDao` 调用和状态更新；PO/Entity builder、订单状态枚举映射和列表映射进入 mapper；对账 mapper 复用统一订单映射。
+
 - [x] 拆分商城 `OrderService` 支付成功和退款用例处理器。
   - 目标：避免 `OrderService` 继续同时承担支付成功分发、支付流水、营销结算、营销退单、真实退款和退款流水。
   - 实际拆分：`OrderPaySuccessProcessor`、`OrderRefundProcessor`。

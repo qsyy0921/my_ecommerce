@@ -823,7 +823,14 @@ public class DomainPurityTest {
                 "insertPaymentFlow",
                 "insertRefundFlow",
                 "scanReconcileCases",
-                "replayMqFailure"
+                "replayMqFailure",
+                "OrderEntity.builder",
+                "PayOrder.builder",
+                "new PayOrder(",
+                "ProductEntity",
+                "OrderStatusVO",
+                "BigDecimal",
+                "Collectors.toList"
         );
 
         List<String> violations = new ArrayList<>();
@@ -833,13 +840,14 @@ public class DomainPurityTest {
             }
         }
 
-        List<Path> requiredPorts = Arrays.asList(
+        List<Path> requiredFiles = Arrays.asList(
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IOrderPaySuccessMessagePort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/OrderPaySuccessMessagePort.java")
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/OrderPaySuccessMessagePort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/PayOrderEntityMapper.java")
         );
-        for (Path requiredPort : requiredPorts) {
-            if (!Files.exists(requiredPort)) {
-                violations.add("missing order pay success message port: " + requiredPort.getFileName());
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing mall order repository support file: " + requiredFile.getFileName());
             }
         }
 
