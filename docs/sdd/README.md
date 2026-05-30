@@ -25,6 +25,7 @@
 - `2026-05-30-group-buy-order-port-split.md`：记录拼团锁单落库从 `ITradeRepository` 拆到 `IGroupBuyOrderPort`。
 - `2026-05-31-group-buy-order-support-split.md`：记录拼团锁单端口内部拆出队伍锁定和订单明细写入两个支撑组件。
 - `2026-05-30-group-buy-settlement-refund-port-split.md`：记录拼团支付结算和退单写操作从 `ITradeRepository` 拆到独立端口。
+- `2026-05-31-group-buy-settlement-support-split.md`：记录拼团结算端口内部拆出订单支付完成和队伍成团通知支撑组件。
 - `2026-05-30-group-buy-refund-processor-split.md`：记录 `GroupBuyRefundPort` 继续拆成三类退单处理器，门面只保留委托职责。
 - `2026-05-30-group-buy-query-timeout-port-split.md`：记录拼团读模型、超时扫描和渠道策略从通用 `TradeRepository` 拆到独立端口，并删除通用交易仓储。
 - `2026-05-30-group-buy-trade-controller-support-split.md`：记录 `MarketTradeController` 拆出请求校验、领域命令组装和响应 DTO 组装组件。

@@ -312,6 +312,48 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void groupBuySettlementPortShouldDelegateOrderAndTeamDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
+        String source = new String(Files.readAllBytes(settlementAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IGroupBuyOrderDao",
+                "IGroupBuyOrderListDao",
+                "IOrderStateFlowPort",
+                "ITradeNotifyTaskCreatePort",
+                "ITradeLockRequestPort",
+                "GroupBuyOrderList",
+                "OrderStateTransitionEntity",
+                "MDC",
+                "ResponseCode",
+                "updateOrderStatus2COMPLETE",
+                "updateAddCompleteCount",
+                "queryGroupBuyCompleteOrderOutTradeNoListByTeamId",
+                "removeLockResult"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderPaidSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamFormationSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("GroupBuySettlementPort must delegate order-paid and team-formation details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");

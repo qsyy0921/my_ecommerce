@@ -38,6 +38,11 @@
   - 实际拆分：`GroupBuyTeamLockSupport`、`GroupBuyOrderListCreateSupport`。
   - 验收：`GroupBuyOrderPort` 保留事务门面和 `MarketPayOrderEntity` 组装；队伍写入、订单明细写入、唯一索引异常转换、状态流水和库存流水进入支撑组件；架构测试防止回流。
 
+- [x] 拆分拼团结算端口内部支撑。
+  - 目标：避免 `GroupBuySettlementPort` 同时承担订单明细支付完成、锁单结果清理、队伍完成数量累加、成团通知任务和状态流水。
+  - 实际拆分：`GroupBuyOrderPaidSupport`、`GroupBuyTeamFormationSupport`。
+  - 验收：`GroupBuySettlementPort` 只保留事务门面和聚合对象解包；架构测试防止 DAO、状态流水、通知任务和锁单结果清理细节回流。
+
 - [x] 拆分 `TradeRepository` 的剩余读职责。
   - 目标：把活动、队伍、订单、进度、超时未支付扫描拆成更清晰的读模型端口。
   - 实际拆分：`IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort`、`ITradePolicyPort`。
