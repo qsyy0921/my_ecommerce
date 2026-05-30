@@ -6,6 +6,8 @@ const caseType = document.getElementById('caseType');
 const checkAll = document.getElementById('checkAll');
 const adminTokenInput = document.getElementById('adminToken');
 const adminOperatorInput = document.getElementById('adminOperator');
+const logBody = document.getElementById('logBody');
+const logTitle = document.getElementById('logTitle');
 let adminToken = localStorage.getItem('reconcileAdminToken') || 'local-admin-token';
 let adminOperator = localStorage.getItem('reconcileAdminOperator') || 'local-admin';
 
@@ -18,6 +20,7 @@ document.getElementById('saveAuthBtn').addEventListener('click', saveAuth);
 document.getElementById('batchReplayBtn').addEventListener('click', batchReplay);
 document.getElementById('batchHandledBtn').addEventListener('click', () => batchHandle(1));
 document.getElementById('batchIgnoredBtn').addEventListener('click', () => batchHandle(2));
+document.getElementById('batchClosedBtn').addEventListener('click', () => batchHandle(3));
 document.getElementById('importBillBtn').addEventListener('click', importBill);
 checkAll.addEventListener('change', () => {
     document.querySelectorAll('.case-check').forEach(item => item.checked = checkAll.checked);
@@ -26,6 +29,16 @@ caseBody.addEventListener('click', async event => {
     const target = event.target;
     if (target.classList.contains('replay-btn')) {
         await replayCase(target.dataset.caseNo);
+    } else if (target.classList.contains('confirm-btn')) {
+        await handleCase(target.dataset.caseNo, 'confirm', '确认处理');
+    } else if (target.classList.contains('ignore-btn')) {
+        await handleCase(target.dataset.caseNo, 'ignore', '忽略');
+    } else if (target.classList.contains('close-btn')) {
+        await handleCase(target.dataset.caseNo, 'close', '关闭');
+    } else if (target.classList.contains('remark-btn')) {
+        await remarkCase(target.dataset.caseNo);
+    } else if (target.classList.contains('logs-btn')) {
+        await queryLogs(target.dataset.caseNo);
     }
 });
 
@@ -64,7 +77,16 @@ function renderCases(rows) {
             <td>${statusText(item.caseStatus)}</td>
             <td>${escapeHtml(item.summary || '')}</td>
             <td>${formatTime(item.updateTime)}</td>
-            <td><button class="row-btn replay-btn" data-case-no="${escapeHtml(item.caseNo)}">重放</button></td>
+            <td>
+                <div class="action-group">
+                    <button class="row-btn replay-btn" data-case-no="${escapeHtml(item.caseNo)}">重放</button>
+                    <button class="row-btn confirm-btn" data-case-no="${escapeHtml(item.caseNo)}">确认</button>
+                    <button class="row-btn ignore-btn" data-case-no="${escapeHtml(item.caseNo)}">忽略</button>
+                    <button class="row-btn close-btn" data-case-no="${escapeHtml(item.caseNo)}">关闭</button>
+                    <button class="row-btn remark-btn" data-case-no="${escapeHtml(item.caseNo)}">备注</button>
+                    <button class="row-btn logs-btn" data-case-no="${escapeHtml(item.caseNo)}">日志</button>
+                </div>
+            </td>
         </tr>
     `).join('');
 }
@@ -82,7 +104,7 @@ async function batchHandle(status) {
             caseNoList,
             caseStatus: status,
             handler: adminOperator,
-            handleNote: status === 1 ? 'batch handled' : 'batch ignored',
+            handleNote: status === 1 ? 'batch handled' : (status === 2 ? 'batch ignored' : 'batch closed'),
         }),
     });
     const data = await response.json();
@@ -102,6 +124,7 @@ async function replayCase(caseNo) {
     ensureSuccess(data);
     alert(data.data ? '重放成功' : '当前差错单不支持自动重放或重放失败');
     await queryCases();
+    await queryLogs(caseNo);
 }
 
 async function batchReplay() {
@@ -133,9 +156,74 @@ async function importBill() {
     alert(`导入账单 ${data.data || 0} 条`);
 }
 
+async function handleCase(caseNo, action, label) {
+    const note = prompt(`${label}备注：${caseNo}`, `${label} by ${adminOperator}`);
+    if (note === null) return;
+    const response = await fetch(`${mallBaseUrl}/api/v1/reconcile/${action}`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+            caseNo,
+            handler: adminOperator,
+            handleNote: note || label,
+        }),
+    });
+    const data = await response.json();
+    ensureSuccess(data);
+    alert(data.data ? `${label}成功` : `${label}失败，可能差错单已终态`);
+    await queryCases();
+    await queryLogs(caseNo);
+}
+
+async function remarkCase(caseNo) {
+    const note = prompt(`追加备注：${caseNo}`, '');
+    if (!note) return;
+    const response = await fetch(`${mallBaseUrl}/api/v1/reconcile/remark`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+            caseNo,
+            handler: adminOperator,
+            handleNote: note,
+        }),
+    });
+    const data = await response.json();
+    ensureSuccess(data);
+    alert(data.data ? '备注成功' : '备注失败');
+    await queryCases();
+    await queryLogs(caseNo);
+}
+
+async function queryLogs(caseNo) {
+    const params = new URLSearchParams();
+    params.append('bizId', caseNo);
+    params.append('pageSize', '50');
+    const response = await fetch(`${mallBaseUrl}/api/v1/reconcile/operation_logs?${params.toString()}`, { headers: authHeaders() });
+    const data = await response.json();
+    ensureSuccess(data);
+    renderLogs(caseNo, data.data || []);
+}
+
+function renderLogs(caseNo, rows) {
+    logTitle.textContent = caseNo;
+    if (!rows.length) {
+        logBody.innerHTML = '<tr><td colspan="4" class="empty">暂无操作记录</td></tr>';
+        return;
+    }
+    logBody.innerHTML = rows.map(item => `
+        <tr>
+            <td>${formatTime(item.createTime)}</td>
+            <td>${escapeHtml(item.operator || '')}</td>
+            <td>${escapeHtml(item.operationType || '')}</td>
+            <td>${escapeHtml(item.result || '')}</td>
+        </tr>
+    `).join('');
+}
+
 function statusText(status) {
     if (status === 1) return '已处理';
     if (status === 2) return '已忽略';
+    if (status === 3) return '已关闭';
     return '待处理';
 }
 

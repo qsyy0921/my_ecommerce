@@ -931,6 +931,7 @@ MQ：
 - 2026-05-30：补齐秒杀人工补偿 Stream 审计闭环，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示，并同步更新 TODO 状态。
 - 2026-05-30：扩展售后状态机，新增 `REFUNDING/PARTIAL_REFUND/REFUND_REJECTED/FULFILLED` 和 `REFUND_APPLY/REFUND_PARTIAL_SUCCESS/REFUND_REJECT/FULFILL`，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并同步更新 TODO 状态。
 - 2026-05-30：继续拆分商城订单仓储，新增 `PaymentFlowEntity`、`RefundFlowEntity`、`IPaymentFlowPort`、`IRefundFlowPort` 和独立 `OrderReconcileRepository`，支付/退款流水和对账扫描不再堆在 `OrderRepository`，并同步更新 TODO 状态。
+- 2026-05-30：补齐对账差错处理闭环，新增 `ReconcileCaseStatusVO`，差错单支持确认、重放、忽略、关闭、备注和操作日志查询；终态差错单不会被扫描重新打开，重放前校验待处理状态。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillOrderCommandPort` 和 `SeckillOrderCommandPort`，订单创建、批量落库、支付结算和退款状态更新不再挂在 `ISeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-port-split.md`。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，库存流水、结果缓存和订单表分片路由不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-split.md`。
 - 2026-05-30：继续拆分秒杀 Redis 库存预扣，新增 `ISeckillStockReservationPort` 和 `SeckillStockReservationPort`，Redis 库存桶、Lua 预扣、用户占位、初始化锁和库存释放不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-stock-reservation-port.md`。

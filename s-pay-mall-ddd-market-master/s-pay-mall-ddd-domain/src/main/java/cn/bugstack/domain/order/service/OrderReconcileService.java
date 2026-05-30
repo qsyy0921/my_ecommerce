@@ -5,7 +5,9 @@ import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
+import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
+import cn.bugstack.domain.order.model.valobj.ReconcileCaseStatusVO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Date;
@@ -66,7 +68,34 @@ public class OrderReconcileService implements IOrderReconcileService {
 
     @Override
     public boolean handleReconcileCase(String caseNo, Integer caseStatus, String handler, String handleNote) {
-        return reconcileRepository.handleReconcileCase(caseNo, caseStatus, handler, handleNote);
+        ReconcileCaseStatusVO statusVO = ReconcileCaseStatusVO.valueOfCode(caseStatus);
+        if (null == statusVO || ReconcileCaseStatusVO.OPEN.equals(statusVO)) {
+            return false;
+        }
+        return reconcileRepository.handleReconcileCase(caseNo, statusVO.getCode(), handler, handleNote);
+    }
+
+    @Override
+    public boolean confirmReconcileCase(String caseNo, String handler, String handleNote) {
+        return handleReconcileCase(caseNo, ReconcileCaseStatusVO.CONFIRMED.getCode(), handler, handleNote);
+    }
+
+    @Override
+    public boolean ignoreReconcileCase(String caseNo, String handler, String handleNote) {
+        return handleReconcileCase(caseNo, ReconcileCaseStatusVO.IGNORED.getCode(), handler, handleNote);
+    }
+
+    @Override
+    public boolean closeReconcileCase(String caseNo, String handler, String handleNote) {
+        return handleReconcileCase(caseNo, ReconcileCaseStatusVO.CLOSED.getCode(), handler, handleNote);
+    }
+
+    @Override
+    public boolean remarkReconcileCase(String caseNo, String handler, String handleNote) {
+        if (null == caseNo || caseNo.trim().isEmpty() || null == handleNote || handleNote.trim().isEmpty()) {
+            return false;
+        }
+        return reconcileRepository.remarkReconcileCase(caseNo, handler, handleNote);
     }
 
     @Override
@@ -76,6 +105,12 @@ public class OrderReconcileService implements IOrderReconcileService {
         }
         String handler = null == operator || operator.trim().isEmpty() ? "local-admin" : operator.trim();
         try {
+            ReconcileCaseEntity reconcileCase = reconcileRepository.queryReconcileCase(caseNo);
+            if (null == reconcileCase || !ReconcileCaseStatusVO.OPEN.getCode().equals(reconcileCase.getCaseStatus())) {
+                log.warn("reconcile case is not open, skip replay caseNo:{}", caseNo);
+                return false;
+            }
+
             if (caseNo.startsWith("MARKET_SETTLEMENT_TIMEOUT:")) {
                 String orderId = bizId(caseNo);
                 OrderEntity orderEntity = repository.queryOrderByOrderId(orderId);
@@ -89,7 +124,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 } else {
                     productPort.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }
-                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "replay market settlement success");
+                return confirmReconcileCase(caseNo, handler, "replay market settlement success");
             }
 
             if (caseNo.startsWith("PAY_WAIT_TIMEOUT:")) {
@@ -98,7 +133,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 if (!closed) {
                     return false;
                 }
-                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "timeout unpaid order closed by replay");
+                return confirmReconcileCase(caseNo, handler, "timeout unpaid order closed by replay");
             }
 
             if (caseNo.startsWith("REFUND_TIMEOUT:")) {
@@ -111,7 +146,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 if (!refunded) {
                     return false;
                 }
-                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "refund replay success");
+                return confirmReconcileCase(caseNo, handler, "refund replay success");
             }
 
             if (caseNo.startsWith("MQ_CONSUME_FAIL:")) {
@@ -120,14 +155,14 @@ public class OrderReconcileService implements IOrderReconcileService {
                 if (!replayed) {
                     return false;
                 }
-                return reconcileRepository.handleReconcileCase(caseNo, 1, handler, "mq message replayed to original exchange");
+                return confirmReconcileCase(caseNo, handler, "mq message replayed to original exchange");
             }
 
             log.warn("reconcile case does not support auto replay caseNo:{}", caseNo);
             return false;
         } catch (Exception e) {
             log.error("replay reconcile case failed caseNo:{}", caseNo, e);
-            reconcileRepository.handleReconcileCase(caseNo, 0, handler, "replay failed: " + e.getMessage());
+            remarkReconcileCase(caseNo, handler, "replay failed: " + e.getMessage());
             return false;
         }
     }
@@ -135,6 +170,11 @@ public class OrderReconcileService implements IOrderReconcileService {
     @Override
     public void recordReconcileOperation(String operator, String operationType, String bizId, String requestBody, String result) {
         reconcileRepository.recordReconcileOperation(operator, operationType, bizId, requestBody, result);
+    }
+
+    @Override
+    public List<ReconcileOperationLogEntity> queryReconcileOperationLogList(String bizId, Long lastId, Integer pageSize) {
+        return reconcileRepository.queryReconcileOperationLogList(bizId, lastId, null == pageSize ? 20 : pageSize);
     }
 
     @Override

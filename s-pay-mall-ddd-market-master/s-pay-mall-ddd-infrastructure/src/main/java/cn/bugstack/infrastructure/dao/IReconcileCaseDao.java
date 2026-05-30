@@ -16,10 +16,16 @@ public interface IReconcileCaseDao {
                                       @Param("lastId") Long lastId,
                                       @Param("pageSize") Integer pageSize);
 
+    ReconcileCase queryByCaseNo(@Param("caseNo") String caseNo);
+
     int updateCaseHandled(@Param("caseNo") String caseNo,
                           @Param("caseStatus") Integer caseStatus,
                           @Param("handler") String handler,
                           @Param("handleNote") String handleNote);
+
+    int updateCaseRemark(@Param("caseNo") String caseNo,
+                         @Param("handler") String handler,
+                         @Param("handleNote") String handleNote);
 
     int countOpenCase(@Param("caseType") String caseType);
 

@@ -257,6 +257,39 @@ public class DomainPurityTest {
         Assert.assertTrue("Mall OrderRepository must only own order persistence and order events: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void mallReconcileCaseShouldKeepExplicitClosedLoopOperations() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        Path service = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
+        Path mapper = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/resources/mybatis/mapper/reconcile_case_mapper.xml");
+
+        String controllerSource = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+        String serviceSource = new String(Files.readAllBytes(service), StandardCharsets.UTF_8);
+        String mapperSource = new String(Files.readAllBytes(mapper), StandardCharsets.UTF_8);
+
+        List<String> requiredSnippets = Arrays.asList(
+                "value = \"confirm\"",
+                "value = \"ignore\"",
+                "value = \"close\"",
+                "value = \"remark\"",
+                "value = \"operation_logs\"",
+                "ReconcileCaseStatusVO",
+                "queryReconcileCase(caseNo)",
+                "case_status in (1, 2, 3)",
+                "and case_status = 0"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : requiredSnippets) {
+            if (!controllerSource.contains(snippet) && !serviceSource.contains(snippet) && !mapperSource.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Assert.assertTrue("Mall reconcile case closed-loop operations must stay explicit and terminal-safe: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

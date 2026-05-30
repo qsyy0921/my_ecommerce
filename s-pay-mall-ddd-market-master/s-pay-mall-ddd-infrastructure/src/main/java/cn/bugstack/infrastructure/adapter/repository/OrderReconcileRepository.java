@@ -6,6 +6,7 @@ import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.PaymentFlowEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
+import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.model.entity.RefundFlowEntity;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
 import cn.bugstack.infrastructure.dao.IMqMessageRecordDao;
@@ -105,8 +106,22 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
     }
 
     @Override
+    public ReconcileCaseEntity queryReconcileCase(String caseNo) {
+        ReconcileCase reconcileCase = reconcileCaseDao.queryByCaseNo(caseNo);
+        if (null == reconcileCase) {
+            return null;
+        }
+        return toReconcileCaseEntity(reconcileCase);
+    }
+
+    @Override
     public boolean handleReconcileCase(String caseNo, Integer caseStatus, String handler, String handleNote) {
         return reconcileCaseDao.updateCaseHandled(caseNo, caseStatus, handler, handleNote) > 0;
+    }
+
+    @Override
+    public boolean remarkReconcileCase(String caseNo, String handler, String handleNote) {
+        return reconcileCaseDao.updateCaseRemark(caseNo, handler, handleNote) > 0;
     }
 
     @Override
@@ -142,6 +157,15 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
                 .requestBody(null == requestBody ? null : (requestBody.length() > 1024 ? requestBody.substring(0, 1024) : requestBody))
                 .result(null == result ? null : (result.length() > 512 ? result.substring(0, 512) : result))
                 .build());
+    }
+
+    @Override
+    public List<ReconcileOperationLogEntity> queryReconcileOperationLogList(String bizId, Long lastId, Integer pageSize) {
+        List<ReconcileOperationLog> operationLogList = reconcileOperationLogDao.queryLogList(bizId, lastId, pageSize);
+        if (null == operationLogList || operationLogList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return operationLogList.stream().map(this::toReconcileOperationLogEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -338,6 +362,18 @@ public class OrderReconcileRepository implements IOrderReconcileRepository {
                 .handledTime(reconcileCase.getHandledTime())
                 .handler(reconcileCase.getHandler())
                 .handleNote(reconcileCase.getHandleNote())
+                .build();
+    }
+
+    private ReconcileOperationLogEntity toReconcileOperationLogEntity(ReconcileOperationLog operationLog) {
+        return ReconcileOperationLogEntity.builder()
+                .id(operationLog.getId())
+                .operator(operationLog.getOperator())
+                .operationType(operationLog.getOperationType())
+                .bizId(operationLog.getBizId())
+                .requestBody(operationLog.getRequestBody())
+                .result(operationLog.getResult())
+                .createTime(operationLog.getCreateTime())
                 .build();
     }
 

@@ -2,6 +2,7 @@ package cn.bugstack.trigger.http;
 
 import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
+import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.types.common.Constants;
 import com.alibaba.fastjson.JSON;
@@ -110,6 +111,52 @@ public class ReconcileCaseController {
         }
     }
 
+    @RequestMapping(value = "confirm", method = RequestMethod.POST)
+    public Response<Boolean> confirm(@RequestBody HandleRequest request,
+                                     @RequestHeader(value = "x-admin-token", required = false) String token,
+                                     @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+        return handleWithStatus(request, token, operator, "CONFIRM");
+    }
+
+    @RequestMapping(value = "ignore", method = RequestMethod.POST)
+    public Response<Boolean> ignore(@RequestBody HandleRequest request,
+                                    @RequestHeader(value = "x-admin-token", required = false) String token,
+                                    @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+        return handleWithStatus(request, token, operator, "IGNORE");
+    }
+
+    @RequestMapping(value = "close", method = RequestMethod.POST)
+    public Response<Boolean> close(@RequestBody HandleRequest request,
+                                   @RequestHeader(value = "x-admin-token", required = false) String token,
+                                   @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+        return handleWithStatus(request, token, operator, "CLOSE");
+    }
+
+    @RequestMapping(value = "remark", method = RequestMethod.POST)
+    public Response<Boolean> remark(@RequestBody HandleRequest request,
+                                    @RequestHeader(value = "x-admin-token", required = false) String token,
+                                    @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+        if (!authorized(token)) {
+            return noLogin();
+        }
+        try {
+            String handler = resolveOperator(operator, request.getHandler());
+            boolean result = orderReconcileService.remarkReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
+            audit(handler, "REMARK", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            return Response.<Boolean>builder()
+                    .code(Constants.ResponseCode.SUCCESS.getCode())
+                    .info(Constants.ResponseCode.SUCCESS.getInfo())
+                    .data(result)
+                    .build();
+        } catch (Exception e) {
+            log.error("remark reconcile case failed caseNo:{}", request.getCaseNo(), e);
+            return Response.<Boolean>builder()
+                    .code(Constants.ResponseCode.UN_ERROR.getCode())
+                    .info(Constants.ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
     @RequestMapping(value = "batch_handle", method = RequestMethod.POST)
     public Response<Integer> batchHandle(@RequestBody BatchHandleRequest request,
                                          @RequestHeader(value = "x-admin-token", required = false) String token,
@@ -127,6 +174,7 @@ public class ReconcileCaseController {
                             null == request.getCaseStatus() ? 1 : request.getCaseStatus(),
                             handler,
                             request.getHandleNote());
+                    audit(handler, "BATCH_HANDLE_ITEM", caseNo, "caseStatus=" + request.getCaseStatus(), "result=" + result);
                     if (result) {
                         count++;
                     }
@@ -141,6 +189,32 @@ public class ReconcileCaseController {
         } catch (Exception e) {
             log.error("batch handle reconcile case failed", e);
             return Response.<Integer>builder()
+                    .code(Constants.ResponseCode.UN_ERROR.getCode())
+                    .info(Constants.ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
+    @RequestMapping(value = "operation_logs", method = RequestMethod.GET)
+    public Response<List<ReconcileOperationLogEntity>> queryOperationLogs(@RequestParam(required = false) String bizId,
+                                                                          @RequestParam(required = false) Long lastId,
+                                                                          @RequestParam(required = false, defaultValue = "50") Integer pageSize,
+                                                                          @RequestHeader(value = "x-admin-token", required = false) String token,
+                                                                          @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+        if (!authorized(token)) {
+            return noLogin();
+        }
+        try {
+            List<ReconcileOperationLogEntity> operationLogList = orderReconcileService.queryReconcileOperationLogList(bizId, lastId, pageSize);
+            audit(operator, "QUERY_LOG", bizId, "lastId=" + lastId + ", pageSize=" + pageSize, "count=" + operationLogList.size());
+            return Response.<List<ReconcileOperationLogEntity>>builder()
+                    .code(Constants.ResponseCode.SUCCESS.getCode())
+                    .info(Constants.ResponseCode.SUCCESS.getInfo())
+                    .data(operationLogList)
+                    .build();
+        } catch (Exception e) {
+            log.error("query reconcile operation logs failed bizId:{}", bizId, e);
+            return Response.<List<ReconcileOperationLogEntity>>builder()
                     .code(Constants.ResponseCode.UN_ERROR.getCode())
                     .info(Constants.ResponseCode.UN_ERROR.getInfo())
                     .build();
@@ -184,7 +258,9 @@ public class ReconcileCaseController {
             int count = 0;
             if (null != request.getCaseNoList()) {
                 for (String caseNo : request.getCaseNoList()) {
-                    if (orderReconcileService.replayReconcileCase(caseNo, handler)) {
+                    boolean result = orderReconcileService.replayReconcileCase(caseNo, handler);
+                    audit(handler, "BATCH_REPLAY_ITEM", caseNo, JSON.toJSONString(request), "result=" + result);
+                    if (result) {
                         count++;
                     }
                 }
@@ -260,6 +336,35 @@ public class ReconcileCaseController {
             orderReconcileService.recordReconcileOperation(resolveOperator(operator, null), operationType, bizId, requestBody, result);
         } catch (Exception e) {
             log.warn("record reconcile operation failed operationType:{} bizId:{}", operationType, bizId, e);
+        }
+    }
+
+    private Response<Boolean> handleWithStatus(HandleRequest request, String token, String operator, String operationType) {
+        if (!authorized(token)) {
+            return noLogin();
+        }
+        try {
+            String handler = resolveOperator(operator, request.getHandler());
+            boolean result;
+            if ("CONFIRM".equals(operationType)) {
+                result = orderReconcileService.confirmReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
+            } else if ("IGNORE".equals(operationType)) {
+                result = orderReconcileService.ignoreReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
+            } else {
+                result = orderReconcileService.closeReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
+            }
+            audit(handler, operationType, request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            return Response.<Boolean>builder()
+                    .code(Constants.ResponseCode.SUCCESS.getCode())
+                    .info(Constants.ResponseCode.SUCCESS.getInfo())
+                    .data(result)
+                    .build();
+        } catch (Exception e) {
+            log.error("handle reconcile case failed operationType:{} caseNo:{}", operationType, request.getCaseNo(), e);
+            return Response.<Boolean>builder()
+                    .code(Constants.ResponseCode.UN_ERROR.getCode())
+                    .info(Constants.ResponseCode.UN_ERROR.getInfo())
+                    .build();
         }
     }
 

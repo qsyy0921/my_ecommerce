@@ -38,9 +38,9 @@
             target_status = values(target_status),
             summary = values(summary),
             detail = values(detail),
-            retry_count = retry_count + 1,
-            case_status = if(case_status = 1, case_status, values(case_status)),
-            update_time = now()
+            retry_count = if(case_status in (1, 2, 3), retry_count, retry_count + 1),
+            case_status = if(case_status in (1, 2, 3), case_status, values(case_status)),
+            update_time = if(case_status in (1, 2, 3), update_time, now())
     </insert>
 
     <select id="queryCaseList" resultMap="dataMap">
@@ -62,6 +62,15 @@
         limit #{pageSize}
     </select>
 
+    <select id="queryByCaseNo" resultMap="dataMap">
+        select id, case_no, biz_type, biz_id, user_id, case_type, case_status,
+               severity, source_status, target_status, summary, detail, retry_count,
+               create_time, update_time, handled_time, handler, handle_note
+        from reconcile_case
+        where case_no = #{caseNo}
+        limit 1
+    </select>
+
     <update id="updateCaseHandled">
         update reconcile_case
         set case_status = #{caseStatus},
@@ -70,7 +79,15 @@
             handled_time = now(),
             update_time = now()
         where case_no = #{caseNo}
-          and case_status != 1
+          and case_status = 0
+    </update>
+
+    <update id="updateCaseRemark">
+        update reconcile_case
+        set handler = #{handler},
+            handle_note = #{handleNote},
+            update_time = now()
+        where case_no = #{caseNo}
     </update>
 
     <select id="countOpenCase" resultType="int">

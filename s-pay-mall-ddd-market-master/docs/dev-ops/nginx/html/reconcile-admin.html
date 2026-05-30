@@ -32,6 +32,7 @@
             <option value="">全部</option>
             <option value="1">已处理</option>
             <option value="2">已忽略</option>
+            <option value="3">已关闭</option>
         </select>
         <select id="caseType">
             <option value="">全部类型</option>
@@ -48,6 +49,7 @@
         <button id="batchReplayBtn">批量重放</button>
         <button id="batchHandledBtn">批量处理</button>
         <button id="batchIgnoredBtn">批量忽略</button>
+        <button id="batchClosedBtn">批量关闭</button>
     </section>
 
     <section class="panel">
@@ -69,6 +71,26 @@
         </table>
     </section>
 
+    <section class="log-panel">
+        <div class="panel-title">
+            <h2>操作审计</h2>
+            <span id="logTitle">选择差错单查看操作记录</span>
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>时间</th>
+                <th>操作人</th>
+                <th>操作</th>
+                <th>结果</th>
+            </tr>
+            </thead>
+            <tbody id="logBody">
+            <tr><td colspan="4" class="empty">暂无操作记录</td></tr>
+            </tbody>
+        </table>
+    </section>
+
     <section class="bill-panel">
         <h2>三方账单导入</h2>
         <p>CSV 列：billNo,orderId,channel,channelTradeNo,billType,amount,billStatus,billTime</p>
@@ -76,6 +98,6 @@
         <button id="importBillBtn">导入账单</button>
     </section>
 </main>
-<script src="./js/reconcile-admin.js?v=20260525-reconcile2"></script>
+<script src="./js/reconcile-admin.js?v=20260530-reconcile-closed-loop"></script>
 </body>
 </html>
