@@ -12,11 +12,16 @@
 
 ## P0 当前优先级最高
 
-- [~] 拆分 `TradeRepository` 的剩余职责。
+- [x] 拆分 `TradeRepository` 的剩余写职责。
   - 目标：把拼团锁单落库、结算状态更新、退单状态更新拆成更小端口或仓储适配器。
   - 建议拆分：`GroupBuyOrderRepository`、`GroupBuySettlementRepository`、`GroupBuyRefundRepository`。
-  - 进展：拼团结算已拆到 `IGroupBuySettlementPort`，三类退单已拆到 `IGroupBuyRefundPort`；锁单落库和部分查询仍在 `TradeRepository`。
-  - 验收：`ITradeRepository` 不再暴露结算和退单技术方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过。
+  - 进展：拼团锁单落库已拆到 `IGroupBuyOrderPort`，拼团结算已拆到 `IGroupBuySettlementPort`，三类退单已拆到 `IGroupBuyRefundPort`；部分查询仍在 `TradeRepository`。
+  - 验收：`ITradeRepository` 不再暴露锁单、结算和退单写方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过。
+
+- [ ] 拆分 `TradeRepository` 的剩余读职责。
+  - 目标：把活动、队伍、订单、进度、超时未支付扫描拆成更清晰的读模型端口。
+  - 建议拆分：`IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort`。
+  - 验收：`ITradeRepository` 可以被删除或只保留非常窄的兼容查询门面。
 
 - [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。

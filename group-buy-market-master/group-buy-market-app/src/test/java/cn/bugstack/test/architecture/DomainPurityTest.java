@@ -78,12 +78,13 @@ public class DomainPurityTest {
     }
 
     @Test
-    public void tradeRepositoryShouldNotExposeSettlementAndRefundWrites() throws Exception {
+    public void tradeRepositoryShouldNotExposeGroupBuyWrites() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
         String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
 
         List<String> forbiddenMethods = Arrays.asList(
+                "lockMarketPayOrder",
                 "settlementMarketPayOrder",
                 "unpaid2Refund",
                 "paid2Refund",
@@ -97,7 +98,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("ITradeRepository must keep group-buy settlement and refund writes behind dedicated ports: " + violations, violations.isEmpty());
+        Assert.assertTrue("ITradeRepository must keep group-buy order, settlement and refund writes behind dedicated ports: " + violations, violations.isEmpty());
     }
 
     @Test

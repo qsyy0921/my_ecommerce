@@ -8,7 +8,7 @@
 
 本次只拆拼团结算和退单写能力，不改变业务语义。
 
-- `ITradeRepository` 保留交易查询、活动查询、锁单落库和超时未支付查询。
+- `ITradeRepository` 保留交易查询、活动查询、锁单落库和超时未支付查询。本条是本次拆分时的阶段边界，后续锁单落库已继续拆到 `IGroupBuyOrderPort`。
 - 拼团支付结算写操作移到 `IGroupBuySettlementPort`。
 - 拼团三类退单写操作移到 `IGroupBuyRefundPort`。
 - 结算和退单端口仍负责本地事务、状态流水、锁单结果缓存清理、通知任务创建和库存流水记录。
@@ -53,7 +53,7 @@ flowchart LR
 
 ## 后续
 
-`TradeRepository` 目前主要剩余职责是拼团锁单落库、活动/队伍/订单查询、超时未支付查询。下一步可以继续拆：
+`TradeRepository` 在本次之后主要剩余职责是拼团锁单落库、活动/队伍/订单查询、超时未支付查询。后续 `2026-05-30-group-buy-order-port-split.md` 已继续把拼团锁单落库拆到 `IGroupBuyOrderPort`，因此当前剩余重点变为读模型和超时扫描拆分。下一步可以继续拆：
 
 - `GroupBuyOrderPort`：专注拼团锁单落库。
 - `GroupBuyQueryPort`：专注活动、队伍、订单查询读模型。

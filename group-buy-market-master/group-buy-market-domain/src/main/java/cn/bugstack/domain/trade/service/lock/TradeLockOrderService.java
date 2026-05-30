@@ -1,5 +1,6 @@
 package cn.bugstack.domain.trade.service.lock;
 
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyOrderPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
@@ -22,15 +23,18 @@ import lombok.extern.slf4j.Slf4j;
 public class TradeLockOrderService implements ITradeLockOrderService {
 
     private final ITradeRepository repository;
+    private final IGroupBuyOrderPort groupBuyOrderPort;
     private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
     private final ITradeLockRequestPort tradeLockRequestPort;
     private final BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter;
 
     public TradeLockOrderService(ITradeRepository repository,
+                                 IGroupBuyOrderPort groupBuyOrderPort,
                                  IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                  ITradeLockRequestPort tradeLockRequestPort,
                                  BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
         this.repository = repository;
+        this.groupBuyOrderPort = groupBuyOrderPort;
         this.groupBuyTeamStockPort = groupBuyTeamStockPort;
         this.tradeLockRequestPort = tradeLockRequestPort;
         this.tradeRuleFilter = tradeRuleFilter;
@@ -84,7 +88,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
                     .build();
 
             // 锁定聚合订单 - 这会用户只是下单还没有支付。后续会有2个流程；支付成功、超时未支付（回退）
-            MarketPayOrderEntity marketPayOrderEntity = repository.lockMarketPayOrder(groupBuyOrderAggregate);
+            MarketPayOrderEntity marketPayOrderEntity = groupBuyOrderPort.lockMarketPayOrder(groupBuyOrderAggregate);
             tradeLockRequestPort.cacheLockResult(userEntity.getUserId(), payDiscountEntity.getOutTradeNo(), marketPayOrderEntity, payActivityEntity.getValidTime());
             return marketPayOrderEntity;
         } catch (Exception e) {

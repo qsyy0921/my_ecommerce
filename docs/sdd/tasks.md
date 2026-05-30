@@ -97,6 +97,7 @@
 - [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
 - [x] 拼团队伍库存占位拆到 `IGroupBuyTeamStockPort`，`ITradeRepository` 不再暴露 Redis 队伍名额占用和退单恢复方法。
 - [x] 拼团锁单请求锁和结果缓存拆到 `ITradeLockRequestPort`，`ITradeRepository` 不再暴露 Redis 请求锁和缓存方法。
+- [x] 拼团锁单落库拆到 `IGroupBuyOrderPort`，`ITradeRepository` 不再暴露锁单写方法。
 - [x] 拼团支付结算拆到 `IGroupBuySettlementPort`，`ITradeRepository` 不再暴露结算写方法。
 - [x] 拼团三类退单写操作拆到 `IGroupBuyRefundPort`，`ITradeRepository` 不再暴露退单写方法。
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
@@ -105,7 +106,7 @@
 - [x] 秒杀订单分片路由拆到 `SeckillOrderShardRouter`，分片表名和路由规则从主仓储移出。
 - [x] 秒杀 Redis 库存预扣拆到 `ISeckillStockReservationPort`，`SeckillRepository` 不再直接依赖 `IRedisService`、库存桶 Key、用户占位 Key 和 Lua 预扣细节。
 - [x] `DomainPurityTest` 增加 `ITradeRepository` 通知任务、队伍库存和锁单请求缓存方法回流守护。
-- [x] `DomainPurityTest` 增加 `ITradeRepository` 拼团结算和退单写方法回流守护。
+- [x] `DomainPurityTest` 增加 `ITradeRepository` 拼团锁单、结算和退单写方法回流守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
 - [x] `DomainPurityTest` 增加 `SeckillRepository` 库存流水、结果缓存、分片路由和 Redis 库存预扣细节回流守护。
 - [~] 继续拆分大 Repository、补偿编排和更多领域用例测试，详细后续任务见 `docs/sdd/ddd-sdd-todo-list.md`。

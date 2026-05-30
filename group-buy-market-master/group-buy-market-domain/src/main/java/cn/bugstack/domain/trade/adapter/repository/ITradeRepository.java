@@ -1,7 +1,6 @@
 package cn.bugstack.domain.trade.adapter.repository;
 
 import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
-import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.MarketPayOrderEntity;
@@ -17,8 +16,6 @@ import java.util.List;
 public interface ITradeRepository {
 
     MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo);
-
-    MarketPayOrderEntity lockMarketPayOrder(GroupBuyOrderAggregate groupBuyOrderAggregate);
 
     GroupBuyProgressVO queryGroupBuyProgress(String teamId);
 

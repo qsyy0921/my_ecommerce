@@ -11,7 +11,7 @@
 - `TradeRepository` 不再直接依赖 `INotifyTaskDao`、`IGroupBuyStockFlowDao`、`NotifyTask`、`GroupBuyStockFlow`。
 - 通知任务由 `ITradeNotifyTaskPort` 表达，基础设施适配器负责构建 `notify_task` PO 并落库。
 - `TradeTaskService` 直接依赖 `ITradeNotifyTaskPort` 查询和更新通知任务状态，不再依赖 `ITradeRepository`。
-- `ITradeRepository` 不再暴露通知任务查询和状态更新方法，只保留交易主链路需要的锁单、结算、退款和库存占位方法。
+- `ITradeRepository` 不再暴露通知任务查询和状态更新方法，只保留交易主链路需要的锁单、结算、退款和库存占位方法。本条是本次拆分时的阶段边界，后续锁单、结算、退款和库存占位已继续拆到独立端口。
 - 拼团队伍库存占位由 `IGroupBuyTeamStockPort` 表达，Redis Lua 占位、用户占位释放和退单恢复量写入不再挂在 `ITradeRepository` 上。
 - 拼团锁单请求锁和锁单结果缓存由 `ITradeLockRequestPort` 表达，`ITradeRepository` 不再暴露 Redis 请求锁、缓存写入和缓存清理方法。
 - 拼团库存流水由 `IGroupBuyStockFlowPort` 表达，领域实体 `GroupBuyStockFlowEntity` 负责承载业务语义。
