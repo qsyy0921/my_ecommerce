@@ -1,6 +1,7 @@
 package cn.bugstack.domain.seckill.service;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCommandPort;
 import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
@@ -23,13 +24,16 @@ public class SeckillService implements ISeckillService {
 
     private final ISeckillRepository seckillRepository;
     private final ISeckillMaintenancePort seckillMaintenancePort;
+    private final ISeckillOrderCommandPort seckillOrderCommandPort;
     private final Integer maxConcurrentPerActivity;
 
     public SeckillService(ISeckillRepository seckillRepository,
                           ISeckillMaintenancePort seckillMaintenancePort,
+                          ISeckillOrderCommandPort seckillOrderCommandPort,
                           Integer maxConcurrentPerActivity) {
         this.seckillRepository = seckillRepository;
         this.seckillMaintenancePort = seckillMaintenancePort;
+        this.seckillOrderCommandPort = seckillOrderCommandPort;
         this.maxConcurrentPerActivity = maxConcurrentPerActivity;
     }
 
@@ -111,22 +115,22 @@ public class SeckillService implements ISeckillService {
 
     @Override
     public void createSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
-        seckillRepository.createSeckillOrder(seckillOrderEntity);
+        seckillOrderCommandPort.createSeckillOrder(seckillOrderEntity);
     }
 
     @Override
     public void createSeckillOrders(List<SeckillOrderEntity> seckillOrderEntities) {
-        seckillRepository.createSeckillOrders(seckillOrderEntities);
+        seckillOrderCommandPort.createSeckillOrders(seckillOrderEntities);
     }
 
     @Override
     public SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo) {
-        return seckillRepository.settlementSeckillOrder(userId, outTradeNo);
+        return seckillOrderCommandPort.settlementSeckillOrder(userId, outTradeNo);
     }
 
     @Override
     public SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason) {
-        return seckillRepository.refundSeckillOrder(userId, outTradeNo, refundReason);
+        return seckillOrderCommandPort.refundSeckillOrder(userId, outTradeNo, refundReason);
     }
 
     @Override

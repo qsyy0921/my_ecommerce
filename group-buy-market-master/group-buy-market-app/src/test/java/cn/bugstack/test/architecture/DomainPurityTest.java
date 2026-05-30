@@ -109,6 +109,29 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillRepositoryShouldNotExposeOrderLifecycleCommands() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
+        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenMethods = Arrays.asList(
+                "createSeckillOrder",
+                "createSeckillOrders",
+                "settlementSeckillOrder",
+                "refundSeckillOrder"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String method : forbiddenMethods) {
+            if (source.contains(method)) {
+                violations.add(method);
+            }
+        }
+
+        Assert.assertTrue("ISeckillRepository must keep order lifecycle commands behind ISeckillOrderCommandPort: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillRepositoryShouldKeepCacheFlowAndShardDetailsBehindAdapters() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
@@ -131,7 +154,16 @@ public class DomainPurityTest {
                 "private boolean useOrderSharding",
                 "private String stockBucketKey",
                 "private String userLockKey",
-                "private int bucketOf"
+                "private int bucketOf",
+                "insertIgnoreBatch",
+                "insertIgnoreShardBatch",
+                "paySuccessOrder",
+                "refundPaidOrder",
+                "closeUnpaidOrder",
+                "SeckillOrderStatusEnumVO",
+                "DuplicateKeyException",
+                "SeckillFaultInjector",
+                "SeckillStreamMetrics"
         );
 
         List<String> violations = new ArrayList<>();

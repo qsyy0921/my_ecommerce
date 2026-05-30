@@ -43,6 +43,16 @@
   - 建议组件：`SeckillOrderShardRouter`。
   - 验收：分片数可配置；路由规则稳定；后续接 ShardingSphere/TDDL 时改动范围可控。
 
+- [x] 拆分 `SeckillRepository` 的订单命令职责。
+  - 目标：把异步落库、批量落库、支付结算、退款状态更新从秒杀主仓储中移出。
+  - 实际拆分：`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`。
+  - 验收：`ISeckillRepository` 不再暴露订单命令方法；`SeckillRepository` 不再直接处理批量插入、支付成功和退款状态更新。
+
+- [ ] 拆分 `SeckillRepository` 的查询和库存可用性职责。
+  - 目标：把活动查询、订单查询、结果查询、库存初始化/查询和本地售罄短缓存继续拆开。
+  - 建议拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`。
+  - 验收：`ISeckillRepository` 可以进一步删除或收窄为兼容门面。
+
 ## P1 高并发与消息可靠性
 
 - [ ] 设计专业 MQ 演进方案。
