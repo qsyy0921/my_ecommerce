@@ -104,6 +104,11 @@
   - 实际拆分：先拆到订单命令端口，后续继续拆成 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，并用 `SeckillOrderTableGateway`、`SeckillOrderAssembler`、`SeckillStockReleaseSupport` 隔离分片表访问、对象转换和库存释放/回滚。
   - 验收：`ISeckillRepository` / `SeckillRepository` 已删除；`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除；秒杀领域服务按订单生命周期依赖创建、结算、退款端口。
 
+- [x] 拆分秒杀订单创建端口内部支撑。
+  - 目标：避免 `SeckillOrderCreatePort` 在生命周期端口拆分后继续同时承担单条创建、批量创建、结果缓存、库存流水、状态流水、批量指标和失败回滚。
+  - 实际拆分：`SeckillSingleOrderCreateSupport`、`SeckillBatchOrderCreateSupport`。
+  - 验收：`SeckillOrderCreatePort` 只保留事务门面和单条/批量委托；架构测试防止落库、缓存、流水、指标和回滚细节回流。
+
 - [x] 拆分 `SeckillRepository` 的查询和库存可用性职责。
   - 目标：把活动查询、订单查询、结果查询、库存初始化/查询和本地售罄短缓存继续拆开。
   - 实际拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`。

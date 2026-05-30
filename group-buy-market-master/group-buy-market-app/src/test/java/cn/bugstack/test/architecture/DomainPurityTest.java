@@ -509,6 +509,49 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillOrderCreatePortShouldDelegateSingleAndBatchDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path createAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCreatePort.java");
+        String source = new String(Files.readAllBytes(createAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IOrderStateFlowPort",
+                "ISeckillStockFlowPort",
+                "ISeckillResultCachePort",
+                "SeckillOrderTableGateway",
+                "SeckillStockReleaseSupport",
+                "SeckillStreamMetrics",
+                "SeckillFaultInjector",
+                "DuplicateKeyException",
+                "SeckillStockFlowEntity",
+                "OrderStateTransitionEntity",
+                "insertIgnoreBatch",
+                "recordBatchInsert",
+                "rollbackReservation",
+                "new ArrayList"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillSingleOrderCreateSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillBatchOrderCreateSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillOrderCreatePort must stay a transactional facade and delegate single/batch creation details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillLockAndAvailabilityAdaptersShouldNotContainOrderLifecycleCommands() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> adapterPaths = Arrays.asList(
