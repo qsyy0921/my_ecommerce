@@ -176,6 +176,11 @@
   - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
   - 验收：Redis Stream、RabbitMQ、Redis Queue、本地队列投递选择收敛到消息 Adapter；锁单适配器不再感知具体中间件。
 
+- [x] 拆分秒杀限流端口内部固定窗口支撑。
+  - 目标：避免 `SeckillRateLimitPort` 同时承担三维限流策略、Redis Key、Lua、固定窗口计数和 Redisson 调用。
+  - 实际拆分：`SeckillFixedWindowRateLimitSupport`。
+  - 验收：`SeckillRateLimitPort` 保留启停开关、活动/用户/IP 配置和限流顺序；Redis 固定窗口执行细节进入支撑组件；架构测试防止 Redisson/Lua 细节回流。
+
 - [x] 拆分秒杀 Redis Stream 缓冲队列内部技术细节。
   - 目标：避免 `SeckillOrderCreateBuffer` 继续承载分片路由、消息映射、DLQ payload 和指标采样等细节。
   - 实际拆分：`SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler`。

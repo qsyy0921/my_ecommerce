@@ -1128,6 +1128,38 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillRateLimitPortShouldDelegateRedisFixedWindowDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path rateLimitPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRateLimitPort.java");
+        String source = new String(Files.readAllBytes(rateLimitPort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "RedissonClient",
+                "RScript",
+                "StringCodec",
+                "Arrays",
+                "RATE_LIMIT_KEY_PREFIX",
+                "redis.call",
+                "pexpire",
+                "getScript"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Path fixedWindowSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillFixedWindowRateLimitSupport.java");
+        if (!Files.exists(fixedWindowSupport)) {
+            violations.add("missing support:" + fixedWindowSupport.getFileName());
+        }
+
+        Assert.assertTrue("SeckillRateLimitPort must delegate Redis fixed-window details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOpsControllerShouldDependOnManualCompensationPortsOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillOpsController.java");

@@ -30,6 +30,7 @@
 - [x] DB 唯一索引兜底重复参与。
 - [x] 活动预热任务：活动开始前批量加载热点库存和活动配置。
 - [x] 秒杀入口限流：按活动、用户、IP 维度限流。
+- [x] 秒杀限流端口内部拆出 Redis 固定窗口限流支撑组件，端口保留三维限流策略和配置读取。
 - [x] 秒杀排队削峰：热点活动可切换到 MQ/Redis Stream 排队下单。
 - [x] 秒杀支付结算和退款库存闭环：`CREATE -> COMPLETE -> REFUND`、未支付取消和库存流水审计。
 
@@ -174,6 +175,7 @@
 - [x] `DomainPurityTest` 增加秒杀退款端口边界守护，避免未支付取消、已支付退款、库存释放和状态流水细节回流。
 - [x] `DomainPurityTest` 增加秒杀锁单适配器消息中间件路由回流守护。
 - [x] `DomainPurityTest` 增加秒杀锁单端口库存闸门和预扣发布边界守护，避免售罄缓存、预扣、消息投递和回滚细节回流。
+- [x] `DomainPurityTest` 增加秒杀限流端口边界守护，避免 Redisson、Lua、Key 前缀和固定窗口计数细节回流。
 - [x] `DomainPurityTest` 增加秒杀库存可用性端口边界守护，避免售罄缓存、初始化锁、DB 回源和 Redis 初始化细节回流。
 - [x] `DomainPurityTest` 增强秒杀库存预扣端口边界守护，避免 Redis API、Lua 预扣和库存桶循环细节回流。
 - [x] `DomainPurityTest` 增加秒杀补偿台 Controller 边界守护，避免 trigger 直接依赖 Redis Stream 实现类。

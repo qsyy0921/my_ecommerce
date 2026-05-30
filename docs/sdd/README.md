@@ -34,6 +34,7 @@
 - `2026-05-30-group-buy-trade-controller-usecase-support-split.md`：记录 `MarketTradeController` 继续拆出锁单、结算、退单 3 个 HTTP 用例支撑组件，入口层只保留路由。
 - `2026-05-30-payment-callback-idempotency.md`：记录支付回调流水幂等和重复回调后续动作拦截方案。
 - `2026-05-30-seckill-prewarm-rate-limit.md`：记录秒杀活动预热、活动/用户/IP 三维限流和入口指标方案。
+- `2026-05-31-seckill-rate-limit-support-split.md`：记录秒杀限流端口内部拆出 Redis 固定窗口限流支撑组件。
 - `2026-05-30-rabbitmq-dlq-ops.md`：记录 RabbitMQ DLQ 失败台账、指标和人工处理入口方案。
 - `2026-05-30-mq-producer-outbox-retry.md`：记录 MQ 生产者 confirm 失败台账、定时重试和人工补偿入口方案。
 - `2026-05-30-pressure-invariant-validation.md`：记录本机压测矩阵、秒杀库存不变量、拼团队伍统计不变量和分片库存同步修复。
