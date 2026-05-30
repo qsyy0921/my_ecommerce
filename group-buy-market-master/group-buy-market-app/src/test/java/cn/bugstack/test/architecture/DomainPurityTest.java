@@ -814,6 +814,46 @@ public class DomainPurityTest {
         Assert.assertTrue("MarketTradeController must delegate request validation, command assembly and response DTO mapping details: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void groupBuyMarketIndexControllerShouldDelegateValidationCommandAndDtoMappingDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MarketIndexController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "StringUtils.isBlank",
+                "MarketProductEntity.builder()",
+                "GoodsMarketResponseDTO.Goods.builder()",
+                "GoodsMarketResponseDTO.Team.builder()",
+                "GoodsMarketResponseDTO.TeamStatistic.builder()",
+                "GoodsMarketResponseDTO.builder()",
+                "differenceDateTime2Str",
+                "new ArrayList",
+                "new Date()",
+                "for (UserGroupBuyOrderDetailEntity"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigRequestValidator.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigCommandAssembler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigResponseAssembler.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("MarketIndexController must delegate request validation, market command assembly and homepage DTO mapping details: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

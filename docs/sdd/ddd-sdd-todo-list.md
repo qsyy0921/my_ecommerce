@@ -33,6 +33,11 @@
   - 实际拆分：`GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler`、`GroupBuyTradeResponseAssembler`。
   - 验收：`DomainPurityTest` 防止 `StringUtils` 校验、`NotifyTypeEnumVO.valueOf`、领域命令 builder 和拼团交易响应 DTO builder 回流到 Controller。
 
+- [x] 拆分拼团首页 HTTP Controller 支撑逻辑。
+  - 目标：避免 `MarketIndexController` 继续承担请求校验、API DTO 到领域命令转换和首页响应 DTO 组装。
+  - 实际拆分：`GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler`、`GroupBuyMarketConfigResponseAssembler`。
+  - 验收：`DomainPurityTest` 防止 `StringUtils` 校验、`MarketProductEntity.builder`、`GoodsMarketResponseDTO` builder 和队伍列表遍历回流到 Controller。
+
 - [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。

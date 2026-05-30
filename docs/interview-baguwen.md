@@ -121,6 +121,7 @@ types           异常、枚举、常量、通用类型
 - `GroupBuyRefundPort` 基础设施实现继续拆成三类退单处理器，未支付释放、已支付未成团、已支付已成团不再堆在一个大实现类里。
 - 拼团读模型查询、超时未支付扫描、渠道黑名单策略已分别拆到 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
 - 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
+- 拼团首页 HTTP 入口 `MarketIndexController` 拆出 `GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler` 和 `GroupBuyMarketConfigResponseAssembler`，Controller 不再直接维护请求校验、领域命令 builder、首页 DTO builder 和队伍列表遍历。
 - 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - `SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter` 和 `SeckillStockInitializationCache`，Redis Key、桶路由、本地初始化短缓存不再堆在预扣主适配器里。
 - `SeckillOrderCreateBuffer` 内部继续拆出 `SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper` 和 `SeckillStreamMetricsSampler`，Redis Stream 分片 hash、retry key、StreamAddArgs、DLQ payload、人工补偿消息解析和 pending/lag 采样 Lua 不再堆在缓冲主类里。
@@ -163,6 +164,7 @@ types           异常、枚举、常量、通用类型
 - 拼团锁单：`group-buy-market-domain/.../trade/service/lock`
 - 拼团结算：`group-buy-market-domain/.../trade/service/settlement`
 - 退单策略：`group-buy-market-domain/.../trade/service/refund`
+- 拼团首页 HTTP 支撑组件：`group-buy-market-trigger/.../support/GroupBuyMarketConfigRequestValidator.java`、`GroupBuyMarketConfigCommandAssembler.java`、`GroupBuyMarketConfigResponseAssembler.java`
 - 首页试算查询端口：`group-buy-market-domain/.../activity/adapter/port/IActivityTrialQueryPort.java`
 - 人群标签端口：`group-buy-market-domain/.../activity/adapter/port/ICrowdTagPort.java`
 - 活动开关端口：`group-buy-market-domain/.../activity/adapter/port/IActivitySwitchPort.java`
@@ -965,6 +967,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分拼团首页 HTTP 入口，新增 `GroupBuyMarketConfigRequestValidator`、`GroupBuyMarketConfigCommandAssembler` 和 `GroupBuyMarketConfigResponseAssembler`，请求校验、领域命令 builder、首页 DTO builder 和队伍列表遍历不再堆在 `MarketIndexController`，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-index-controller-support-split.md`。
 - 2026-05-30：治理商城对账查询 API DTO 边界，新增 `ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler` 和 `ReconcileQuerySupport`，对账查询接口不再直接返回 domain entity，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-api-dto-boundary.md`。
 - 2026-05-30：删除商城通用 `IProductPort`，新增 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort` 及对应基础设施适配器，商品查询、营销锁单、营销结算和营销退款不再共用过宽商品端口，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-product-market-port-split.md`。
 - 2026-05-30：删除营销活动通用 `IActivityRepository` / `ActivityRepository`，新增 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort` 及对应基础设施适配器，首页试算、折扣人群标签、DCC 开关和队伍展示不再依赖过宽仓储，并新增 SDD 记录 `docs/sdd/2026-05-30-activity-repository-port-split.md`。
