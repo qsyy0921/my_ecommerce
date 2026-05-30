@@ -23,6 +23,11 @@
   - 实际拆分：`IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort`、`ITradePolicyPort`。
   - 验收：`ITradeRepository` / `TradeRepository` 已删除，架构测试防止通用交易仓储回流。
 
+- [x] 拆分拼团交易 HTTP Controller 支撑逻辑。
+  - 目标：避免 `MarketTradeController` 继续承担请求校验矩阵、通知类型解析、API DTO 到领域命令转换和响应 DTO 组装。
+  - 实际拆分：`GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler`、`GroupBuyTradeResponseAssembler`。
+  - 验收：`DomainPurityTest` 防止 `StringUtils` 校验、`NotifyTypeEnumVO.valueOf`、领域命令 builder 和拼团交易响应 DTO builder 回流到 Controller。
+
 - [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。

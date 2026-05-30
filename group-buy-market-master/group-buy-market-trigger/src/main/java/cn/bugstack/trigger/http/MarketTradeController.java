@@ -3,31 +3,26 @@ package cn.bugstack.trigger.http;
 import cn.bugstack.api.IMarketTradeService;
 import cn.bugstack.api.dto.*;
 import cn.bugstack.api.response.Response;
-import cn.bugstack.domain.activity.model.entity.MarketProductEntity;
 import cn.bugstack.domain.activity.model.entity.TrialBalanceEntity;
-import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.bugstack.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
-import cn.bugstack.domain.activity.model.valobj.TeamStatisticVO;
 import cn.bugstack.domain.activity.service.IIndexGroupBuyMarketService;
 import cn.bugstack.domain.trade.model.entity.*;
 import cn.bugstack.domain.trade.model.valobj.GroupBuyProgressVO;
-import cn.bugstack.domain.trade.model.valobj.NotifyConfigVO;
 import cn.bugstack.domain.trade.model.valobj.NotifyTypeEnumVO;
-import cn.bugstack.domain.trade.model.valobj.TradeOrderStatusEnumVO;
 import cn.bugstack.domain.trade.service.ITradeLockOrderService;
 import cn.bugstack.domain.trade.service.ITradeRefundOrderService;
 import cn.bugstack.domain.trade.service.ITradeSettlementOrderService;
+import cn.bugstack.trigger.support.GroupBuyTradeCommandAssembler;
+import cn.bugstack.trigger.support.GroupBuyTradeRequestValidator;
+import cn.bugstack.trigger.support.GroupBuyTradeResponseAssembler;
 import cn.bugstack.trigger.support.StructuredBusinessLogger;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -51,6 +46,12 @@ public class MarketTradeController implements IMarketTradeService {
     private ITradeRefundOrderService tradeRefundOrderService;
     @Resource
     private StructuredBusinessLogger businessLogger;
+    @Resource
+    private GroupBuyTradeRequestValidator requestValidator;
+    @Resource
+    private GroupBuyTradeCommandAssembler commandAssembler;
+    @Resource
+    private GroupBuyTradeResponseAssembler responseAssembler;
 
     /**
      * 拼团营销锁单
@@ -81,14 +82,7 @@ public class MarketTradeController implements IMarketTradeService {
 
             log.info("营销交易锁单:{} LockMarketPayOrderRequestDTO:{}", userId, JSON.toJSONString(requestDTO));
 
-            if (StringUtils.isBlank(userId)
-                    || StringUtils.isBlank(source)
-                    || StringUtils.isBlank(channel)
-                    || StringUtils.isBlank(goodsId)
-                    || null == activityId
-                    || StringUtils.isBlank(outTradeNo)
-                    || null == notifyConfigVO
-                    || StringUtils.isBlank(notifyConfigVO.getNotifyType())) {
+            if (!requestValidator.validLock(requestDTO)) {
                 businessLogger.warn("group_buy_lock_order", "illegal_parameter", businessLogger.fields(
                         "userId", userId,
                         "activityId", activityId,
@@ -101,10 +95,8 @@ public class MarketTradeController implements IMarketTradeService {
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
                         .build();
             }
-            NotifyTypeEnumVO notifyTypeEnumVO;
-            try {
-                notifyTypeEnumVO = NotifyTypeEnumVO.valueOf(notifyConfigVO.getNotifyType());
-            } catch (IllegalArgumentException e) {
+            NotifyTypeEnumVO notifyTypeEnumVO = requestValidator.resolveNotifyType(requestDTO);
+            if (null == notifyTypeEnumVO) {
                 businessLogger.warn("group_buy_lock_order", "illegal_notify_type", businessLogger.fields(
                         "userId", userId,
                         "activityId", activityId,
@@ -118,7 +110,7 @@ public class MarketTradeController implements IMarketTradeService {
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
                         .build();
             }
-            if (NotifyTypeEnumVO.HTTP.equals(notifyTypeEnumVO) && StringUtils.isBlank(notifyConfigVO.getNotifyUrl())) {
+            if (!requestValidator.validNotifyUrl(requestDTO, notifyTypeEnumVO)) {
                 businessLogger.warn("group_buy_lock_order", "illegal_notify_url", businessLogger.fields(
                         "userId", userId,
                         "activityId", activityId,
@@ -136,15 +128,6 @@ public class MarketTradeController implements IMarketTradeService {
             // 查询 outTradeNo 是否已经存在交易记录
             MarketPayOrderEntity marketPayOrderEntity = tradeOrderService.queryNoPayMarketPayOrderByOutTradeNo(userId, outTradeNo);
             if (null != marketPayOrderEntity) {
-                LockMarketPayOrderResponseDTO lockMarketPayOrderResponseDTO = LockMarketPayOrderResponseDTO.builder()
-                        .orderId(marketPayOrderEntity.getOrderId())
-                        .originalPrice(marketPayOrderEntity.getOriginalPrice())
-                        .deductionPrice(marketPayOrderEntity.getDeductionPrice())
-                        .payPrice(marketPayOrderEntity.getPayPrice())
-                        .tradeOrderStatus(marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode())
-                        .teamId(marketPayOrderEntity.getTeamId())
-                        .build();
-
                 log.info("交易锁单记录(存在):{} marketPayOrderEntity:{}", userId, JSON.toJSONString(marketPayOrderEntity));
                 businessLogger.info("group_buy_lock_order", "idempotent_hit", businessLogger.fields(
                         "userId", userId,
@@ -158,12 +141,12 @@ public class MarketTradeController implements IMarketTradeService {
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
-                        .data(lockMarketPayOrderResponseDTO)
+                        .data(responseAssembler.toLockResponse(marketPayOrderEntity))
                         .build();
             }
 
             // 判断拼团锁单是否完成了目标
-            if (StringUtils.isNotBlank(teamId)) {
+            if (requestValidator.hasTeamId(teamId)) {
                 GroupBuyProgressVO groupBuyProgressVO = tradeOrderService.queryGroupBuyProgress(teamId);
                 if (null != groupBuyProgressVO && Objects.equals(groupBuyProgressVO.getTargetCount(), groupBuyProgressVO.getLockCount())) {
                     log.info("交易锁单拦截-拼单目标已达成:{} {}", userId, teamId);
@@ -184,13 +167,7 @@ public class MarketTradeController implements IMarketTradeService {
             }
 
             // 营销优惠试算
-            TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(MarketProductEntity.builder()
-                    .userId(userId)
-                    .source(source)
-                    .channel(channel)
-                    .goodsId(goodsId)
-                    .activityId(activityId)
-                    .build());
+            TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(commandAssembler.toMarketProduct(requestDTO));
 
             // 人群限定
             if (!trialBalanceEntity.getIsVisible() || !trialBalanceEntity.getIsEnable()) {
@@ -213,33 +190,9 @@ public class MarketTradeController implements IMarketTradeService {
 
             // 营销优惠锁单
             marketPayOrderEntity = tradeOrderService.lockMarketPayOrder(
-                    UserEntity.builder().userId(userId).build(),
-                    PayActivityEntity.builder()
-                            .teamId(teamId)
-                            .activityId(activityId)
-                            .activityName(groupBuyActivityDiscountVO.getActivityName())
-                            .startTime(groupBuyActivityDiscountVO.getStartTime())
-                            .endTime(groupBuyActivityDiscountVO.getEndTime())
-                            .validTime(groupBuyActivityDiscountVO.getValidTime())
-                            .targetCount(groupBuyActivityDiscountVO.getTarget())
-                            .build(),
-                    PayDiscountEntity.builder()
-                            .source(source)
-                            .channel(channel)
-                            .goodsId(goodsId)
-                            .goodsName(trialBalanceEntity.getGoodsName())
-                            .originalPrice(trialBalanceEntity.getOriginalPrice())
-                            .deductionPrice(trialBalanceEntity.getDeductionPrice())
-                            .payPrice(trialBalanceEntity.getPayPrice())
-                            .outTradeNo(outTradeNo)
-                            .notifyConfigVO(
-                                    // 构建回调通知对象
-                                    NotifyConfigVO.builder()
-                                            .notifyType(notifyTypeEnumVO)
-                                            .notifyMQ(notifyConfigVO.getNotifyMQ())
-                                            .notifyUrl(notifyConfigVO.getNotifyUrl())
-                                            .build())
-                            .build());
+                    commandAssembler.toUser(userId),
+                    commandAssembler.toPayActivity(teamId, activityId, groupBuyActivityDiscountVO),
+                    commandAssembler.toPayDiscount(requestDTO, trialBalanceEntity, notifyTypeEnumVO));
 
             log.info("交易锁单记录(新):{} marketPayOrderEntity:{}", userId, JSON.toJSONString(marketPayOrderEntity));
             businessLogger.info("group_buy_lock_order", "success", businessLogger.fields(
@@ -257,14 +210,7 @@ public class MarketTradeController implements IMarketTradeService {
             return Response.<LockMarketPayOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(LockMarketPayOrderResponseDTO.builder()
-                            .orderId(marketPayOrderEntity.getOrderId())
-                            .originalPrice(marketPayOrderEntity.getOriginalPrice())
-                            .deductionPrice(marketPayOrderEntity.getDeductionPrice())
-                            .payPrice(marketPayOrderEntity.getPayPrice())
-                            .tradeOrderStatus(marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode())
-                            .teamId(marketPayOrderEntity.getTeamId())
-                            .build())
+                    .data(responseAssembler.toLockResponse(marketPayOrderEntity))
                     .build();
         } catch (AppException e) {
             log.error("营销交易锁单业务异常:{} LockMarketPayOrderRequestDTO:{}", null == requestDTO ? null : requestDTO.getUserId(), JSON.toJSONString(requestDTO), e);
@@ -312,7 +258,7 @@ public class MarketTradeController implements IMarketTradeService {
             }
             log.info("营销交易组队结算开始:{} outTradeNo:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo());
 
-            if (StringUtils.isBlank(requestDTO.getUserId()) || StringUtils.isBlank(requestDTO.getSource()) || StringUtils.isBlank(requestDTO.getChannel()) || StringUtils.isBlank(requestDTO.getOutTradeNo()) || null == requestDTO.getOutTradeTime()) {
+            if (!requestValidator.validSettlement(requestDTO)) {
                 businessLogger.warn("group_buy_settlement", "illegal_parameter", businessLogger.fields(
                         "userId", requestDTO.getUserId(),
                         "outTradeNo", requestDTO.getOutTradeNo(),
@@ -324,20 +270,9 @@ public class MarketTradeController implements IMarketTradeService {
             }
 
             // 1. 结算服务
-            TradePaySettlementEntity tradePaySettlementEntity = tradeSettlementOrderService.settlementMarketPayOrder(TradePaySuccessEntity.builder()
-                    .source(requestDTO.getSource())
-                    .channel(requestDTO.getChannel())
-                    .userId(requestDTO.getUserId())
-                    .outTradeNo(requestDTO.getOutTradeNo())
-                    .outTradeTime(requestDTO.getOutTradeTime())
-                    .build());
+            TradePaySettlementEntity tradePaySettlementEntity = tradeSettlementOrderService.settlementMarketPayOrder(commandAssembler.toTradePaySuccess(requestDTO));
 
-            SettlementMarketPayOrderResponseDTO responseDTO = SettlementMarketPayOrderResponseDTO.builder()
-                    .userId(tradePaySettlementEntity.getUserId())
-                    .teamId(tradePaySettlementEntity.getTeamId())
-                    .activityId(tradePaySettlementEntity.getActivityId())
-                    .outTradeNo(tradePaySettlementEntity.getOutTradeNo())
-                    .build();
+            SettlementMarketPayOrderResponseDTO responseDTO = responseAssembler.toSettlementResponse(tradePaySettlementEntity);
 
             // 返回结果
             Response<SettlementMarketPayOrderResponseDTO> response = Response.<SettlementMarketPayOrderResponseDTO>builder()
@@ -395,7 +330,7 @@ public class MarketTradeController implements IMarketTradeService {
             }
             log.info("营销拼团退单开始:{} outTradeNo:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo());
 
-            if (StringUtils.isBlank(requestDTO.getUserId()) || StringUtils.isBlank(requestDTO.getOutTradeNo()) || StringUtils.isBlank(requestDTO.getSource()) || StringUtils.isBlank(requestDTO.getChannel())) {
+            if (!requestValidator.validRefund(requestDTO)) {
                 businessLogger.warn("group_buy_refund", "illegal_parameter", businessLogger.fields(
                         "userId", requestDTO.getUserId(),
                         "outTradeNo", requestDTO.getOutTradeNo(),
@@ -407,20 +342,9 @@ public class MarketTradeController implements IMarketTradeService {
             }
 
             // 1. 退单服务
-            TradeRefundBehaviorEntity tradeRefundBehaviorEntity = tradeRefundOrderService.refundOrder(TradeRefundCommandEntity.builder()
-                    .userId(requestDTO.getUserId())
-                    .outTradeNo(requestDTO.getOutTradeNo())
-                    .source(requestDTO.getSource())
-                    .channel(requestDTO.getChannel())
-                    .build());
+            TradeRefundBehaviorEntity tradeRefundBehaviorEntity = tradeRefundOrderService.refundOrder(commandAssembler.toTradeRefundCommand(requestDTO));
 
-            RefundMarketPayOrderResponseDTO responseDTO = RefundMarketPayOrderResponseDTO.builder()
-                    .userId(tradeRefundBehaviorEntity.getUserId())
-                    .orderId(tradeRefundBehaviorEntity.getOrderId())
-                    .teamId(tradeRefundBehaviorEntity.getTeamId())
-                    .code(tradeRefundBehaviorEntity.getTradeRefundBehaviorEnum().getCode())
-                    .info(tradeRefundBehaviorEntity.getTradeRefundBehaviorEnum().getInfo())
-                    .build();
+            RefundMarketPayOrderResponseDTO responseDTO = responseAssembler.toRefundResponse(tradeRefundBehaviorEntity);
 
             // 返回结果
             Response<RefundMarketPayOrderResponseDTO> response = Response.<RefundMarketPayOrderResponseDTO>builder()

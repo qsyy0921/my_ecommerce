@@ -119,6 +119,7 @@ types           异常、枚举、常量、通用类型
 - 拼团锁单落库、支付结算、三类退单写操作已分别拆到 `IGroupBuyOrderPort`、`IGroupBuySettlementPort` 和 `IGroupBuyRefundPort`。
 - `GroupBuyRefundPort` 基础设施实现继续拆成三类退单处理器，未支付释放、已支付未成团、已支付已成团不再堆在一个大实现类里。
 - 拼团读模型查询、超时未支付扫描、渠道黑名单策略已分别拆到 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
+- 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
 - 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - `SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter` 和 `SeckillStockInitializationCache`，Redis Key、桶路由、本地初始化短缓存不再堆在预扣主适配器里。
 - `SeckillOrderCreateBuffer` 内部继续拆出 `SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper` 和 `SeckillStreamMetricsSampler`，Redis Stream 分片 hash、retry key、StreamAddArgs、DLQ payload、人工补偿消息解析和 pending/lag 采样 Lua 不再堆在缓冲主类里。
@@ -159,6 +160,7 @@ types           异常、枚举、常量、通用类型
 - 拼团结算：`group-buy-market-domain/.../trade/service/settlement`
 - 退单策略：`group-buy-market-domain/.../trade/service/refund`
 - 拼团锁单落库端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuyOrderPort.java`
+- 拼团交易 HTTP 支撑组件：`group-buy-market-trigger/.../support/GroupBuyTradeRequestValidator.java`、`GroupBuyTradeCommandAssembler.java`、`GroupBuyTradeResponseAssembler.java`
 - 拼团读模型端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuyQueryPort.java`
 - 拼团超时扫描端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuyTimeoutOrderPort.java`
 - 拼团结算端口：`group-buy-market-domain/.../trade/adapter/port/IGroupBuySettlementPort.java`
@@ -949,6 +951,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分拼团交易 HTTP 入口，新增 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder 不再堆在 `MarketTradeController`，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-support-split.md`。
 - 2026-05-30：继续拆分秒杀 HTTP 入口，新增 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，请求校验矩阵、代理 IP 解析和秒杀响应 DTO 字段映射不再堆在 `SeckillMarketController`，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-controller-support-split.md`。
 - 2026-05-30：继续拆分秒杀订单生命周期命令，删除 `ISeckillOrderCommandPort` / `SeckillOrderCommandPort`，新增 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，并把分片表访问、PO/Entity 转换、库存释放/回滚拆到 `SeckillOrderTableGateway`、`SeckillOrderAssembler`、`SeckillStockReleaseSupport`；新增 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-decomposition.md`。
 - 2026-05-30：继续拆分秒杀库存预扣适配器，新增 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，并新增架构测试防止 Redis Key、CRC32 桶路由和本地初始化缓存回流到 `SeckillStockReservationPort`。
