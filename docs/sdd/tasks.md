@@ -74,6 +74,7 @@
 - [x] 支付流水和退款流水独立端口化，订单状态不再替代支付/退款事实。
 - [x] 商城 `OrderService` 与 `OrderReconcileService` 拆分，订单主链路和对账差错处理分离。
 - [x] 商城 `OrderService` 支付成功和退款用例拆到 `OrderPaySuccessProcessor`、`OrderRefundProcessor`，订单服务不再直接编排支付流水、营销结算、营销退单和退款流水。
+- [x] 商城 `OrderReconcileService` 自动重放编排拆到 `ReconcileCaseReplayProcessor`，营销结算补偿复用 `MarketSettlementReconcileProcessor`，对账服务门面不再直接持有订单仓储、营销结算端口和退款重放细节。
 - [x] 商城 `IOrderRepository` 与 `IOrderReconcileRepository` 拆分，订单主链路仓储端口不暴露对账台账能力。
 - [x] 对账差错单支持确认、重放、忽略、关闭、备注和操作日志查询。
 - [x] 超时未支付退单补偿。
@@ -99,6 +100,7 @@
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。
+- [x] 商城 `OrderReconcileService` 拆出 `ReconcileCaseReplayProcessor` 和 `MarketSettlementReconcileProcessor`，对账服务门面不再混入差错类型路由、订单关单、退款重放和 MQ 重放。
 - [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
@@ -166,6 +168,7 @@
 - [x] 读模型适配器已完成不拆边界审计，`GroupBuyQueryPort`、`GroupBuyDisplayPort`、`ActivityTrialQueryPort` 当前保持查询聚合职责，并由架构测试防止写操作和补偿逻辑回流。
 - [x] 对账差错处理补齐 `ReconcileCaseStatusVO` 和终态保护，`reconcile_case` 终态不会被扫描重新打开，重放前先校验待处理状态。
 - [x] 对账重放契约测试已补齐，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 跳过和失败备注。
+- [x] `DomainPurityTest` 增加商城对账服务重放处理器边界守护，避免差错单重放分支和营销结算补偿细节回流到 `OrderReconcileService`。
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
 - [x] `DomainPurityTest` 增加读模型适配器只读守护，避免拼团/活动查询适配器混入写操作、状态流水、消息发送和补偿逻辑。
 - [x] `DomainPurityTest` 增加拼团锁单端口边界守护，避免队伍写入、订单明细、状态流水和库存流水细节回流。

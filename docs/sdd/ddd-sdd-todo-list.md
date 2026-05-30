@@ -287,6 +287,11 @@
   - 实际拆分：`ReconcileCaseScanSupport`、`ReconcileOperationLogSupport`。
   - 验收：`OrderReconcileRepository` 保留对账端口门面；扫描规则和操作日志细节进入支撑组件；架构测试和操作日志支撑单元测试通过。
 
+- [x] 拆分商城对账服务自动重放处理器。
+  - 目标：避免 `OrderReconcileService` 在完成主链路拆分后继续承担差错单类型路由、订单关单、退款重放、MQ 重放和营销结算补偿。
+  - 实际拆分：`ReconcileCaseReplayProcessor`、`MarketSettlementReconcileProcessor`。
+  - 验收：`OrderReconcileService` 只保留对账查询、人工处理、备注、操作日志和账单导入门面；重放分支和营销结算差异进入处理器；架构测试防止重放细节回流。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

@@ -13,6 +13,8 @@ import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
 import cn.bugstack.domain.order.model.valobj.ReconcileCaseStatusVO;
 import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.domain.order.service.OrderReconcileService;
+import cn.bugstack.domain.order.service.processor.MarketSettlementReconcileProcessor;
+import cn.bugstack.domain.order.service.processor.ReconcileCaseReplayProcessor;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -130,7 +132,9 @@ public class OrderReconcileServiceReplayContractTest {
         private final FakeOrderReconcileRepository reconcileRepository = new FakeOrderReconcileRepository();
         private final FakeMarketSettlementPort marketSettlementPort = new FakeMarketSettlementPort();
         private final FakeOrderService orderService = new FakeOrderService();
-        private final OrderReconcileService service = new OrderReconcileService(orderRepository, reconcileRepository, marketSettlementPort, orderService);
+        private final MarketSettlementReconcileProcessor marketSettlementReconcileProcessor = new MarketSettlementReconcileProcessor(marketSettlementPort, orderService);
+        private final ReconcileCaseReplayProcessor replayProcessor = new ReconcileCaseReplayProcessor(orderRepository, reconcileRepository, orderService, marketSettlementReconcileProcessor);
+        private final OrderReconcileService service = new OrderReconcileService(reconcileRepository, marketSettlementReconcileProcessor, replayProcessor);
     }
 
     private static class FakeOrderRepository implements IOrderRepository {

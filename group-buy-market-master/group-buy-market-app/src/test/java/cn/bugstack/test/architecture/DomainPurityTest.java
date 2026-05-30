@@ -1584,10 +1584,12 @@ public class DomainPurityTest {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
         Path service = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
+        Path replayProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
         Path mapper = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/resources/mybatis/mapper/reconcile_case_mapper.xml");
 
         String controllerSource = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
         String serviceSource = new String(Files.readAllBytes(service), StandardCharsets.UTF_8);
+        String replayProcessorSource = new String(Files.readAllBytes(replayProcessor), StandardCharsets.UTF_8);
         String mapperSource = new String(Files.readAllBytes(mapper), StandardCharsets.UTF_8);
 
         List<String> requiredSnippets = Arrays.asList(
@@ -1604,12 +1606,61 @@ public class DomainPurityTest {
 
         List<String> violations = new ArrayList<>();
         for (String snippet : requiredSnippets) {
-            if (!controllerSource.contains(snippet) && !serviceSource.contains(snippet) && !mapperSource.contains(snippet)) {
+            if (!controllerSource.contains(snippet) && !serviceSource.contains(snippet) && !replayProcessorSource.contains(snippet) && !mapperSource.contains(snippet)) {
                 violations.add(snippet);
             }
         }
 
         Assert.assertTrue("Mall reconcile case closed-loop operations must stay explicit and terminal-safe: " + violations, violations.isEmpty());
+    }
+
+    @Test
+    public void mallOrderReconcileServiceShouldDelegateReplayAndSettlementUsecases() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path service = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
+        Path replayProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
+        Path settlementProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/MarketSettlementReconcileProcessor.java");
+        Path domainConfig = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+
+        List<String> violations = new ArrayList<>();
+        for (Path requiredFile : Arrays.asList(replayProcessor, settlementProcessor)) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing processor:" + requiredFile.getFileName());
+            }
+        }
+
+        assertSourceDoesNotContain(service, violations, Arrays.asList(
+                "IOrderRepository",
+                "IMarketSettlementPort",
+                "IOrderService",
+                "MarketTypeVO",
+                "MARKET_SETTLEMENT_TIMEOUT:",
+                "PAY_WAIT_TIMEOUT:",
+                "REFUND_TIMEOUT:",
+                "MQ_CONSUME_FAIL:",
+                "queryOrderByOrderId",
+                "changeOrderClose",
+                "refundPayOrder",
+                "replayMqFailure",
+                "bizId("
+        ));
+
+        String serviceSource = new String(Files.readAllBytes(service), StandardCharsets.UTF_8);
+        if (!serviceSource.contains("marketSettlementReconcileProcessor.settle(orderEntity)")) {
+            violations.add("OrderReconcileService must delegate stale settlement replay");
+        }
+        if (!serviceSource.contains("reconcileCaseReplayProcessor.replay(caseNo, operator)")) {
+            violations.add("OrderReconcileService must delegate case replay");
+        }
+
+        String configSource = new String(Files.readAllBytes(domainConfig), StandardCharsets.UTF_8);
+        for (String snippet : Arrays.asList("marketSettlementReconcileProcessor(", "reconcileCaseReplayProcessor(")) {
+            if (!configSource.contains(snippet)) {
+                violations.add("DomainServiceConfig missing bean:" + snippet);
+            }
+        }
+
+        Assert.assertTrue("Mall OrderReconcileService must keep query/operation facade separate from replay and settlement usecases: " + violations, violations.isEmpty());
     }
 
     @Test

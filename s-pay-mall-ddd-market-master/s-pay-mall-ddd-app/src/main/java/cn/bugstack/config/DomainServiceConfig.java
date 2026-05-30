@@ -24,8 +24,10 @@ import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.domain.order.service.IOrderService;
 import cn.bugstack.domain.order.service.OrderService;
 import cn.bugstack.domain.order.service.OrderReconcileService;
+import cn.bugstack.domain.order.service.processor.MarketSettlementReconcileProcessor;
 import cn.bugstack.domain.order.service.processor.OrderPaySuccessProcessor;
 import cn.bugstack.domain.order.service.processor.OrderRefundProcessor;
+import cn.bugstack.domain.order.service.processor.ReconcileCaseReplayProcessor;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import com.google.common.cache.Cache;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,11 +66,24 @@ public class DomainServiceConfig {
     }
 
     @Bean
-    public IOrderReconcileService orderReconcileService(IOrderRepository orderRepository,
-                                                        IOrderReconcileRepository orderReconcileRepository,
-                                                        IMarketSettlementPort marketSettlementPort,
-                                                        IOrderService orderService) {
-        return new OrderReconcileService(orderRepository, orderReconcileRepository, marketSettlementPort, orderService);
+    public MarketSettlementReconcileProcessor marketSettlementReconcileProcessor(IMarketSettlementPort marketSettlementPort,
+                                                                                 IOrderService orderService) {
+        return new MarketSettlementReconcileProcessor(marketSettlementPort, orderService);
+    }
+
+    @Bean
+    public ReconcileCaseReplayProcessor reconcileCaseReplayProcessor(IOrderRepository orderRepository,
+                                                                     IOrderReconcileRepository orderReconcileRepository,
+                                                                     IOrderService orderService,
+                                                                     MarketSettlementReconcileProcessor marketSettlementReconcileProcessor) {
+        return new ReconcileCaseReplayProcessor(orderRepository, orderReconcileRepository, orderService, marketSettlementReconcileProcessor);
+    }
+
+    @Bean
+    public IOrderReconcileService orderReconcileService(IOrderReconcileRepository orderReconcileRepository,
+                                                        MarketSettlementReconcileProcessor marketSettlementReconcileProcessor,
+                                                        ReconcileCaseReplayProcessor reconcileCaseReplayProcessor) {
+        return new OrderReconcileService(orderReconcileRepository, marketSettlementReconcileProcessor, reconcileCaseReplayProcessor);
     }
 
     @Bean
