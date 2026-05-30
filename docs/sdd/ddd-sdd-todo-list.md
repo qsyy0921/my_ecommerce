@@ -65,9 +65,9 @@
   - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
   - 验收：Redis Stream、RabbitMQ、Redis Queue、本地队列投递选择收敛到消息 Adapter；锁单适配器不再感知具体中间件。
 
-- [ ] 补齐 Stream 人工补偿治理。
+- [x] 补齐 Stream 人工补偿治理。
   - 目标：人工补偿 Stream 不只是失败隔离，还要有可查询、可重放、可审计能力。
-  - 本机可做：补偿查询接口、单条重放接口、操作日志表。
+  - 本机已做：补偿查询接口、单条/批量重放接口、`seckill_manual_compensation_log` 操作日志表、操作记录查询接口和补偿台展示。
   - 生产边界：权限、审批流和 SLA 需要后台系统支撑。
 
 ## P2 售后和对账模型

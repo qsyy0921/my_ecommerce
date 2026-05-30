@@ -1,4 +1,5 @@
 const messageBody = document.getElementById('messageBody');
+const logBody = document.getElementById('logBody');
 const checkAll = document.getElementById('checkAll');
 const adminTokenInput = document.getElementById('adminToken');
 const adminOperatorInput = document.getElementById('adminOperator');
@@ -13,6 +14,7 @@ document.getElementById('saveAuthBtn').addEventListener('click', saveAuth);
 document.getElementById('queryBtn').addEventListener('click', queryMessages);
 document.getElementById('replaySelectedBtn').addEventListener('click', replaySelected);
 document.getElementById('replayTopBtn').addEventListener('click', () => replayMessages([], 20));
+document.getElementById('queryLogBtn').addEventListener('click', queryLogs);
 checkAll.addEventListener('change', () => {
     document.querySelectorAll('.message-check').forEach(item => item.checked = checkAll.checked);
 });
@@ -64,6 +66,35 @@ async function replayMessages(messageIds, limit) {
     ensureSuccess(data);
     alert(`已重放 ${data.data || 0} 条`);
     await queryMessages();
+    await queryLogs();
+}
+
+async function queryLogs() {
+    const response = await fetch(`${AppConfig.groupBuyMarketUrl}/api/v1/gbm/seckill/ops/manual_logs?limit=50`, {
+        headers: authHeaders(),
+    });
+    const data = await response.json();
+    ensureSuccess(data);
+    renderLogs(data.data || []);
+}
+
+function renderLogs(rows) {
+    if (!rows.length) {
+        logBody.innerHTML = '<tr><td colspan="8" class="empty">暂无补偿操作记录</td></tr>';
+        return;
+    }
+    logBody.innerHTML = rows.map(item => `
+        <tr>
+            <td>${formatTime(item.createTime)}</td>
+            <td>${escapeHtml(item.operator || '')}</td>
+            <td>${escapeHtml(item.operationType || '')}</td>
+            <td>${escapeHtml(item.messageIds || '')}</td>
+            <td>${escapeHtml(item.requestLimit || '')}</td>
+            <td>${escapeHtml(item.manualStreamKey || '')}</td>
+            <td>${escapeHtml(item.resultCount || 0)}</td>
+            <td>${item.success === 1 ? '成功' : escapeHtml(item.errorMessage || '失败')}</td>
+        </tr>
+    `).join('');
 }
 
 function authHeaders(extra = {}) {
@@ -97,4 +128,10 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;');
 }
 
+function formatTime(value) {
+    if (!value) return '';
+    return new Date(value).toLocaleString();
+}
+
 queryMessages();
+queryLogs();

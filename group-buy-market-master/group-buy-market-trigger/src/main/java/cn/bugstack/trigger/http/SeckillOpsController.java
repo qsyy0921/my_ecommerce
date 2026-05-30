@@ -1,7 +1,9 @@
 package cn.bugstack.trigger.http;
 
 import cn.bugstack.api.response.Response;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillManualCompensationAuditPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillManualCompensationPort;
+import cn.bugstack.domain.seckill.model.entity.SeckillManualCompensationLogEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillManualMessageEntity;
 import cn.bugstack.types.enums.ResponseCode;
 import com.alibaba.fastjson.JSON;
@@ -28,6 +30,8 @@ public class SeckillOpsController {
 
     @Resource
     private ISeckillManualCompensationPort seckillManualCompensationPort;
+    @Resource
+    private ISeckillManualCompensationAuditPort seckillManualCompensationAuditPort;
 
     @Value("${app.seckill.admin-token:local-admin-token}")
     private String adminToken;
@@ -35,12 +39,22 @@ public class SeckillOpsController {
     @RequestMapping(value = "manual_messages", method = RequestMethod.GET)
     public Response<List<SeckillManualMessageEntity>> queryManualMessages(
             @RequestParam(required = false, defaultValue = "20") Integer limit,
-            @RequestHeader(value = "x-admin-token", required = false) String token) {
+            @RequestHeader(value = "x-admin-token", required = false) String token,
+            @RequestHeader(value = "x-admin-operator", required = false) String operator) {
         if (!authorized(token)) {
             return denied();
         }
+        int safeLimit = null == limit ? 20 : limit;
         try {
-            List<SeckillManualMessageEntity> messages = seckillManualCompensationPort.queryManualMessages(null == limit ? 20 : limit);
+            List<SeckillManualMessageEntity> messages = seckillManualCompensationPort.queryManualMessages(safeLimit);
+            recordAudit(SeckillManualCompensationLogEntity.builder()
+                    .operator(operator(operator))
+                    .operationType(SeckillManualCompensationLogEntity.OPERATION_QUERY)
+                    .requestLimit(safeLimit)
+                    .manualStreamKey(seckillManualCompensationPort.manualStreamKey())
+                    .resultCount(messages.size())
+                    .success(1)
+                    .build());
             return Response.<List<SeckillManualMessageEntity>>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
@@ -48,6 +62,14 @@ public class SeckillOpsController {
                     .build();
         } catch (Exception e) {
             log.error("query seckill manual messages failed", e);
+            recordAudit(SeckillManualCompensationLogEntity.builder()
+                    .operator(operator(operator))
+                    .operationType(SeckillManualCompensationLogEntity.OPERATION_QUERY)
+                    .requestLimit(safeLimit)
+                    .manualStreamKey(seckillManualCompensationPort.manualStreamKey())
+                    .success(0)
+                    .errorMessage(e.getMessage())
+                    .build());
             return Response.<List<SeckillManualMessageEntity>>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
@@ -62,18 +84,61 @@ public class SeckillOpsController {
         if (!authorized(token)) {
             return denied();
         }
+        ReplayManualRequest safeRequest = null == request ? new ReplayManualRequest() : request;
+        int safeLimit = null == safeRequest.getLimit() ? 20 : safeRequest.getLimit();
         try {
-            int count = seckillManualCompensationPort.replayManualMessages(request.getMessageIds(), null == request.getLimit() ? 20 : request.getLimit());
+            int count = seckillManualCompensationPort.replayManualMessages(safeRequest.getMessageIds(), safeLimit);
             log.warn("seckill manual messages replayed operator:{} count:{} request:{}",
-                    StringUtils.defaultIfBlank(operator, "local-admin"), count, JSON.toJSONString(request));
+                    operator(operator), count, JSON.toJSONString(safeRequest));
+            recordAudit(SeckillManualCompensationLogEntity.builder()
+                    .operator(operator(operator))
+                    .operationType(SeckillManualCompensationLogEntity.OPERATION_REPLAY)
+                    .messageIds(JSON.toJSONString(safeRequest.getMessageIds()))
+                    .requestLimit(safeLimit)
+                    .manualStreamKey(seckillManualCompensationPort.manualStreamKey())
+                    .resultCount(count)
+                    .success(1)
+                    .build());
             return Response.<Integer>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
                     .data(count)
                     .build();
         } catch (Exception e) {
-            log.error("replay seckill manual messages failed request:{}", JSON.toJSONString(request), e);
+            log.error("replay seckill manual messages failed request:{}", JSON.toJSONString(safeRequest), e);
+            recordAudit(SeckillManualCompensationLogEntity.builder()
+                    .operator(operator(operator))
+                    .operationType(SeckillManualCompensationLogEntity.OPERATION_REPLAY)
+                    .messageIds(JSON.toJSONString(safeRequest.getMessageIds()))
+                    .requestLimit(safeLimit)
+                    .manualStreamKey(seckillManualCompensationPort.manualStreamKey())
+                    .success(0)
+                    .errorMessage(e.getMessage())
+                    .build());
             return Response.<Integer>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
+    @RequestMapping(value = "manual_logs", method = RequestMethod.GET)
+    public Response<List<SeckillManualCompensationLogEntity>> queryManualLogs(
+            @RequestParam(required = false, defaultValue = "50") Integer limit,
+            @RequestHeader(value = "x-admin-token", required = false) String token) {
+        if (!authorized(token)) {
+            return denied();
+        }
+        try {
+            List<SeckillManualCompensationLogEntity> logs = seckillManualCompensationAuditPort.queryRecentLogs(null == limit ? 50 : limit);
+            return Response.<List<SeckillManualCompensationLogEntity>>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(logs)
+                    .build();
+        } catch (Exception e) {
+            log.error("query seckill manual compensation logs failed", e);
+            return Response.<List<SeckillManualCompensationLogEntity>>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
@@ -89,6 +154,18 @@ public class SeckillOpsController {
                 .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                 .info("unauthorized")
                 .build();
+    }
+
+    private String operator(String operator) {
+        return StringUtils.defaultIfBlank(operator, "local-admin");
+    }
+
+    private void recordAudit(SeckillManualCompensationLogEntity logEntity) {
+        try {
+            seckillManualCompensationAuditPort.record(logEntity);
+        } catch (Exception e) {
+            log.error("record seckill manual compensation audit failed log:{}", JSON.toJSONString(logEntity), e);
+        }
     }
 
     @Data

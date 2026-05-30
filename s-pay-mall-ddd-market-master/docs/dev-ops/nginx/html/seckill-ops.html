@@ -30,6 +30,7 @@
         <button id="queryBtn">查询补偿消息</button>
         <button id="replaySelectedBtn">重放选中</button>
         <button id="replayTopBtn">重放前 20 条</button>
+        <button id="queryLogBtn">查询操作记录</button>
     </section>
 
     <section class="panel">
@@ -48,8 +49,26 @@
             <tbody id="messageBody"></tbody>
         </table>
     </section>
+
+    <section class="panel">
+        <table>
+            <thead>
+            <tr>
+                <th>时间</th>
+                <th>操作人</th>
+                <th>操作</th>
+                <th>消息 ID</th>
+                <th>Limit</th>
+                <th>Stream</th>
+                <th>数量</th>
+                <th>结果</th>
+            </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+        </table>
+    </section>
 </main>
 <script src="./js/common.js?v=20260524"></script>
-<script src="./js/seckill-ops.js?v=20260526"></script>
+<script src="./js/seckill-ops.js?v=20260530"></script>
 </body>
 </html>

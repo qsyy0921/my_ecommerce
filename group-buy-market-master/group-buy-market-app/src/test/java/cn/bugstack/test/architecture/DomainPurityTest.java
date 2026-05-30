@@ -200,6 +200,31 @@ public class DomainPurityTest {
         Assert.assertTrue("Seckill order lock adapter must delegate message middleware routing to ISeckillOrderMessagePort: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void seckillOpsControllerShouldDependOnManualCompensationPortsOnly() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillOpsController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "cn.bugstack.infrastructure",
+                "SeckillOrderCreateBuffer",
+                "RStream",
+                "Redisson",
+                "IRedisService",
+                "StreamMessageId"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Assert.assertTrue("Seckill ops controller must operate through manual compensation domain ports only: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

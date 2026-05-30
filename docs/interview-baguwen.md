@@ -806,7 +806,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 ### 4. 补偿台治理问题
 
 - 秒杀补偿台已有查询和重放，商城对账也有差错单处理，但生产上还需要审批流、SLA、权限分级和补偿结果回写。
-- 现在的补偿能力偏工程闭环，缺少运营后台治理能力。
+- 现在秒杀补偿台已补操作审计表和操作记录查询，但整体仍偏工程闭环，生产上还缺审批流、SLA、权限分级和补偿结果回写。
 - 面试中可以说：“我把失败消息从不可见变成可查询、可隔离、可重放；审批和 SLA 属于后续运营化建设。”
 
 ### 5. 支付对账问题
@@ -928,6 +928,7 @@ MQ：
 - 2026-05-30：删除通用秒杀仓储，新增 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort` 和独立 `SeckillMaintenancePort` 适配器，活动查询、库存可用性、锁单预扣、维护任务不再共用 `ISeckillRepository` / `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-delete-port-split.md`。
 - 2026-05-30：继续拆分秒杀消息投递，新增 `ISeckillOrderMessagePort` 和 `SeckillOrderMessagePort`，RabbitMQ/Redis Stream/Redis Queue/本地队列投递选择不再挂在 `SeckillOrderLockPort`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-message-port.md`。
 - 2026-05-30：补齐专业 MQ 演进方案，`docs/sdd/mq-evolution.md` 明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、路由策略、Outbox 兜底、迁移步骤和回滚方案，并同步更新 TODO 状态。
+- 2026-05-30：补齐秒杀人工补偿 Stream 审计闭环，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示，并同步更新 TODO 状态。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillOrderCommandPort` 和 `SeckillOrderCommandPort`，订单创建、批量落库、支付结算和退款状态更新不再挂在 `ISeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-port-split.md`。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，库存流水、结果缓存和订单表分片路由不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-split.md`。
 - 2026-05-30：继续拆分秒杀 Redis 库存预扣，新增 `ISeckillStockReservationPort` 和 `SeckillStockReservationPort`，Redis 库存桶、Lua 预扣、用户占位、初始化锁和库存释放不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-stock-reservation-port.md`。

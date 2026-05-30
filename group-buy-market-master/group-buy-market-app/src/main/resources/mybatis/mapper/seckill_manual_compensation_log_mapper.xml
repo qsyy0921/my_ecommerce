@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.ISeckillManualCompensationLogDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.SeckillManualCompensationLog">
+        <id column="id" property="id"/>
+        <result column="operator" property="operator"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="message_ids" property="messageIds"/>
+        <result column="request_limit" property="requestLimit"/>
+        <result column="manual_stream_key" property="manualStreamKey"/>
+        <result column="result_count" property="resultCount"/>
+        <result column="success" property="success"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="cn.bugstack.infrastructure.dao.po.SeckillManualCompensationLog">
+        insert into seckill_manual_compensation_log(
+            operator, operation_type, message_ids, request_limit, manual_stream_key,
+            result_count, success, error_message, create_time
+        ) values(
+            #{operator}, #{operationType}, #{messageIds}, #{requestLimit}, #{manualStreamKey},
+            #{resultCount}, #{success}, #{errorMessage}, now()
+        )
+    </insert>
+
+    <select id="queryRecentLogs" resultMap="dataMap">
+        select id, operator, operation_type, message_ids, request_limit, manual_stream_key,
+               result_count, success, error_message, create_time
+        from seckill_manual_compensation_log
+        order by create_time desc, id desc
+        limit #{limit}
+    </select>
+
+</mapper>
