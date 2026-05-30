@@ -494,6 +494,55 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mallProductPortShouldStaySplitFromMarketTradePorts() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path productPort = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductPort.java");
+        Assert.assertFalse("Generic IProductPort should stay deleted; split product query from market trade ports.", Files.exists(productPort));
+
+        List<Path> requiredPorts = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductQueryPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketOrderLockPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketSettlementPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketRefundPort.java")
+        );
+        for (Path requiredPort : requiredPorts) {
+            Assert.assertTrue("Missing mall product/market semantic port: " + requiredPort.getFileName(), Files.exists(requiredPort));
+        }
+
+        List<Path> requiredAdapters = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketOrderLockPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketSettlementPort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketRefundPort.java")
+        );
+        for (Path requiredAdapter : requiredAdapters) {
+            Assert.assertTrue("Missing mall product/market semantic adapter: " + requiredAdapter.getFileName(), Files.exists(requiredAdapter));
+        }
+
+        List<String> violations = new ArrayList<>();
+        Path productAdapter = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java");
+        assertSourceDoesNotContain(productAdapter, violations, Arrays.asList(
+                "lockGroupBuyMarketPayOrder",
+                "lockSeckillPayOrder",
+                "settlementGroupBuyMarketPayOrder",
+                "settlementSeckillPayOrder",
+                "refundGroupBuyMarketPayOrder",
+                "refundSeckillPayOrder",
+                "IGroupBuyMarketService",
+                "LockMarketPayOrderRequestDTO",
+                "SettlementMarketPayOrderRequestDTO",
+                "RefundMarketPayOrderRequestDTO"
+        ));
+
+        Path domainConfig = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+        assertSourceDoesNotContain(domainConfig, violations, Arrays.asList(
+                "IProductPort"
+        ));
+
+        Assert.assertTrue("Mall ProductPort must stay product-query only, with market operations in dedicated ports: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallOrderReconcileRepositoryShouldDelegateCaseReplayCsvAndMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path reconcileRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderReconcileRepository.java");

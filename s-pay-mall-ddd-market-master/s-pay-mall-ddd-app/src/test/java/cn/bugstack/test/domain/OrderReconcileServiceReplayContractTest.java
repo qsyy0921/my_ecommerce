@@ -1,13 +1,11 @@
 package cn.bugstack.test.domain;
 
-import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
-import cn.bugstack.domain.order.model.entity.MarketPayDiscountEntity;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
 import cn.bugstack.domain.order.model.entity.PayOrderEntity;
-import cn.bugstack.domain.order.model.entity.ProductEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.model.entity.ShopCartEntity;
@@ -37,8 +35,8 @@ public class OrderReconcileServiceReplayContractTest {
         boolean result = fixture.service.replayReconcileCase("MARKET_SETTLEMENT_TIMEOUT:" + ORDER_ID, OPERATOR);
 
         Assert.assertTrue(result);
-        Assert.assertEquals(1, fixture.productPort.groupBuySettlementCalls);
-        Assert.assertEquals(0, fixture.productPort.seckillSettlementCalls);
+        Assert.assertEquals(1, fixture.marketSettlementPort.groupBuySettlementCalls);
+        Assert.assertEquals(0, fixture.marketSettlementPort.seckillSettlementCalls);
         Assert.assertEquals(1, fixture.reconcileRepository.confirmCalls);
         Assert.assertEquals(ReconcileCaseStatusVO.CONFIRMED.getCode(), fixture.reconcileRepository.lastHandledStatus);
     }
@@ -51,8 +49,8 @@ public class OrderReconcileServiceReplayContractTest {
         boolean result = fixture.service.replayReconcileCase("MARKET_SETTLEMENT_TIMEOUT:" + ORDER_ID, OPERATOR);
 
         Assert.assertTrue(result);
-        Assert.assertEquals(0, fixture.productPort.groupBuySettlementCalls);
-        Assert.assertEquals(1, fixture.productPort.seckillSettlementCalls);
+        Assert.assertEquals(0, fixture.marketSettlementPort.groupBuySettlementCalls);
+        Assert.assertEquals(1, fixture.marketSettlementPort.seckillSettlementCalls);
         Assert.assertEquals(1, fixture.orderRepository.marketSettlementCalls);
         Assert.assertEquals(1, fixture.reconcileRepository.confirmCalls);
     }
@@ -100,7 +98,7 @@ public class OrderReconcileServiceReplayContractTest {
         boolean result = fixture.service.replayReconcileCase("MARKET_SETTLEMENT_TIMEOUT:" + ORDER_ID, OPERATOR);
 
         Assert.assertFalse(result);
-        Assert.assertEquals(0, fixture.productPort.groupBuySettlementCalls);
+        Assert.assertEquals(0, fixture.marketSettlementPort.groupBuySettlementCalls);
         Assert.assertEquals(0, fixture.reconcileRepository.confirmCalls);
     }
 
@@ -108,7 +106,7 @@ public class OrderReconcileServiceReplayContractTest {
     public void replayFailureShouldRemarkCaseWithoutConfirming() {
         Fixture fixture = new Fixture();
         fixture.orderRepository.orderEntity = order(MarketTypeVO.GROUP_BUY_MARKET.getCode());
-        fixture.productPort.throwOnSettlement = true;
+        fixture.marketSettlementPort.throwOnSettlement = true;
 
         boolean result = fixture.service.replayReconcileCase("MARKET_SETTLEMENT_TIMEOUT:" + ORDER_ID, OPERATOR);
 
@@ -130,9 +128,9 @@ public class OrderReconcileServiceReplayContractTest {
     private static class Fixture {
         private final FakeOrderRepository orderRepository = new FakeOrderRepository();
         private final FakeOrderReconcileRepository reconcileRepository = new FakeOrderReconcileRepository();
-        private final FakeProductPort productPort = new FakeProductPort();
+        private final FakeMarketSettlementPort marketSettlementPort = new FakeMarketSettlementPort();
         private final FakeOrderService orderService = new FakeOrderService();
-        private final OrderReconcileService service = new OrderReconcileService(orderRepository, reconcileRepository, productPort, orderService);
+        private final OrderReconcileService service = new OrderReconcileService(orderRepository, reconcileRepository, marketSettlementPort, orderService);
     }
 
     private static class FakeOrderRepository implements IOrderRepository {
@@ -285,28 +283,13 @@ public class OrderReconcileServiceReplayContractTest {
         }
     }
 
-    private static class FakeProductPort implements IProductPort {
+    private static class FakeMarketSettlementPort implements IMarketSettlementPort {
         private int groupBuySettlementCalls;
         private int seckillSettlementCalls;
         private boolean throwOnSettlement;
 
         @Override
-        public ProductEntity queryProductByProductId(String productId) {
-            return null;
-        }
-
-        @Override
-        public MarketPayDiscountEntity lockMarketPayOrder(String userId, String teamId, Long activityId, String productId, String orderId) {
-            return null;
-        }
-
-        @Override
-        public MarketPayDiscountEntity lockSeckillPayOrder(String userId, Long activityId, String productId, String orderId) {
-            return null;
-        }
-
-        @Override
-        public void settlementMarketPayOrder(String userId, String orderId, Date orderTime) {
+        public void settlementGroupBuyMarketPayOrder(String userId, String orderId, Date orderTime) {
             groupBuySettlementCalls++;
             if (throwOnSettlement) {
                 throw new RuntimeException("settlement failed");
@@ -319,14 +302,6 @@ public class OrderReconcileServiceReplayContractTest {
             if (throwOnSettlement) {
                 throw new RuntimeException("settlement failed");
             }
-        }
-
-        @Override
-        public void refundMarketPayOrder(String userId, String orderId) {
-        }
-
-        @Override
-        public void refundSeckillPayOrder(String userId, String orderId) {
         }
     }
 

@@ -1,6 +1,6 @@
 package cn.bugstack.domain.order.service;
 
-import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
@@ -18,16 +18,16 @@ public class OrderReconcileService implements IOrderReconcileService {
 
     private final IOrderRepository repository;
     private final IOrderReconcileRepository reconcileRepository;
-    private final IProductPort productPort;
+    private final IMarketSettlementPort marketSettlementPort;
     private final IOrderService orderService;
 
     public OrderReconcileService(IOrderRepository repository,
                                  IOrderReconcileRepository reconcileRepository,
-                                 IProductPort productPort,
+                                 IMarketSettlementPort marketSettlementPort,
                                  IOrderService orderService) {
         this.repository = repository;
         this.reconcileRepository = reconcileRepository;
-        this.productPort = productPort;
+        this.marketSettlementPort = marketSettlementPort;
         this.orderService = orderService;
     }
 
@@ -43,10 +43,10 @@ public class OrderReconcileService implements IOrderReconcileService {
             try {
                 Date payTime = null == orderEntity.getPayTime() ? new Date() : orderEntity.getPayTime();
                 if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
-                    productPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                    marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                     repository.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
                 } else {
-                    productPort.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                    marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }
                 successCount++;
             } catch (Exception e) {
@@ -119,10 +119,10 @@ public class OrderReconcileService implements IOrderReconcileService {
                 }
                 Date payTime = null == orderEntity.getPayTime() ? new Date() : orderEntity.getPayTime();
                 if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
-                    productPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                    marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                     repository.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
                 } else {
-                    productPort.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                    marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }
                 return confirmReconcileCase(caseNo, handler, "replay market settlement success");
             }

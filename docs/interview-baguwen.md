@@ -129,6 +129,7 @@ types           异常、枚举、常量、通用类型
 - 商城 `ReconcileCaseController` 拆出 `ReconcileAdminSupport`，对账后台入口不再直接持有管理员 token、操作人兜底解析、操作审计写入和导入账单请求预览截断细节。
 - 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，通过 `ReconcileQuerySupport` 和 `ReconcileResponseAssembler` 转换，HTTP API 不再直接暴露 domain entity。
 - 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和用户订单 DTO 映射细节。
+- 商城商品查询和营销交易能力已拆开，通用 `IProductPort` 删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
 - 新增 `SeckillOrderLockPortUnitTest` 和 `SeckillPendingRetryPolicy`，用 fake port 覆盖秒杀库存预扣、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - 新增 `TradeRefundOrderServiceUnitTest`，用 fake port 覆盖拼团未支付未成团、已支付未成团、已支付已成团、重复退单、非法退单状态和锁单库存恢复边界。
 
@@ -201,6 +202,10 @@ types           异常、枚举、常量、通用类型
 商城服务：
 
 - 下单和支付：`s-pay-mall-ddd-domain/.../order`
+- 商品查询端口：`s-pay-mall-ddd-domain/.../order/adapter/port/IProductQueryPort.java`
+- 营销锁单端口：`s-pay-mall-ddd-domain/.../order/adapter/port/IMarketOrderLockPort.java`
+- 营销结算端口：`s-pay-mall-ddd-domain/.../order/adapter/port/IMarketSettlementPort.java`
+- 营销退款端口：`s-pay-mall-ddd-domain/.../order/adapter/port/IMarketRefundPort.java`
 - 支付适配：`s-pay-mall-ddd-infrastructure/.../port/PayPort.java`
 - 支付 HTTP 入口：`s-pay-mall-ddd-trigger/.../AliPayController.java`
 - 支付回调/主动查询支撑：`s-pay-mall-ddd-trigger/.../support/AlipayNotifySupport.java`、`ActivePayNotifySupport.java`
@@ -746,7 +751,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
 - 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
-- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试、对账重放契约测试和异步执行端口；营销活动侧通用 `IActivityRepository` 已删除，首页试算、人群标签、DCC 开关、队伍展示分别收敛到语义端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单创建、支付结算、退款都收敛到业务语义端口。
+- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试、对账重放契约测试和异步执行端口；商城侧通用 `IProductPort` 已删除，商品查询、营销锁单、营销结算、营销退款分别收敛到语义端口；营销活动侧通用 `IActivityRepository` 已删除，首页试算、人群标签、DCC 开关、队伍展示分别收敛到语义端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单创建、支付结算、退款都收敛到业务语义端口。
 
 面试表达：
 
@@ -961,6 +966,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-30：治理商城对账查询 API DTO 边界，新增 `ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler` 和 `ReconcileQuerySupport`，对账查询接口不再直接返回 domain entity，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-api-dto-boundary.md`。
+- 2026-05-30：删除商城通用 `IProductPort`，新增 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort` 及对应基础设施适配器，商品查询、营销锁单、营销结算和营销退款不再共用过宽商品端口，并新增 SDD 记录 `docs/sdd/2026-05-30-mall-product-market-port-split.md`。
 - 2026-05-30：删除营销活动通用 `IActivityRepository` / `ActivityRepository`，新增 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort` 及对应基础设施适配器，首页试算、折扣人群标签、DCC 开关和队伍展示不再依赖过宽仓储，并新增 SDD 记录 `docs/sdd/2026-05-30-activity-repository-port-split.md`。
 - 2026-05-30：继续拆分商城对账后台入口，新增 `ReconcileAdminSupport`，管理员 token 校验、操作人解析、操作审计写入和导入账单请求预览截断不再堆在 `ReconcileCaseController`，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-admin-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口，新增 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，请求校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder 不再堆在 `MarketTradeController`，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-support-split.md`。

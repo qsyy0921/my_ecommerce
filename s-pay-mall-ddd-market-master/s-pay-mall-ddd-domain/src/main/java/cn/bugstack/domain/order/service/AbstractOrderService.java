@@ -1,6 +1,7 @@
 package cn.bugstack.domain.order.service;
 
-import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
+import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.*;
@@ -17,11 +18,15 @@ public abstract class AbstractOrderService implements IOrderService {
 
     protected final IOrderRepository repository;
 
-    protected final IProductPort port;
+    protected final IProductQueryPort productQueryPort;
+    protected final IMarketOrderLockPort marketOrderLockPort;
 
-    public AbstractOrderService(IOrderRepository repository, IProductPort port) {
+    public AbstractOrderService(IOrderRepository repository,
+                                IProductQueryPort productQueryPort,
+                                IMarketOrderLockPort marketOrderLockPort) {
         this.repository = repository;
-        this.port = port;
+        this.productQueryPort = productQueryPort;
+        this.marketOrderLockPort = marketOrderLockPort;
     }
 
     @Override
@@ -63,7 +68,7 @@ public abstract class AbstractOrderService implements IOrderService {
         }
 
         // 查询商品信息
-        ProductEntity productEntity = port.queryProductByProductId(shopCartEntity.getProductId());
+        ProductEntity productEntity = productQueryPort.queryProductByProductId(shopCartEntity.getProductId());
 
         // 订单实体信息
         OrderEntity orderEntity = CreateOrderAggregate.buildOrderEntity(productEntity.getProductId(), productEntity.getProductName(), shopCartEntity.getMarketTypeVO().getCode());
@@ -103,10 +108,6 @@ public abstract class AbstractOrderService implements IOrderService {
 
     protected abstract void doSaveOrder(CreateOrderAggregate orderAggregate);
 
-    protected abstract MarketPayDiscountEntity lockMarketPayOrder(String userId, String teamId, Long activityId, String productId, String orderId);
-
-    protected abstract MarketPayDiscountEntity lockSeckillPayOrder(String userId, Long activityId, String productId, String orderId);
-
     protected abstract PayOrderEntity doPrepayOrder(String userId, String productId, String productName, String orderId, BigDecimal totalAmount, String payChannel);
 
     protected abstract PayOrderEntity doPrepayOrder(String userId, String productId, String productName, String orderId, BigDecimal totalAmount, MarketPayDiscountEntity marketPayDiscountEntity, String payChannel);
@@ -114,13 +115,13 @@ public abstract class AbstractOrderService implements IOrderService {
     private MarketPayDiscountEntity lockPayMarketOrder(ShopCartEntity shopCartEntity, String orderId) {
         MarketPayDiscountEntity marketPayDiscountEntity = null;
         if (MarketTypeVO.GROUP_BUY_MARKET.equals(shopCartEntity.getMarketTypeVO())) {
-            marketPayDiscountEntity = this.lockMarketPayOrder(shopCartEntity.getUserId(),
+            marketPayDiscountEntity = marketOrderLockPort.lockGroupBuyMarketPayOrder(shopCartEntity.getUserId(),
                     shopCartEntity.getTeamId(),
                     shopCartEntity.getActivityId(),
                     shopCartEntity.getProductId(),
                     orderId);
         } else if (MarketTypeVO.SECKILL_MARKET.equals(shopCartEntity.getMarketTypeVO())) {
-            marketPayDiscountEntity = this.lockSeckillPayOrder(shopCartEntity.getUserId(),
+            marketPayDiscountEntity = marketOrderLockPort.lockSeckillPayOrder(shopCartEntity.getUserId(),
                     shopCartEntity.getActivityId(),
                     shopCartEntity.getProductId(),
                     orderId);

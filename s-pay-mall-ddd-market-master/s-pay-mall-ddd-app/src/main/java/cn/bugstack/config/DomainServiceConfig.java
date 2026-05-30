@@ -10,9 +10,12 @@ import cn.bugstack.domain.message.adapter.repository.IMessageRecordRepository;
 import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
+import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
+import cn.bugstack.domain.order.adapter.port.IMarketRefundPort;
+import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
 import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
-import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
 import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
@@ -32,20 +35,23 @@ public class DomainServiceConfig {
 
     @Bean
     public IOrderService orderService(IOrderRepository orderRepository,
-                                      IProductPort productPort,
+                                      IProductQueryPort productQueryPort,
+                                      IMarketOrderLockPort marketOrderLockPort,
+                                      IMarketSettlementPort marketSettlementPort,
+                                      IMarketRefundPort marketRefundPort,
                                       IPayPort payPort,
                                       IPaymentFlowPort paymentFlowPort,
                                       IRefundFlowPort refundFlowPort,
                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new OrderService(orderRepository, productPort, payPort, paymentFlowPort, refundFlowPort, domainTaskExecutor);
+        return new OrderService(orderRepository, productQueryPort, marketOrderLockPort, marketSettlementPort, marketRefundPort, payPort, paymentFlowPort, refundFlowPort, domainTaskExecutor);
     }
 
     @Bean
     public IOrderReconcileService orderReconcileService(IOrderRepository orderRepository,
                                                         IOrderReconcileRepository orderReconcileRepository,
-                                                        IProductPort productPort,
+                                                        IMarketSettlementPort marketSettlementPort,
                                                         IOrderService orderService) {
-        return new OrderReconcileService(orderRepository, orderReconcileRepository, productPort, orderService);
+        return new OrderReconcileService(orderRepository, orderReconcileRepository, marketSettlementPort, orderService);
     }
 
     @Bean

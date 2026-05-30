@@ -102,6 +102,11 @@
   - 本次完成：新增 `PaymentFlowEntity`、`RefundFlowEntity`、`IPaymentFlowPort`、`IRefundFlowPort`，并把支付/退款流水 DAO 适配收敛到独立端口。
   - 验收：`OrderService` 记录支付/退款事实，`OrderRepository` 不再依赖支付/退款流水 DAO/PO，对账仓储可基于支付流水、退款流水、商城订单和营销订单生成差错单。
 
+- [x] 拆分商城商品端口和营销交易端口。
+  - 目标：避免 `IProductPort` 同时承载商品查询、拼团/秒杀锁单、营销结算和营销退款。
+  - 实际拆分：`IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`。
+  - 验收：`IProductPort` 删除；`ProductPort` 只负责商品查询；订单主链路、对账重放、退款流程按最小语义端口依赖；架构测试防止通用商品端口回流。
+
 - [x] 完善对账差错处理闭环。
   - 目标：差错单支持人工确认、重放、忽略、关闭、备注和审计。
   - 本次完成：新增 `ReconcileCaseStatusVO`，补齐确认、忽略、关闭、备注、操作日志查询接口和前端入口；终态差错单不会被扫描 upsert 重新打开，重放只允许待处理差错单执行。

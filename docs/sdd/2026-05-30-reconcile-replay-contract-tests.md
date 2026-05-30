@@ -21,7 +21,7 @@
 ## 变更
 
 - 新增 `OrderReconcileServiceReplayContractTest`。
-- 测试使用 fake `IOrderRepository`、`IOrderReconcileRepository`、`IProductPort`、`IOrderService`，不依赖 Spring 容器和真实 MySQL/RabbitMQ。
+- 测试使用 fake `IOrderRepository`、`IOrderReconcileRepository`、`IMarketSettlementPort`、`IOrderService`，不依赖 Spring 容器和真实 MySQL/RabbitMQ。
 - 修复商城 app 的 surefire 配置，把硬编码 `<skipTests>true</skipTests>` 改为 `<skipTests>${skipTests}</skipTests>`，确保 `-DskipTests=false` 能真正运行测试。
 
 ## 覆盖用例

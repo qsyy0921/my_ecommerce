@@ -124,6 +124,7 @@
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
 - [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。
 - [x] 商城支付/退款流水拆到 `IPaymentFlowPort` / `IRefundFlowPort`，对账仓储拆到独立 `OrderReconcileRepository`，`OrderRepository` 只保留订单持久化和订单事件。
+- [x] 商城商品端口和营销交易端口已拆分，通用 `IProductPort` 已删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
 - [x] 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、CSV 解析和实体映射细节。
 - [x] 商城 `ReconcileCaseController` 拆出 `ReconcileAdminSupport`，后台入口不再直接持有管理员 token、操作人兜底解析、操作审计写入和导入账单预览截断细节。
 - [x] 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，`ReconcileCaseController` 不再把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 作为 HTTP 响应契约。

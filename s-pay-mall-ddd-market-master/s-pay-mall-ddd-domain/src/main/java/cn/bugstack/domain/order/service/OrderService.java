@@ -2,7 +2,10 @@ package cn.bugstack.domain.order.service;
 
 import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
-import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
+import cn.bugstack.domain.order.adapter.port.IMarketRefundPort;
+import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
+import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
 import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
@@ -24,17 +27,24 @@ public class OrderService extends AbstractOrderService {
 
     private final IDomainTaskExecutor domainTaskExecutor;
     private final IPayPort payPort;
+    private final IMarketSettlementPort marketSettlementPort;
+    private final IMarketRefundPort marketRefundPort;
     private final IPaymentFlowPort paymentFlowPort;
     private final IRefundFlowPort refundFlowPort;
 
     public OrderService(IOrderRepository repository,
-                        IProductPort port,
+                        IProductQueryPort productQueryPort,
+                        IMarketOrderLockPort marketOrderLockPort,
+                        IMarketSettlementPort marketSettlementPort,
+                        IMarketRefundPort marketRefundPort,
                         IPayPort payPort,
                         IPaymentFlowPort paymentFlowPort,
                         IRefundFlowPort refundFlowPort,
                         IDomainTaskExecutor domainTaskExecutor) {
-        super(repository, port);
+        super(repository, productQueryPort, marketOrderLockPort);
         this.payPort = payPort;
+        this.marketSettlementPort = marketSettlementPort;
+        this.marketRefundPort = marketRefundPort;
         this.paymentFlowPort = paymentFlowPort;
         this.refundFlowPort = refundFlowPort;
         this.domainTaskExecutor = domainTaskExecutor;
@@ -43,16 +53,6 @@ public class OrderService extends AbstractOrderService {
     @Override
     protected void doSaveOrder(CreateOrderAggregate orderAggregate) {
         repository.doSaveOrder(orderAggregate);
-    }
-
-    @Override
-    protected MarketPayDiscountEntity lockMarketPayOrder(String userId, String teamId, Long activityId, String productId, String orderId) {
-        return port.lockMarketPayOrder(userId, teamId, activityId, productId, orderId);
-    }
-
-    @Override
-    protected MarketPayDiscountEntity lockSeckillPayOrder(String userId, Long activityId, String productId, String orderId) {
-        return port.lockSeckillPayOrder(userId, activityId, productId, orderId);
     }
 
     @Override
@@ -121,7 +121,7 @@ public class OrderService extends AbstractOrderService {
     private void asyncSettlementMarketPayOrder(OrderEntity orderEntity, Date payTime) {
         domainTaskExecutor.execute(() -> {
             try {
-                port.settlementMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
             } catch (Exception e) {
                 log.error("async market settlement failed, wait reconciliation job userId:{} orderId:{}",
                         orderEntity.getUserId(), orderEntity.getOrderId(), e);
@@ -132,7 +132,7 @@ public class OrderService extends AbstractOrderService {
     private void asyncSettlementSeckillPayOrder(OrderEntity orderEntity, Date payTime) {
         domainTaskExecutor.execute(() -> {
             try {
-                port.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
+                marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 repository.changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
             } catch (Exception e) {
                 log.error("async seckill settlement failed, wait reconciliation job userId:{} orderId:{}",
@@ -181,9 +181,9 @@ public class OrderService extends AbstractOrderService {
 
         // 3. 对于营销类型的单子，先调用营销侧恢复对应库存和订单状态
         if (MarketTypeVO.GROUP_BUY_MARKET.equals(marketTypeVO)) {
-            port.refundMarketPayOrder(userId, orderId);
+            marketRefundPort.refundGroupBuyMarketPayOrder(userId, orderId);
         } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
-            port.refundSeckillPayOrder(userId, orderId);
+            marketRefundPort.refundSeckillPayOrder(userId, orderId);
         }
 
         // 4. 执行退单操作；CREATE 新创建订单，不需要退款
