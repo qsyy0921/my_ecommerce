@@ -101,6 +101,11 @@
   - 实际拆分：`SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper`、`SeckillStreamMetricsSampler`。
   - 验收：`DomainPurityTest` 防止 CRC32、StreamAddArgs、JSON payload、指标 Lua 和内部 BufferMessage 回流到缓冲主类。
 
+- [x] 拆分秒杀人工补偿 Stream 端口实现。
+  - 目标：避免 `SeckillOrderCreateBuffer` 同时承担缓冲队列和人工补偿台领域端口实现。
+  - 实际拆分：`SeckillManualCompensationStream`、`SeckillManualCompensationPort`。
+  - 验收：`SeckillOrderCreateBuffer` 不再实现 `ISeckillManualCompensationPort`，不再暴露人工补偿查询、重放和 Stream Key 方法；补偿台仍通过领域端口查询和重放人工补偿消息。
+
 - [x] 拆分秒杀 HTTP Controller 支撑逻辑。
   - 目标：避免 `SeckillMarketController` 继续承担请求校验矩阵、客户端 IP 解析和 Entity 到 DTO 字段映射。
   - 实际拆分：`SeckillRequestValidator`、`ClientIpResolver`、`SeckillResponseAssembler`。

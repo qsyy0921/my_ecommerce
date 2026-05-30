@@ -1,7 +1,5 @@
 package cn.bugstack.infrastructure.event;
 
-import cn.bugstack.domain.seckill.adapter.port.ISeckillManualCompensationPort;
-import cn.bugstack.domain.seckill.model.entity.SeckillManualMessageEntity;
 import cn.bugstack.infrastructure.redis.IRedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.AutoClaimResult;
@@ -32,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Component
-public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort {
+public class SeckillOrderCreateBuffer {
 
     public static final String MODE_MQ = "mq";
     public static final String MODE_REDIS_QUEUE = "redis_queue";
@@ -60,9 +58,6 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
     @Value("${app.seckill.order-create-buffer.pending-max-retry:5}")
     private Integer pendingMaxRetry;
 
-    @Value("${app.seckill.order-create-buffer.dead-stream-key:seckill:order:create:manual}")
-    private String deadStreamKey;
-
     @Resource
     private IRedisService redisService;
 
@@ -80,10 +75,11 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
 
     @Resource
     private SeckillStreamMetricsSampler seckillStreamMetricsSampler;
+    @Resource
+    private SeckillManualCompensationStream seckillManualCompensationStream;
 
     private BlockingQueue<String> localQueue;
     private List<RStream<String, String>> streams = Collections.emptyList();
-    private RStream<String, String> deadStream;
     private final ConcurrentHashMap<String, AtomicInteger> consumerCursor = new ConcurrentHashMap<>();
     private final SeckillPendingRetryPolicy pendingRetryPolicy = new SeckillPendingRetryPolicy();
 
@@ -99,10 +95,9 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
                 streamList.add(stream);
             }
             streams = Collections.unmodifiableList(streamList);
-            deadStream = redissonClient.getStream(deadStreamKey, StringCodec.INSTANCE);
         }
         log.info("seckill order create buffer init mode:{} localCapacity:{} redisQueueKey:{} streamKey:{} streamShards:{} streamGroup:{} deadStream:{}",
-                mode(), localCapacity, redisQueueKey, seckillStreamShardRouter.baseStreamKey(), seckillStreamShardRouter.shardCount(), streamGroup, deadStreamKey);
+                mode(), localCapacity, redisQueueKey, seckillStreamShardRouter.baseStreamKey(), seckillStreamShardRouter.shardCount(), streamGroup, seckillManualCompensationStream.streamKey());
     }
 
     public String mode() {
@@ -203,7 +198,7 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
             seckillStreamMetrics.recordFail(seckillStreamShardRouter.streamKey(shardIndex), 1);
             if (pendingRetryPolicy.shouldIsolate(retryCount, pendingMaxRetry)) {
                 deadMessages.computeIfAbsent(shardIndex, key -> new ArrayList<>()).add(message);
-                addToDeadStream(message, retryCount, exception);
+                seckillManualCompensationStream.isolate(message, retryCount, exception);
                 seckillStreamMetrics.recordDlq(seckillStreamShardRouter.streamKey(shardIndex), 1);
             }
         }
@@ -235,55 +230,6 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
 
     public String redisQueueKey() {
         return redisQueueKey;
-    }
-
-    @Override
-    public List<SeckillManualMessageEntity> queryManualMessages(int limit) {
-        RStream<String, String> stream = null == deadStream ? redissonClient.getStream(deadStreamKey, StringCodec.INSTANCE) : deadStream;
-        Map<StreamMessageId, Map<String, String>> entries = stream.range(Math.max(1, limit), StreamMessageId.MIN, StreamMessageId.MAX);
-        if (null == entries || entries.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<SeckillManualMessageEntity> result = new ArrayList<>(entries.size());
-        for (Map.Entry<StreamMessageId, Map<String, String>> entry : entries.entrySet()) {
-            SeckillManualMessageEntity deadMessage = seckillStreamMessageMapper.toDeadMessage(entry.getKey(), entry.getValue());
-            if (null != deadMessage) {
-                result.add(deadMessage);
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public int replayManualMessages(List<String> messageIds, int limit) {
-        List<SeckillManualMessageEntity> messages = new ArrayList<>();
-        if (null != messageIds && !messageIds.isEmpty()) {
-            for (String messageId : messageIds) {
-                SeckillManualMessageEntity deadMessage = queryDeadMessage(messageId);
-                if (null != deadMessage) {
-                    messages.add(deadMessage);
-                }
-            }
-        } else {
-            messages.addAll(queryManualMessages(Math.max(1, limit)));
-        }
-
-        int count = 0;
-        RStream<String, String> stream = null == deadStream ? redissonClient.getStream(deadStreamKey, StringCodec.INSTANCE) : deadStream;
-        for (SeckillManualMessageEntity deadMessage : messages) {
-            if (null == deadMessage.getBody() || deadMessage.getBody().trim().isEmpty()) {
-                continue;
-            }
-            offer(deadMessage.getBody(), deadMessage.getBody());
-            stream.remove(seckillStreamMessageMapper.parseStreamMessageId(deadMessage.getId()));
-            count++;
-        }
-        return count;
-    }
-
-    @Override
-    public String manualStreamKey() {
-        return deadStreamKey;
     }
 
     private List<SeckillOrderBufferMessage> pollLocalBatch(int size, long timeout, TimeUnit timeUnit) throws InterruptedException {
@@ -373,24 +319,6 @@ public class SeckillOrderCreateBuffer implements ISeckillManualCompensationPort 
                 entries,
                 shardIndex,
                 seckillStreamShardRouter.streamKey(shardIndex));
-    }
-
-    private void addToDeadStream(SeckillOrderBufferMessage message, long retryCount, Exception exception) {
-        deadStream.add(seckillStreamMessageMapper.toManualMessage(message, retryCount, exception));
-    }
-
-    private SeckillManualMessageEntity queryDeadMessage(String messageId) {
-        if (null == messageId || messageId.trim().isEmpty()) {
-            return null;
-        }
-        StreamMessageId streamMessageId = seckillStreamMessageMapper.parseStreamMessageId(messageId);
-        RStream<String, String> stream = null == deadStream ? redissonClient.getStream(deadStreamKey, StringCodec.INSTANCE) : deadStream;
-        Map<StreamMessageId, Map<String, String>> entries = stream.range(1, streamMessageId, streamMessageId);
-        if (null == entries || entries.isEmpty()) {
-            return null;
-        }
-        Map.Entry<StreamMessageId, Map<String, String>> entry = entries.entrySet().iterator().next();
-        return seckillStreamMessageMapper.toDeadMessage(entry.getKey(), entry.getValue());
     }
 
     private void createGroupIfAbsent(RStream<String, String> stream) {

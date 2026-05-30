@@ -496,7 +496,12 @@ public class DomainPurityTest {
                 "private long parseLong",
                 "public static class BufferMessage",
                 "private SeckillManualMessageEntity toDeadMessage",
-                "private StreamMessageId parseStreamMessageId"
+                "private StreamMessageId parseStreamMessageId",
+                "implements ISeckillManualCompensationPort",
+                "queryManualMessages",
+                "replayManualMessages",
+                "manualStreamKey",
+                "deadStreamKey"
         );
 
         List<String> violations = new ArrayList<>();
@@ -510,7 +515,9 @@ public class DomainPurityTest {
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderBufferMessage.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamShardRouter.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMessageMapper.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java")
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillManualCompensationStream.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillManualCompensationPort.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
