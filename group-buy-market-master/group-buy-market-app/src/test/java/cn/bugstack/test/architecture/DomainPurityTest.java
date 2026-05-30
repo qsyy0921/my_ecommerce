@@ -391,6 +391,48 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void tradeLockRequestPortShouldDelegateRedisKeyAndJsonDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path lockRequestAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeLockRequestPort.java");
+        String source = new String(Files.readAllBytes(lockRequestAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IRedisService",
+                "Constants",
+                "JSON",
+                "StringUtils",
+                "TimeUnit",
+                "LOCKING_KEY_PREFIX",
+                "LOCK_RESULT_KEY_PREFIX",
+                "setNx",
+                "setValue",
+                "getValue",
+                "redisService.remove",
+                "toJSONString",
+                "parseObject"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockRequestSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockResultCacheSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("TradeLockRequestPort must delegate Redis key, ttl and JSON details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");

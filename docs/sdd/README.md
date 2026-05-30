@@ -22,6 +22,7 @@
 - `2026-05-30-mall-order-service-usecase-processor-split.md`：记录商城 `OrderService` 支付成功和退款用例处理器拆分。
 - `2026-05-30-trade-repository-split.md`：记录 `TradeRepository` 通知任务、库存流水职责拆分方案和验收标准。
 - `2026-05-30-group-buy-lock-idempotency.md`：记录拼团锁单请求幂等、结果缓存和用户维度 Redis 占位方案。
+- `2026-05-31-group-buy-lock-request-support-split.md`：记录拼团锁单请求端口内部拆出请求锁和锁单结果缓存支撑组件。
 - `2026-05-30-group-buy-order-port-split.md`：记录拼团锁单落库从 `ITradeRepository` 拆到 `IGroupBuyOrderPort`。
 - `2026-05-31-group-buy-order-support-split.md`：记录拼团锁单端口内部拆出队伍锁定和订单明细写入两个支撑组件。
 - `2026-05-30-group-buy-settlement-refund-port-split.md`：记录拼团支付结算和退单写操作从 `ITradeRepository` 拆到独立端口。

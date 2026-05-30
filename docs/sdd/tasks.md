@@ -103,6 +103,7 @@
 - [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskExecutionPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
 - [x] 拼团队伍库存占位拆到 `IGroupBuyTeamStockPort`，`ITradeRepository` 不再暴露 Redis 队伍名额占用和退单恢复方法。
 - [x] 拼团锁单请求锁和结果缓存拆到 `ITradeLockRequestPort`，`ITradeRepository` 不再暴露 Redis 请求锁和缓存方法。
+- [x] 拼团锁单请求端口内部继续拆出请求锁和锁单结果缓存支撑组件，端口实现只保留门面委托。
 - [x] 拼团锁单落库拆到 `IGroupBuyOrderPort`，`ITradeRepository` 不再暴露锁单写方法。
 - [x] 拼团锁单端口内部继续拆出队伍锁定和订单明细写入支撑组件，`GroupBuyOrderPort` 保留事务门面。
 - [x] 拼团支付结算拆到 `IGroupBuySettlementPort`，`ITradeRepository` 不再暴露结算写方法。
@@ -161,6 +162,7 @@
 - [x] `DomainPurityTest` 增加读模型适配器只读守护，避免拼团/活动查询适配器混入写操作、状态流水、消息发送和补偿逻辑。
 - [x] `DomainPurityTest` 增加拼团锁单端口边界守护，避免队伍写入、订单明细、状态流水和库存流水细节回流。
 - [x] `DomainPurityTest` 增加拼团结算端口边界守护，避免订单支付完成、队伍成团、通知任务和锁单结果清理细节回流。
+- [x] `DomainPurityTest` 增加拼团锁单请求端口边界守护，避免 Redis Key、TTL 和 JSON 序列化细节回流。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
 - [x] `DomainPurityTest` 增加通用 `ISeckillRepository` / `SeckillRepository` 删除守护，以及秒杀查询、库存可用性、锁单端口职责守护。
 - [x] `DomainPurityTest` 增加秒杀查询适配器边界守护，避免活动缓存、分片查询、PO 映射和结果缓存回源细节回流。
