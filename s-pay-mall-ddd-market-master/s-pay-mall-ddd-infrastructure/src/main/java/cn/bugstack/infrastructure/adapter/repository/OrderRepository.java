@@ -1,6 +1,5 @@
 package cn.bugstack.infrastructure.adapter.repository;
 
-import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
@@ -11,9 +10,6 @@ import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
 import cn.bugstack.infrastructure.dao.IOrderDao;
 import cn.bugstack.infrastructure.dao.po.PayOrder;
-import cn.bugstack.infrastructure.event.EventPublisher;
-import cn.bugstack.types.event.BaseEvent;
-import com.alibaba.fastjson.JSON;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -28,10 +24,6 @@ public class OrderRepository implements IOrderRepository {
 
     @Resource
     private IOrderDao orderDao;
-    @Resource
-    private PaySuccessMessageEvent paySuccessMessageEvent;
-    @Resource
-    private EventPublisher eventPublisher;
 
     @Override
     public void doSaveOrder(CreateOrderAggregate orderAggregate) {
@@ -103,22 +95,7 @@ public class OrderRepository implements IOrderRepository {
         payOrderReq.setStatus(OrderStatusVO.PAY_SUCCESS.getCode());
         payOrderReq.setPayTime(payTime);
         int updated = orderDao.changeOrderPaySuccess(payOrderReq);
-        if (1 != updated) {
-            return false;
-        }
-
-        // 不走拼团营销的直接结算发货
-        BaseEvent.EventMessage<PaySuccessMessageEvent.PaySuccessMessage> paySuccessMessageEventMessage = paySuccessMessageEvent.buildEventMessage(
-                PaySuccessMessageEvent.PaySuccessMessage.builder()
-                        .tradeNo(orderId)
-                        .build());
-        PaySuccessMessageEvent.PaySuccessMessage paySuccessMessage = paySuccessMessageEventMessage.getData();
-
-        // 旧版发送消息方式
-        // eventBus.post(JSON.toJSONString(paySuccessMessage));
-
-        eventPublisher.publish(paySuccessMessageEvent.topic(), JSON.toJSONString(paySuccessMessage));
-        return true;
+        return 1 == updated;
     }
 
     @Override
@@ -153,22 +130,7 @@ public class OrderRepository implements IOrderRepository {
 
     @Override
     public void changeOrderMarketSettlement(List<String> outTradeNoList) {
-        // 更新拼团结算状态
         orderDao.changeOrderMarketSettlement(outTradeNoList);
-
-        // 循环成功发送消息 - 一般在公司的场景里，还会有job任务扫描超时没有结算的订单，查询订单状态。查询对方服务端的接口，会被限制一次查询多少，频次多少。
-        outTradeNoList.forEach(outTradeNo -> {
-            BaseEvent.EventMessage<PaySuccessMessageEvent.PaySuccessMessage> paySuccessMessageEventMessage = paySuccessMessageEvent.buildEventMessage(
-                    PaySuccessMessageEvent.PaySuccessMessage.builder()
-                            .tradeNo(outTradeNo)
-                            .build());
-            PaySuccessMessageEvent.PaySuccessMessage paySuccessMessage = paySuccessMessageEventMessage.getData();
-
-            // 旧版发送消息方式
-            // eventBus.post(JSON.toJSONString(paySuccessMessage));
-
-            eventPublisher.publish(paySuccessMessageEvent.topic(), JSON.toJSONString(paySuccessMessage));
-        });
     }
 
     @Override

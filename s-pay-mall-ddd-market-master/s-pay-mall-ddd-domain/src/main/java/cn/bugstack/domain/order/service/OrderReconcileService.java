@@ -44,7 +44,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 Date payTime = null == orderEntity.getPayTime() ? new Date() : orderEntity.getPayTime();
                 if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
                     marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
-                    repository.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
+                    orderService.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
                 } else {
                     marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }
@@ -120,7 +120,7 @@ public class OrderReconcileService implements IOrderReconcileService {
                 Date payTime = null == orderEntity.getPayTime() ? new Date() : orderEntity.getPayTime();
                 if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
                     marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
-                    repository.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
+                    orderService.changeOrderMarketSettlement(java.util.Collections.singletonList(orderEntity.getOrderId()));
                 } else {
                     marketSettlementPort.settlementGroupBuyMarketPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
                 }

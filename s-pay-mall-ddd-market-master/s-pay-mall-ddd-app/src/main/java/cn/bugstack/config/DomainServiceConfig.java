@@ -13,6 +13,7 @@ import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
 import cn.bugstack.domain.order.adapter.port.IMarketRefundPort;
 import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
+import cn.bugstack.domain.order.adapter.port.IOrderPaySuccessMessagePort;
 import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
@@ -42,8 +43,9 @@ public class DomainServiceConfig {
                                       IPayPort payPort,
                                       IPaymentFlowPort paymentFlowPort,
                                       IRefundFlowPort refundFlowPort,
+                                      IOrderPaySuccessMessagePort orderPaySuccessMessagePort,
                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new OrderService(orderRepository, productQueryPort, marketOrderLockPort, marketSettlementPort, marketRefundPort, payPort, paymentFlowPort, refundFlowPort, domainTaskExecutor);
+        return new OrderService(orderRepository, productQueryPort, marketOrderLockPort, marketSettlementPort, marketRefundPort, payPort, paymentFlowPort, refundFlowPort, orderPaySuccessMessagePort, domainTaskExecutor);
     }
 
     @Bean

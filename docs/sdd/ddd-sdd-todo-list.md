@@ -12,6 +12,11 @@
 
 ## P0 当前优先级最高
 
+- [x] 拆分商城订单支付成功消息发布端口。
+  - 目标：避免 `OrderRepository` 继续同时承担订单持久化和支付成功 MQ 发送。
+  - 实际拆分：`IOrderPaySuccessMessagePort`、`OrderPaySuccessMessagePort`。
+  - 验收：`OrderRepository` 不再依赖 `PaySuccessMessageEvent`、`EventPublisher`、`BaseEvent`、JSON 序列化和 MQ publish；普通订单支付成功、拼团/秒杀营销结算完成后仍通过统一端口发送支付成功消息。
+
 - [x] 拆分 `TradeRepository` 的剩余写职责。
   - 目标：把拼团锁单落库、结算状态更新、退单状态更新拆成更小端口或仓储适配器。
   - 建议拆分：`GroupBuyOrderRepository`、`GroupBuySettlementRepository`、`GroupBuyRefundRepository`。

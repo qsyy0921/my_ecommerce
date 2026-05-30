@@ -584,6 +584,11 @@ public class DomainPurityTest {
                 "IRefundFlowDao",
                 "PaymentFlow",
                 "RefundFlow",
+                "PaySuccessMessageEvent",
+                "EventPublisher",
+                "BaseEvent",
+                "JSON.toJSONString",
+                "eventPublisher.publish",
                 "IReconcileCaseDao",
                 "IReconcileOperationLogDao",
                 "IThirdPartyBillDao",
@@ -601,7 +606,17 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("Mall OrderRepository must only own order persistence and order events: " + violations, violations.isEmpty());
+        List<Path> requiredPorts = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IOrderPaySuccessMessagePort.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/OrderPaySuccessMessagePort.java")
+        );
+        for (Path requiredPort : requiredPorts) {
+            if (!Files.exists(requiredPort)) {
+                violations.add("missing order pay success message port: " + requiredPort.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Mall OrderRepository must only own order persistence and delegate flows/events to dedicated ports: " + violations, violations.isEmpty());
     }
 
     @Test

@@ -5,6 +5,7 @@ import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IMarketOrderLockPort;
 import cn.bugstack.domain.order.adapter.port.IMarketRefundPort;
 import cn.bugstack.domain.order.adapter.port.IMarketSettlementPort;
+import cn.bugstack.domain.order.adapter.port.IOrderPaySuccessMessagePort;
 import cn.bugstack.domain.order.adapter.port.IProductQueryPort;
 import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
@@ -31,6 +32,7 @@ public class OrderService extends AbstractOrderService {
     private final IMarketRefundPort marketRefundPort;
     private final IPaymentFlowPort paymentFlowPort;
     private final IRefundFlowPort refundFlowPort;
+    private final IOrderPaySuccessMessagePort orderPaySuccessMessagePort;
 
     public OrderService(IOrderRepository repository,
                         IProductQueryPort productQueryPort,
@@ -40,6 +42,7 @@ public class OrderService extends AbstractOrderService {
                         IPayPort payPort,
                         IPaymentFlowPort paymentFlowPort,
                         IRefundFlowPort refundFlowPort,
+                        IOrderPaySuccessMessagePort orderPaySuccessMessagePort,
                         IDomainTaskExecutor domainTaskExecutor) {
         super(repository, productQueryPort, marketOrderLockPort);
         this.payPort = payPort;
@@ -47,6 +50,7 @@ public class OrderService extends AbstractOrderService {
         this.marketRefundPort = marketRefundPort;
         this.paymentFlowPort = paymentFlowPort;
         this.refundFlowPort = refundFlowPort;
+        this.orderPaySuccessMessagePort = orderPaySuccessMessagePort;
         this.domainTaskExecutor = domainTaskExecutor;
     }
 
@@ -110,6 +114,9 @@ public class OrderService extends AbstractOrderService {
             }
         } else {
             boolean changed = repository.changeOrderPaySuccess(orderId, payTime);
+            if (changed) {
+                orderPaySuccessMessagePort.publish(orderId);
+            }
             paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
             if (!changed) {
                 log.info("payment callback idempotent hit, skip normal order message orderId:{}", orderId);
@@ -133,7 +140,7 @@ public class OrderService extends AbstractOrderService {
         domainTaskExecutor.execute(() -> {
             try {
                 marketSettlementPort.settlementSeckillPayOrder(orderEntity.getUserId(), orderEntity.getOrderId(), payTime);
-                repository.changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
+                changeOrderMarketSettlement(Collections.singletonList(orderEntity.getOrderId()));
             } catch (Exception e) {
                 log.error("async seckill settlement failed, wait reconciliation job userId:{} orderId:{}",
                         orderEntity.getUserId(), orderEntity.getOrderId(), e);
@@ -159,6 +166,7 @@ public class OrderService extends AbstractOrderService {
     @Override
     public void changeOrderMarketSettlement(List<String> outTradeNoList) {
         repository.changeOrderMarketSettlement(outTradeNoList);
+        orderPaySuccessMessagePort.publishAll(outTradeNoList);
     }
 
     @Override

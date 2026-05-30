@@ -54,6 +54,7 @@
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-mall-alipay-controller-support-split.md`：记录商城 `AliPayController` 拆出支付宝回调、主动查询和订单列表响应组装支撑组件。
 - `2026-05-30-mall-product-market-port-split.md`：记录商城商品查询端口和营销交易锁单/结算/退款端口拆分。
+- `2026-05-30-mall-order-pay-success-message-port.md`：记录商城订单支付成功 MQ 发布从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`。
 - `2026-05-30-activity-repository-port-split.md`：记录营销活动通用仓储拆成试算查询、人群标签、DCC 开关和队伍展示四类语义端口。
 - `2026-05-30-group-buy-index-controller-support-split.md`：记录 `MarketIndexController` 拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
 - `2026-05-30-trade-notification-port-split.md`：记录拼团通知发送从泛化 `ITradePort` 拆到语义通知端口，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑。

@@ -91,6 +91,7 @@
 ## T9 DDD 治理
 
 - [x] 明确商城服务和营销服务各自维护独立 DDD 分层，拼团和秒杀先作为营销上下文内的两个子域。
+- [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。

@@ -51,7 +51,7 @@ public class OrderReconcileServiceReplayContractTest {
         Assert.assertTrue(result);
         Assert.assertEquals(0, fixture.marketSettlementPort.groupBuySettlementCalls);
         Assert.assertEquals(1, fixture.marketSettlementPort.seckillSettlementCalls);
-        Assert.assertEquals(1, fixture.orderRepository.marketSettlementCalls);
+        Assert.assertEquals(1, fixture.orderService.marketSettlementCalls);
         Assert.assertEquals(1, fixture.reconcileRepository.confirmCalls);
     }
 
@@ -307,6 +307,7 @@ public class OrderReconcileServiceReplayContractTest {
 
     private static class FakeOrderService implements IOrderService {
         private int refundPayOrderCalls;
+        private int marketSettlementCalls;
 
         @Override
         public PayOrderEntity createOrder(ShopCartEntity shopCartEntity) {
@@ -338,6 +339,7 @@ public class OrderReconcileServiceReplayContractTest {
 
         @Override
         public void changeOrderMarketSettlement(List<String> outTradeNoList) {
+            marketSettlementCalls++;
         }
 
         @Override
