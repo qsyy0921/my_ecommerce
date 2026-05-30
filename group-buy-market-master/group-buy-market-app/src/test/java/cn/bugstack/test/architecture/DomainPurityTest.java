@@ -539,6 +539,46 @@ public class DomainPurityTest {
         Assert.assertTrue("Mall AliPayController must delegate payment channel SDK, callback parsing and order-list DTO mapping details: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void seckillMarketControllerShouldDelegateValidationClientIpAndDtoMappingDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillMarketController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "StringUtils.isBlank",
+                "getHeader(\"X-Forwarded-For\")",
+                "getHeader(\"X-Real-IP\")",
+                "getRemoteAddr",
+                "SeckillMarketResponseDTO.builder()",
+                "LockSeckillOrderResponseDTO.builder()",
+                "SettlementSeckillOrderResponseDTO.builder()",
+                "RefundSeckillOrderResponseDTO.builder()",
+                "private LockSeckillOrderResponseDTO buildLockSeckillOrderResponse",
+                "private String getClientIp"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRequestValidator.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/ClientIpResolver.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillResponseAssembler.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillMarketController must delegate request validation, client IP resolution and DTO mapping details: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

@@ -122,6 +122,7 @@ types           异常、枚举、常量、通用类型
 - 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - `SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter` 和 `SeckillStockInitializationCache`，Redis Key、桶路由、本地初始化短缓存不再堆在预扣主适配器里。
 - `SeckillOrderCreateBuffer` 内部继续拆出 `SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper` 和 `SeckillStreamMetricsSampler`，Redis Stream 分片 hash、retry key、StreamAddArgs、DLQ payload、人工补偿消息解析和 pending/lag 采样 Lua 不再堆在缓冲主类里。
+- `SeckillMarketController` 拆出 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，HTTP 入口不再直接维护请求校验矩阵、代理 IP 解析和秒杀响应 DTO 字段映射。
 - 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、三方账单 CSV 解析和 PO/Entity 映射细节。
 - 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和用户订单 DTO 映射细节。
 - 新增 `SeckillOrderLockPortUnitTest` 和 `SeckillPendingRetryPolicy`，用 fake port 覆盖秒杀库存预扣、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
@@ -185,6 +186,7 @@ types           异常、枚举、常量、通用类型
 - 秒杀 Stream 分片路由：`group-buy-market-infrastructure/.../SeckillStreamShardRouter.java`
 - 秒杀 Stream 消息映射：`group-buy-market-infrastructure/.../SeckillStreamMessageMapper.java`
 - 秒杀 Stream 指标采样：`group-buy-market-infrastructure/.../SeckillStreamMetricsSampler.java`
+- 秒杀 HTTP 支撑组件：`group-buy-market-trigger/.../support/SeckillRequestValidator.java`、`ClientIpResolver.java`、`SeckillResponseAssembler.java`
 - 秒杀补偿口：`group-buy-market-trigger/.../SeckillOpsController.java`
 
 商城服务：
@@ -947,6 +949,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分秒杀 HTTP 入口，新增 `SeckillRequestValidator`、`ClientIpResolver` 和 `SeckillResponseAssembler`，请求校验矩阵、代理 IP 解析和秒杀响应 DTO 字段映射不再堆在 `SeckillMarketController`，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-controller-support-split.md`。
 - 2026-05-30：继续拆分秒杀订单生命周期命令，删除 `ISeckillOrderCommandPort` / `SeckillOrderCommandPort`，新增 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，并把分片表访问、PO/Entity 转换、库存释放/回滚拆到 `SeckillOrderTableGateway`、`SeckillOrderAssembler`、`SeckillStockReleaseSupport`；新增 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-decomposition.md`。
 - 2026-05-30：继续拆分秒杀库存预扣适配器，新增 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，并新增架构测试防止 Redis Key、CRC32 桶路由和本地初始化缓存回流到 `SeckillStockReservationPort`。
 - 2026-05-30：继续拆分拼团退单基础设施实现，`GroupBuyRefundPort` 改为薄门面，新增 `GroupBuyUnpaidRefundProcessor`、`GroupBuyPaidUnformedRefundProcessor`、`GroupBuyPaidFormedRefundProcessor` 和 `GroupBuyRefundSupport`，并新增架构测试防止门面回流 DAO/事务细节。

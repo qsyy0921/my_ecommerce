@@ -16,13 +16,15 @@ import cn.bugstack.domain.seckill.adapter.port.ISeckillRateLimitPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.service.ISeckillService;
+import cn.bugstack.trigger.support.ClientIpResolver;
+import cn.bugstack.trigger.support.SeckillRequestValidator;
+import cn.bugstack.trigger.support.SeckillResponseAssembler;
 import cn.bugstack.trigger.support.StructuredBusinessLogger;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import cn.bugstack.wrench.rate.limiter.types.annotations.RateLimiterAccessInterceptor;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,6 +52,12 @@ public class SeckillMarketController implements ISeckillMarketService {
     private ISeckillMetricsPort seckillMetricsPort;
     @Resource
     private StructuredBusinessLogger businessLogger;
+    @Resource
+    private SeckillRequestValidator requestValidator;
+    @Resource
+    private SeckillResponseAssembler responseAssembler;
+    @Resource
+    private ClientIpResolver clientIpResolver;
     @Autowired
     private HttpServletRequest httpServletRequest;
 
@@ -58,12 +66,7 @@ public class SeckillMarketController implements ISeckillMarketService {
     public Response<SeckillMarketResponseDTO> querySeckillMarketConfig(@RequestBody SeckillMarketRequestDTO requestDTO) {
         try {
             log.debug("query seckill market config start requestDTO:{}", JSON.toJSONString(requestDTO));
-            if (null == requestDTO
-                    || StringUtils.isBlank(requestDTO.getUserId())
-                    || StringUtils.isBlank(requestDTO.getSource())
-                    || StringUtils.isBlank(requestDTO.getChannel())
-                    || StringUtils.isBlank(requestDTO.getGoodsId())
-                    || null == requestDTO.getActivityId()) {
+            if (!requestValidator.validQueryMarketConfig(requestDTO)) {
                 return Response.<SeckillMarketResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -76,25 +79,10 @@ public class SeckillMarketController implements ISeckillMarketService {
                     requestDTO.getChannel(),
                     requestDTO.getGoodsId());
 
-            SeckillMarketResponseDTO responseDTO = SeckillMarketResponseDTO.builder()
-                    .activityId(seckillActivityEntity.getActivityId())
-                    .activityName(seckillActivityEntity.getActivityName())
-                    .goodsId(seckillActivityEntity.getGoodsId())
-                    .goodsName(seckillActivityEntity.getGoodsName())
-                    .originalPrice(seckillActivityEntity.getOriginalPrice())
-                    .seckillPrice(seckillActivityEntity.getSeckillPrice())
-                    .totalCount(seckillActivityEntity.getTotalCount())
-                    .availableCount(seckillActivityEntity.getAvailableCount())
-                    .lockCount(seckillActivityEntity.getLockCount())
-                    .status(seckillActivityEntity.getStatus())
-                    .startTime(seckillActivityEntity.getStartTime())
-                    .endTime(seckillActivityEntity.getEndTime())
-                    .build();
-
             return Response.<SeckillMarketResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(responseDTO)
+                    .data(responseAssembler.toMarketResponse(seckillActivityEntity))
                     .build();
         } catch (AppException e) {
             log.error("query seckill market config business error requestDTO:{}", JSON.toJSONString(requestDTO), e);
@@ -118,13 +106,7 @@ public class SeckillMarketController implements ISeckillMarketService {
         long startMillis = System.currentTimeMillis();
         try {
             log.debug("lock seckill order start requestDTO:{}", JSON.toJSONString(requestDTO));
-            if (null == requestDTO
-                    || StringUtils.isBlank(requestDTO.getUserId())
-                    || StringUtils.isBlank(requestDTO.getSource())
-                    || StringUtils.isBlank(requestDTO.getChannel())
-                    || StringUtils.isBlank(requestDTO.getGoodsId())
-                    || null == requestDTO.getActivityId()
-                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+            if (!requestValidator.validLockOrder(requestDTO)) {
                 businessLogger.warn("seckill_lock_order", "illegal_parameter", businessLogger.fields(
                         "userId", null == requestDTO ? null : requestDTO.getUserId(),
                         "activityId", null == requestDTO ? null : requestDTO.getActivityId(),
@@ -150,7 +132,7 @@ public class SeckillMarketController implements ISeckillMarketService {
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
-                        .data(buildLockSeckillOrderResponse(existsOrder))
+                        .data(responseAssembler.toLockResponse(existsOrder))
                         .build();
             }
             SeckillOrderEntity existsResult = seckillService.querySeckillResult(requestDTO.getUserId(), requestDTO.getActivityId(), requestDTO.getOutTradeNo());
@@ -166,12 +148,13 @@ public class SeckillMarketController implements ISeckillMarketService {
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
                         .info(ResponseCode.SUCCESS.getInfo())
-                        .data(buildLockSeckillOrderResponse(existsResult))
+                        .data(responseAssembler.toLockResponse(existsResult))
                         .build();
             }
 
             long lockStartNanos = System.nanoTime();
-            if (!seckillRateLimitPort.tryAcquire(requestDTO.getActivityId(), requestDTO.getUserId(), getClientIp())) {
+            String clientIp = clientIpResolver.resolve(httpServletRequest);
+            if (!seckillRateLimitPort.tryAcquire(requestDTO.getActivityId(), requestDTO.getUserId(), clientIp)) {
                 seckillMetricsPort.recordRateLimited();
                 seckillMetricsPort.recordLock(System.nanoTime() - lockStartNanos, "rate_limited");
                 businessLogger.warn("seckill_lock_order", "rate_limited", businessLogger.fields(
@@ -179,7 +162,7 @@ public class SeckillMarketController implements ISeckillMarketService {
                         "activityId", requestDTO.getActivityId(),
                         "goodsId", requestDTO.getGoodsId(),
                         "outTradeNo", requestDTO.getOutTradeNo(),
-                        "clientIp", getClientIp(),
+                        "clientIp", clientIp,
                         "costMs", System.currentTimeMillis() - startMillis));
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.RATE_LIMITER.getCode())
@@ -216,7 +199,7 @@ public class SeckillMarketController implements ISeckillMarketService {
             return Response.<LockSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(buildLockSeckillOrderResponse(seckillOrderEntity))
+                    .data(responseAssembler.toLockResponse(seckillOrderEntity))
                     .build();
         } catch (AppException e) {
             log.error("lock seckill order business error requestDTO:{}", JSON.toJSONString(requestDTO), e);
@@ -262,10 +245,7 @@ public class SeckillMarketController implements ISeckillMarketService {
     public Response<LockSeckillOrderResponseDTO> querySeckillOrderResult(@RequestBody QuerySeckillOrderResultRequestDTO requestDTO) {
         try {
             log.debug("query seckill order result start requestDTO:{}", JSON.toJSONString(requestDTO));
-            if (null == requestDTO
-                    || StringUtils.isBlank(requestDTO.getUserId())
-                    || null == requestDTO.getActivityId()
-                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+            if (!requestValidator.validQueryOrderResult(requestDTO)) {
                 return Response.<LockSeckillOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -280,7 +260,7 @@ public class SeckillMarketController implements ISeckillMarketService {
             return Response.<LockSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(buildLockSeckillOrderResponse(seckillOrderEntity))
+                    .data(responseAssembler.toLockResponse(seckillOrderEntity))
                     .build();
         } catch (AppException e) {
             log.error("query seckill order result business error requestDTO:{}", JSON.toJSONString(requestDTO), e);
@@ -302,9 +282,7 @@ public class SeckillMarketController implements ISeckillMarketService {
     public Response<SettlementSeckillOrderResponseDTO> settlementSeckillOrder(@RequestBody SettlementSeckillOrderRequestDTO requestDTO) {
         long startMillis = System.currentTimeMillis();
         try {
-            if (null == requestDTO
-                    || StringUtils.isBlank(requestDTO.getUserId())
-                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+            if (!requestValidator.validSettlement(requestDTO)) {
                 businessLogger.warn("seckill_settlement", "illegal_parameter", businessLogger.fields(
                         "userId", null == requestDTO ? null : requestDTO.getUserId(),
                         "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
@@ -326,13 +304,7 @@ public class SeckillMarketController implements ISeckillMarketService {
             return Response.<SettlementSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(SettlementSeckillOrderResponseDTO.builder()
-                            .userId(entity.getUserId())
-                            .activityId(entity.getActivityId())
-                            .orderId(entity.getOrderId())
-                            .outTradeNo(entity.getOutTradeNo())
-                            .status(entity.getStatus())
-                            .build())
+                    .data(responseAssembler.toSettlementResponse(entity))
                     .build();
         } catch (AppException e) {
             businessLogger.warn("seckill_settlement", "business_error", businessLogger.fields(
@@ -363,9 +335,7 @@ public class SeckillMarketController implements ISeckillMarketService {
     public Response<RefundSeckillOrderResponseDTO> refundSeckillOrder(@RequestBody RefundSeckillOrderRequestDTO requestDTO) {
         long startMillis = System.currentTimeMillis();
         try {
-            if (null == requestDTO
-                    || StringUtils.isBlank(requestDTO.getUserId())
-                    || StringUtils.isBlank(requestDTO.getOutTradeNo())) {
+            if (!requestValidator.validRefund(requestDTO)) {
                 businessLogger.warn("seckill_refund", "illegal_parameter", businessLogger.fields(
                         "userId", null == requestDTO ? null : requestDTO.getUserId(),
                         "outTradeNo", null == requestDTO ? null : requestDTO.getOutTradeNo(),
@@ -396,14 +366,7 @@ public class SeckillMarketController implements ISeckillMarketService {
             return Response.<RefundSeckillOrderResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(RefundSeckillOrderResponseDTO.builder()
-                            .userId(entity.getUserId())
-                            .activityId(entity.getActivityId())
-                            .orderId(entity.getOrderId())
-                            .outTradeNo(entity.getOutTradeNo())
-                            .status(entity.getStatus())
-                            .stockReleased(stockReleased)
-                            .build())
+                    .data(responseAssembler.toRefundResponse(entity, stockReleased))
                     .build();
         } catch (AppException e) {
             businessLogger.warn("seckill_refund", "business_error", businessLogger.fields(
@@ -427,31 +390,6 @@ public class SeckillMarketController implements ISeckillMarketService {
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
         }
-    }
-
-    private LockSeckillOrderResponseDTO buildLockSeckillOrderResponse(SeckillOrderEntity seckillOrderEntity) {
-        return LockSeckillOrderResponseDTO.builder()
-                .orderId(seckillOrderEntity.getOrderId())
-                .activityId(seckillOrderEntity.getActivityId())
-                .goodsId(seckillOrderEntity.getGoodsId())
-                .originalPrice(seckillOrderEntity.getOriginalPrice())
-                .seckillPrice(seckillOrderEntity.getSeckillPrice())
-                .status(seckillOrderEntity.getStatus())
-                .resultStatus(seckillOrderEntity.getResultStatus())
-                .message(seckillOrderEntity.getMessage())
-                .build();
-    }
-
-    private String getClientIp() {
-        String xForwardedFor = httpServletRequest.getHeader("X-Forwarded-For");
-        if (StringUtils.isNotBlank(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String realIp = httpServletRequest.getHeader("X-Real-IP");
-        if (StringUtils.isNotBlank(realIp)) {
-            return realIp.trim();
-        }
-        return httpServletRequest.getRemoteAddr();
     }
 
 }
