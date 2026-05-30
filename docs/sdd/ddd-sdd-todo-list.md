@@ -43,6 +43,11 @@
   - 实际拆分：`GroupBuyLockRequestSupport`、`GroupBuyLockResultCacheSupport`。
   - 验收：`TradeLockRequestPort` 保留领域端口门面和 5 个接口委托；架构测试防止 Redis API、Key、TTL 和 JSON 细节回流；纯单元测试覆盖请求锁和结果缓存。
 
+- [x] 拆分拼团队伍库存端口内部支撑。
+  - 目标：避免 `GroupBuyTeamStockPort` 同时承担 Redis Lua 预扣、用户占位释放、普通恢复、退单恢复幂等锁和异常回滚。
+  - 实际拆分：`GroupBuyTeamStockReservationSupport`、`GroupBuyTeamStockRecoverySupport`。
+  - 验收：`GroupBuyTeamStockPort` 保留领域端口门面和 4 个接口委托；架构测试防止 Redis API、幂等锁和 TTL 细节回流；纯单元测试覆盖预扣、恢复、释放和退单幂等。
+
 - [x] 拆分拼团结算端口内部支撑。
   - 目标：避免 `GroupBuySettlementPort` 同时承担订单明细支付完成、锁单结果清理、队伍完成数量累加、成团通知任务和状态流水。
   - 实际拆分：`GroupBuyOrderPaidSupport`、`GroupBuyTeamFormationSupport`。

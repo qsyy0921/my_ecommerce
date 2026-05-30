@@ -433,6 +433,44 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void groupBuyTeamStockPortShouldDelegateReservationAndRecoveryDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path teamStockAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyTeamStockPort.java");
+        String source = new String(Files.readAllBytes(teamStockAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IRedisService",
+                "Constants",
+                "StringUtils",
+                "TimeUnit",
+                "reserveTeamStock",
+                "setNx",
+                "incr",
+                "redisService.remove",
+                "refund_lock_"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockReservationSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockRecoverySupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("GroupBuyTeamStockPort must delegate reservation and recovery Redis details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");
