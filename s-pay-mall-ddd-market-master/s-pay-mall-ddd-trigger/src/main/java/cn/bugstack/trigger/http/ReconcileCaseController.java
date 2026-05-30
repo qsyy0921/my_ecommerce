@@ -4,11 +4,11 @@ import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
 import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.service.IOrderReconcileService;
+import cn.bugstack.trigger.support.ReconcileAdminSupport;
 import cn.bugstack.types.common.Constants;
 import com.alibaba.fastjson.JSON;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -29,18 +29,18 @@ public class ReconcileCaseController {
     @Resource
     private IOrderReconcileService orderReconcileService;
 
-    @Value("${reconcile.admin-token:local-admin-token}")
-    private String adminToken;
+    @Resource
+    private ReconcileAdminSupport adminSupport;
 
     @RequestMapping(value = "scan", method = RequestMethod.POST)
     public Response<Integer> scan(@RequestHeader(value = "x-admin-token", required = false) String token,
                                   @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
             int count = orderReconcileService.scanReconcileCases();
-            audit(operator, "SCAN", "ALL", null, "count=" + count);
+            adminSupport.audit(operator, "SCAN", "ALL", null, "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -62,12 +62,12 @@ public class ReconcileCaseController {
                                                              @RequestParam(required = false, defaultValue = "20") Integer pageSize,
                                                              @RequestHeader(value = "x-admin-token", required = false) String token,
                                                              @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
             List<ReconcileCaseEntity> caseList = orderReconcileService.queryReconcileCaseList(caseStatus, caseType, lastId, pageSize);
-            audit(operator, "QUERY", caseType, "caseStatus=" + caseStatus + ", lastId=" + lastId + ", pageSize=" + pageSize, "count=" + caseList.size());
+            adminSupport.audit(operator, "QUERY", caseType, "caseStatus=" + caseStatus + ", lastId=" + lastId + ", pageSize=" + pageSize, "count=" + caseList.size());
             return Response.<List<ReconcileCaseEntity>>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -86,17 +86,17 @@ public class ReconcileCaseController {
     public Response<Boolean> handle(@RequestBody HandleRequest request,
                                     @RequestHeader(value = "x-admin-token", required = false) String token,
                                     @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getHandler());
+            String handler = adminSupport.resolveOperator(operator, request.getHandler());
             boolean result = orderReconcileService.handleReconcileCase(
                     request.getCaseNo(),
                     null == request.getCaseStatus() ? 1 : request.getCaseStatus(),
                     handler,
                     request.getHandleNote());
-            audit(handler, "HANDLE", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            adminSupport.audit(handler, "HANDLE", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
             return Response.<Boolean>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -136,13 +136,13 @@ public class ReconcileCaseController {
     public Response<Boolean> remark(@RequestBody HandleRequest request,
                                     @RequestHeader(value = "x-admin-token", required = false) String token,
                                     @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getHandler());
+            String handler = adminSupport.resolveOperator(operator, request.getHandler());
             boolean result = orderReconcileService.remarkReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
-            audit(handler, "REMARK", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            adminSupport.audit(handler, "REMARK", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
             return Response.<Boolean>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -161,11 +161,11 @@ public class ReconcileCaseController {
     public Response<Integer> batchHandle(@RequestBody BatchHandleRequest request,
                                          @RequestHeader(value = "x-admin-token", required = false) String token,
                                          @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getHandler());
+            String handler = adminSupport.resolveOperator(operator, request.getHandler());
             int count = 0;
             if (null != request.getCaseNoList()) {
                 for (String caseNo : request.getCaseNoList()) {
@@ -174,13 +174,13 @@ public class ReconcileCaseController {
                             null == request.getCaseStatus() ? 1 : request.getCaseStatus(),
                             handler,
                             request.getHandleNote());
-                    audit(handler, "BATCH_HANDLE_ITEM", caseNo, "caseStatus=" + request.getCaseStatus(), "result=" + result);
+                    adminSupport.audit(handler, "BATCH_HANDLE_ITEM", caseNo, "caseStatus=" + request.getCaseStatus(), "result=" + result);
                     if (result) {
                         count++;
                     }
                 }
             }
-            audit(handler, "BATCH_HANDLE", null, JSON.toJSONString(request), "count=" + count);
+            adminSupport.audit(handler, "BATCH_HANDLE", null, JSON.toJSONString(request), "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -201,12 +201,12 @@ public class ReconcileCaseController {
                                                                           @RequestParam(required = false, defaultValue = "50") Integer pageSize,
                                                                           @RequestHeader(value = "x-admin-token", required = false) String token,
                                                                           @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
             List<ReconcileOperationLogEntity> operationLogList = orderReconcileService.queryReconcileOperationLogList(bizId, lastId, pageSize);
-            audit(operator, "QUERY_LOG", bizId, "lastId=" + lastId + ", pageSize=" + pageSize, "count=" + operationLogList.size());
+            adminSupport.audit(operator, "QUERY_LOG", bizId, "lastId=" + lastId + ", pageSize=" + pageSize, "count=" + operationLogList.size());
             return Response.<List<ReconcileOperationLogEntity>>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -225,13 +225,13 @@ public class ReconcileCaseController {
     public Response<Boolean> replay(@RequestBody ReplayRequest request,
                                     @RequestHeader(value = "x-admin-token", required = false) String token,
                                     @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getOperator());
+            String handler = adminSupport.resolveOperator(operator, request.getOperator());
             boolean result = orderReconcileService.replayReconcileCase(request.getCaseNo(), handler);
-            audit(handler, "REPLAY", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            adminSupport.audit(handler, "REPLAY", request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
             return Response.<Boolean>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -250,22 +250,22 @@ public class ReconcileCaseController {
     public Response<Integer> batchReplay(@RequestBody BatchReplayRequest request,
                                          @RequestHeader(value = "x-admin-token", required = false) String token,
                                          @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getOperator());
+            String handler = adminSupport.resolveOperator(operator, request.getOperator());
             int count = 0;
             if (null != request.getCaseNoList()) {
                 for (String caseNo : request.getCaseNoList()) {
                     boolean result = orderReconcileService.replayReconcileCase(caseNo, handler);
-                    audit(handler, "BATCH_REPLAY_ITEM", caseNo, JSON.toJSONString(request), "result=" + result);
+                    adminSupport.audit(handler, "BATCH_REPLAY_ITEM", caseNo, JSON.toJSONString(request), "result=" + result);
                     if (result) {
                         count++;
                     }
                 }
             }
-            audit(handler, "BATCH_REPLAY", null, JSON.toJSONString(request), "count=" + count);
+            adminSupport.audit(handler, "BATCH_REPLAY", null, JSON.toJSONString(request), "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -284,12 +284,12 @@ public class ReconcileCaseController {
     public Response<Integer> importBill(@RequestBody String csvText,
                                         @RequestHeader(value = "x-admin-token", required = false) String token,
                                         @RequestHeader(value = "x-admin-operator", required = false) String operator) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
             int count = orderReconcileService.importThirdPartyBillCsv(csvText);
-            audit(operator, "IMPORT_BILL", "THIRD_PARTY_BILL", null == csvText ? null : csvText.substring(0, Math.min(csvText.length(), 1024)), "count=" + count);
+            adminSupport.audit(operator, "IMPORT_BILL", "THIRD_PARTY_BILL", adminSupport.preview(csvText, 1024), "count=" + count);
             return Response.<Integer>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -310,41 +310,12 @@ public class ReconcileCaseController {
         return "success";
     }
 
-    private boolean authorized(String token) {
-        return null != token && token.equals(adminToken);
-    }
-
-    private <T> Response<T> noLogin() {
-        return Response.<T>builder()
-                .code(Constants.ResponseCode.NO_LOGIN.getCode())
-                .info(Constants.ResponseCode.NO_LOGIN.getInfo())
-                .build();
-    }
-
-    private String resolveOperator(String headerOperator, String requestOperator) {
-        if (null != headerOperator && !headerOperator.trim().isEmpty()) {
-            return headerOperator.trim();
-        }
-        if (null != requestOperator && !requestOperator.trim().isEmpty()) {
-            return requestOperator.trim();
-        }
-        return "local-admin";
-    }
-
-    private void audit(String operator, String operationType, String bizId, String requestBody, String result) {
-        try {
-            orderReconcileService.recordReconcileOperation(resolveOperator(operator, null), operationType, bizId, requestBody, result);
-        } catch (Exception e) {
-            log.warn("record reconcile operation failed operationType:{} bizId:{}", operationType, bizId, e);
-        }
-    }
-
     private Response<Boolean> handleWithStatus(HandleRequest request, String token, String operator, String operationType) {
-        if (!authorized(token)) {
-            return noLogin();
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.noLogin();
         }
         try {
-            String handler = resolveOperator(operator, request.getHandler());
+            String handler = adminSupport.resolveOperator(operator, request.getHandler());
             boolean result;
             if ("CONFIRM".equals(operationType)) {
                 result = orderReconcileService.confirmReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
@@ -353,7 +324,7 @@ public class ReconcileCaseController {
             } else {
                 result = orderReconcileService.closeReconcileCase(request.getCaseNo(), handler, request.getHandleNote());
             }
-            audit(handler, operationType, request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
+            adminSupport.audit(handler, operationType, request.getCaseNo(), JSON.toJSONString(request), "result=" + result);
             return Response.<Boolean>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())

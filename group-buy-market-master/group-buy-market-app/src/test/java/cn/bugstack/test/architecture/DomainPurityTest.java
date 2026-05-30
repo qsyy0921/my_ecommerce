@@ -498,6 +498,39 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mallReconcileControllerShouldDelegateAdminAuthOperatorAndAuditDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "@Value",
+                "adminToken",
+                "recordReconcileOperation",
+                "local-admin",
+                "substring(0, Math.min",
+                "private boolean authorized",
+                "private <T> Response<T> noLogin",
+                "private String resolveOperator",
+                "private void audit"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Path supportFile = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAdminSupport.java");
+        if (!Files.exists(supportFile)) {
+            violations.add("missing support:" + supportFile.getFileName());
+        }
+
+        Assert.assertTrue("Mall ReconcileCaseController must delegate admin auth, operator resolution, audit and request preview details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallAliPayControllerShouldDelegatePaymentChannelAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java");
