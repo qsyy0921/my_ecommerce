@@ -48,10 +48,10 @@
   - 实际拆分：`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`。
   - 验收：`ISeckillRepository` 不再暴露订单命令方法；`SeckillRepository` 不再直接处理批量插入、支付成功和退款状态更新。
 
-- [ ] 拆分 `SeckillRepository` 的查询和库存可用性职责。
+- [x] 拆分 `SeckillRepository` 的查询和库存可用性职责。
   - 目标：把活动查询、订单查询、结果查询、库存初始化/查询和本地售罄短缓存继续拆开。
-  - 建议拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`。
-  - 验收：`ISeckillRepository` 可以进一步删除或收窄为兼容门面。
+  - 实际拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`。
+  - 验收：`ISeckillRepository` / `SeckillRepository` 已删除，架构测试防止通用秒杀仓储回流。
 
 ## P1 高并发与消息可靠性
 

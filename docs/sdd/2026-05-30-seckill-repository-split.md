@@ -58,4 +58,11 @@ flowchart LR
 
 ## 后续
 
-本次还没有拆秒杀 Redis 库存桶、Lua 预扣和用户占位逻辑。下一步继续拆 `ISeckillStockReservationPort`，把 `stockBucketKey`、`userLockKey`、`reserveSeckillQualification(...)`、`rollbackReservation(...)` 继续移出主仓储。
+后续已继续完成：
+
+- Redis 库存桶、Lua 预扣和用户占位逻辑拆到 `ISeckillStockReservationPort`。
+- 订单创建、批量落库、支付结算和退款状态更新拆到 `ISeckillOrderCommandPort`。
+- 活动查询、订单查询和结果查询拆到 `ISeckillQueryPort`。
+- 库存可用性查询和初始化协调拆到 `ISeckillStockAvailabilityPort`。
+- 锁单预扣、异步入队和失败回滚拆到 `ISeckillOrderLockPort`。
+- 通用 `ISeckillRepository` / `SeckillRepository` 已删除。

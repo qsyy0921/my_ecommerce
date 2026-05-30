@@ -57,8 +57,12 @@ flowchart LR
 
 ## 后续
 
-秒杀侧下一步可继续拆：
+后续已继续拆分：
 
 - `ISeckillQueryPort`：活动查询、订单查询、结果查询。
 - `ISeckillStockAvailabilityPort`：库存初始化、库存查询、本地售罄短缓存协调。
-- `ISeckillOrderMessagePort`：把 Redis Stream / RabbitMQ / RocketMQ 的消息投递从仓储主流程中解耦。
+- `ISeckillOrderLockPort`：Redis 资格预扣、异步入队、失败回滚。
+- 独立 `SeckillMaintenancePort` 适配器：库存同步、活动预热、超时未支付释放。
+- 通用 `ISeckillRepository` / `SeckillRepository` 已删除。
+
+后续仍可演进 `ISeckillOrderMessagePort`，把 Redis Stream / RabbitMQ / RocketMQ 的消息投递从锁单适配器中进一步解耦。

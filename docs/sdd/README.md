@@ -35,6 +35,7 @@
 - `2026-05-30-seckill-repository-split.md`：记录秒杀库存流水、结果缓存、订单分片路由从主仓储拆出。
 - `2026-05-30-seckill-stock-reservation-port.md`：记录秒杀 Redis 库存桶、Lua 预扣、用户占位和库存释放从主仓储拆出。
 - `2026-05-30-seckill-order-command-port-split.md`：记录秒杀订单创建、批量落库、支付结算和退款状态更新从 `ISeckillRepository` 拆到 `ISeckillOrderCommandPort`。
+- `2026-05-30-seckill-repository-delete-port-split.md`：记录删除通用 `ISeckillRepository` / `SeckillRepository`，拆成查询、库存可用性、锁单和维护端口。
 
 ## SDD 工作流
 

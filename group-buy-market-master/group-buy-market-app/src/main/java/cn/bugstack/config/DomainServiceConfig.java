@@ -5,7 +5,9 @@ import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCommandPort;
-import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import cn.bugstack.domain.seckill.service.SeckillService;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
@@ -50,11 +52,13 @@ import java.util.Map;
 public class DomainServiceConfig {
 
     @Bean
-    public ISeckillService seckillService(ISeckillRepository seckillRepository,
+    public ISeckillService seckillService(ISeckillQueryPort seckillQueryPort,
+                                          ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
+                                          ISeckillOrderLockPort seckillOrderLockPort,
                                           ISeckillMaintenancePort seckillMaintenancePort,
                                           ISeckillOrderCommandPort seckillOrderCommandPort,
                                           @Value("${app.seckill.lock.max-concurrent-per-activity:200}") Integer maxConcurrentPerActivity) {
-        return new SeckillService(seckillRepository, seckillMaintenancePort, seckillOrderCommandPort, maxConcurrentPerActivity);
+        return new SeckillService(seckillQueryPort, seckillStockAvailabilityPort, seckillOrderLockPort, seckillMaintenancePort, seckillOrderCommandPort, maxConcurrentPerActivity);
     }
 
     @Bean

@@ -50,4 +50,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 ## 面试表达
 
-> 秒杀领域里我把用户下单主链路和后台维护链路分开了。`ISeckillRepository` 面向用户请求和交易状态，`ISeckillMaintenancePort` 面向库存同步、活动预热、超时未支付释放这类 Job。这样面试官追问“秒杀主链路为什么不被补偿任务污染”时，可以明确说明端口边界，而不是一个大 Repository 暴露所有能力。
+> 秒杀领域里我先把用户下单主链路和后台维护链路分开，`ISeckillMaintenancePort` 面向库存同步、活动预热、超时未支付释放这类 Job。后续又继续拆掉通用 `ISeckillRepository` / `SeckillRepository`，把查询、库存可用性、锁单预扣、订单命令都拆成独立端口。这样面试官追问“秒杀主链路为什么不被补偿任务污染”时，可以明确说明端口边界，而不是一个大 Repository 暴露所有能力。
+
+## 后续更新
+
+后续 SDD 记录 `2026-05-30-seckill-repository-delete-port-split.md` 已完成通用秒杀仓储删除，并把基础设施侧维护实现迁到独立 `SeckillMaintenancePort`。

@@ -87,12 +87,28 @@ public class DomainPurityTest {
     }
 
     @Test
-    public void seckillRepositoryShouldNotExposeMaintenanceJobMethods() throws Exception {
+    public void genericSeckillRepositoryShouldStayDeleted() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
-        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
+        Path seckillRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
+        Path seckillRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
+
+        Assert.assertFalse("Generic ISeckillRepository should stay deleted; use dedicated seckill ports instead.", Files.exists(seckillRepositoryPort));
+        Assert.assertFalse("Generic SeckillRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(seckillRepositoryAdapter));
+    }
+
+    @Test
+    public void seckillQueryPortShouldNotExposeStockLockOrCommandOperations() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path queryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillQueryPort.java");
+        String source = new String(Files.readAllBytes(queryPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenMethods = Arrays.asList(
+                "queryAvailableStock",
+                "lockSeckillOrder",
+                "createSeckillOrder",
+                "createSeckillOrders",
+                "settlementSeckillOrder",
+                "refundSeckillOrder",
                 "syncSeckillActivityStock",
                 "releaseTimeoutUnpaidOrders",
                 "prewarmUpcomingActivities"
@@ -105,37 +121,16 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("ISeckillRepository must keep maintenance job operations behind ISeckillMaintenancePort: " + violations, violations.isEmpty());
+        Assert.assertTrue("ISeckillQueryPort must only expose seckill read-model queries: " + violations, violations.isEmpty());
     }
 
     @Test
-    public void seckillRepositoryShouldNotExposeOrderLifecycleCommands() throws Exception {
+    public void seckillLockAndAvailabilityAdaptersShouldNotContainOrderLifecycleCommands() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
-        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
-
-        List<String> forbiddenMethods = Arrays.asList(
-                "createSeckillOrder",
-                "createSeckillOrders",
-                "settlementSeckillOrder",
-                "refundSeckillOrder"
+        List<Path> adapterPaths = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java")
         );
-
-        List<String> violations = new ArrayList<>();
-        for (String method : forbiddenMethods) {
-            if (source.contains(method)) {
-                violations.add(method);
-            }
-        }
-
-        Assert.assertTrue("ISeckillRepository must keep order lifecycle commands behind ISeckillOrderCommandPort: " + violations, violations.isEmpty());
-    }
-
-    @Test
-    public void seckillRepositoryShouldKeepCacheFlowAndShardDetailsBehindAdapters() throws Exception {
-        Path workspaceRoot = findWorkspaceRoot();
-        Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
-        String source = new String(Files.readAllBytes(seckillRepository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
                 "IRedisService",
@@ -167,13 +162,16 @@ public class DomainPurityTest {
         );
 
         List<String> violations = new ArrayList<>();
-        for (String snippet : forbiddenSnippets) {
-            if (source.contains(snippet)) {
-                violations.add(snippet);
+        for (Path adapterPath : adapterPaths) {
+            String source = new String(Files.readAllBytes(adapterPath), StandardCharsets.UTF_8);
+            for (String snippet : forbiddenSnippets) {
+                if (source.contains(snippet)) {
+                    violations.add(adapterPath.getFileName() + ":" + snippet);
+                }
             }
         }
 
-        Assert.assertTrue("SeckillRepository must keep stock flow, result cache and order shard details behind dedicated adapters: " + violations, violations.isEmpty());
+        Assert.assertTrue("Seckill lock and stock availability adapters must not own order lifecycle command details: " + violations, violations.isEmpty());
     }
 
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {

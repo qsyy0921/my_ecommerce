@@ -2,7 +2,9 @@ package cn.bugstack.domain.seckill.service;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCommandPort;
-import cn.bugstack.domain.seckill.adapter.repository.ISeckillRepository;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
@@ -22,16 +24,22 @@ import java.util.concurrent.Semaphore;
 @Slf4j
 public class SeckillService implements ISeckillService {
 
-    private final ISeckillRepository seckillRepository;
+    private final ISeckillQueryPort seckillQueryPort;
+    private final ISeckillStockAvailabilityPort seckillStockAvailabilityPort;
+    private final ISeckillOrderLockPort seckillOrderLockPort;
     private final ISeckillMaintenancePort seckillMaintenancePort;
     private final ISeckillOrderCommandPort seckillOrderCommandPort;
     private final Integer maxConcurrentPerActivity;
 
-    public SeckillService(ISeckillRepository seckillRepository,
+    public SeckillService(ISeckillQueryPort seckillQueryPort,
+                          ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
+                          ISeckillOrderLockPort seckillOrderLockPort,
                           ISeckillMaintenancePort seckillMaintenancePort,
                           ISeckillOrderCommandPort seckillOrderCommandPort,
                           Integer maxConcurrentPerActivity) {
-        this.seckillRepository = seckillRepository;
+        this.seckillQueryPort = seckillQueryPort;
+        this.seckillStockAvailabilityPort = seckillStockAvailabilityPort;
+        this.seckillOrderLockPort = seckillOrderLockPort;
         this.seckillMaintenancePort = seckillMaintenancePort;
         this.seckillOrderCommandPort = seckillOrderCommandPort;
         this.maxConcurrentPerActivity = maxConcurrentPerActivity;
@@ -41,11 +49,11 @@ public class SeckillService implements ISeckillService {
 
     @Override
     public SeckillActivityEntity querySeckillActivity(Long activityId, String source, String channel, String goodsId) {
-        SeckillActivityEntity seckillActivityEntity = seckillRepository.querySeckillActivity(activityId, source, channel, goodsId);
+        SeckillActivityEntity seckillActivityEntity = seckillQueryPort.querySeckillActivity(activityId, source, channel, goodsId);
         if (null == seckillActivityEntity) {
             throw new AppException(ResponseCode.E0201);
         }
-        Integer availableStock = seckillRepository.queryAvailableStock(seckillActivityEntity.getActivityId());
+        Integer availableStock = seckillStockAvailabilityPort.queryAvailableStock(seckillActivityEntity.getActivityId());
         return SeckillActivityEntity.builder()
                 .activityId(seckillActivityEntity.getActivityId())
                 .activityName(seckillActivityEntity.getActivityName())
@@ -67,12 +75,12 @@ public class SeckillService implements ISeckillService {
 
     @Override
     public SeckillOrderEntity querySeckillOrderByOutTradeNo(String userId, String outTradeNo) {
-        return seckillRepository.querySeckillOrderByOutTradeNo(userId, outTradeNo);
+        return seckillQueryPort.querySeckillOrderByOutTradeNo(userId, outTradeNo);
     }
 
     @Override
     public SeckillOrderEntity querySeckillResult(String userId, Long activityId, String outTradeNo) {
-        return seckillRepository.querySeckillResult(userId, activityId, outTradeNo);
+        return seckillQueryPort.querySeckillResult(userId, activityId, outTradeNo);
     }
 
     @Override
@@ -84,7 +92,7 @@ public class SeckillService implements ISeckillService {
             throw new AppException(ResponseCode.RATE_LIMITER);
         }
         try {
-            SeckillActivityEntity seckillActivityEntity = seckillRepository.querySeckillActivity(activityId, source, channel, goodsId);
+            SeckillActivityEntity seckillActivityEntity = seckillQueryPort.querySeckillActivity(activityId, source, channel, goodsId);
             if (null == seckillActivityEntity) {
                 throw new AppException(ResponseCode.E0201);
             }
@@ -107,7 +115,7 @@ public class SeckillService implements ISeckillService {
                     .status(SeckillOrderStatusEnumVO.CREATE.getCode())
                     .build();
 
-            return seckillRepository.lockSeckillOrder(seckillOrderEntity);
+            return seckillOrderLockPort.lockSeckillOrder(seckillOrderEntity);
         } finally {
             semaphore.release();
         }
