@@ -3,15 +3,11 @@ package cn.bugstack.infrastructure.adapter.repository;
 import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
-import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
-import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
 import cn.bugstack.domain.trade.model.valobj.*;
 import cn.bugstack.domain.shared.adapter.port.IOrderStateFlowPort;
 import cn.bugstack.domain.shared.model.entity.OrderStateTransitionEntity;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyStockFlowPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
-import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.infrastructure.dao.IGroupBuyActivityDao;
 import cn.bugstack.infrastructure.dao.IGroupBuyOrderDao;
 import cn.bugstack.infrastructure.dao.IGroupBuyOrderListDao;
@@ -55,19 +51,12 @@ public class TradeRepository implements ITradeRepository {
     @Resource
     private IOrderStateFlowPort orderStateFlowPort;
     @Resource
-    private ITradeNotifyTaskPort tradeNotifyTaskPort;
-    @Resource
     private IGroupBuyStockFlowPort groupBuyStockFlowPort;
-    @Resource
-    private ITradeLockRequestPort tradeLockRequestPort;
     @Resource
     private DCCService dccService;
 
     @Value("${spring.rabbitmq.config.producer.topic_team_success.routing_key}")
     private String topic_team_success;
-
-    @Value("${spring.rabbitmq.config.producer.topic_team_refund.routing_key}")
-    private String topic_team_refund;
 
     @Override
     public MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo) {
@@ -252,230 +241,9 @@ public class TradeRepository implements ITradeRepository {
                 .build();
     }
 
-    @Transactional(timeout = 5000)
-    @Override
-    public NotifyTaskEntity settlementMarketPayOrder(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate) {
-
-        UserEntity userEntity = groupBuyTeamSettlementAggregate.getUserEntity();
-        GroupBuyTeamEntity groupBuyTeamEntity = groupBuyTeamSettlementAggregate.getGroupBuyTeamEntity();
-        NotifyConfigVO notifyConfigVO = groupBuyTeamEntity.getNotifyConfigVO();
-        TradePaySuccessEntity tradePaySuccessEntity = groupBuyTeamSettlementAggregate.getTradePaySuccessEntity();
-
-        // 1. 更新拼团订单明细状态
-        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
-        groupBuyOrderListReq.setUserId(userEntity.getUserId());
-        groupBuyOrderListReq.setOutTradeNo(tradePaySuccessEntity.getOutTradeNo());
-        groupBuyOrderListReq.setOutTradeTime(tradePaySuccessEntity.getOutTradeTime());
-
-        int updateOrderListStatusCount = groupBuyOrderListDao.updateOrderStatus2COMPLETE(groupBuyOrderListReq);
-        if (1 != updateOrderListStatusCount) {
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyOrderPaid(
-                tradePaySuccessEntity.getOutTradeNo(),
-                null,
-                userEntity.getUserId(),
-                MDC.get("trace-id")));
-        tradeLockRequestPort.removeLockResult(userEntity.getUserId(), tradePaySuccessEntity.getOutTradeNo());
-
-        // 2. 更新拼团达成数量
-        int updateAddCount = groupBuyOrderDao.updateAddCompleteCount(groupBuyTeamEntity.getTeamId());
-        if (1 != updateAddCount) {
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-
-        // 3. 更新拼团完成状态。是否成团只依赖数据库条件更新，避免并发结算时使用旧 completeCount 误判。
-        int updateOrderStatusCount = groupBuyOrderDao.updateOrderStatus2COMPLETE(groupBuyTeamEntity.getTeamId());
-        if (1 == updateOrderStatusCount) {
-            orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyTeamFormed(
-                    groupBuyTeamEntity.getTeamId(),
-                    userEntity.getUserId(),
-                    MDC.get("trace-id")));
-
-            // 查询拼团交易完成外部单号列表
-            List<String> outTradeNoList = groupBuyOrderListDao.queryGroupBuyCompleteOrderOutTradeNoListByTeamId(groupBuyTeamEntity.getTeamId());
-
-            return tradeNotifyTaskPort.createSettlementTask(
-                    groupBuyTeamEntity.getActivityId(),
-                    groupBuyTeamEntity.getTeamId(),
-                    notifyConfigVO,
-                    outTradeNoList);
-        }
-
-        return null;
-    }
-
     @Override
     public boolean isSCBlackIntercept(String source, String channel) {
         return dccService.isSCBlackIntercept(source, channel);
-    }
-
-    @Override
-    @Transactional(timeout = 5000)
-    public NotifyTaskEntity unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
-        TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
-        GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
-
-        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
-        // 保留userId，企业中往往会根据 userId 作为分库分表路由键，如果将来做分库分表也可以方便处理
-        groupBuyOrderListReq.setUserId(tradeRefundOrderEntity.getUserId());
-        groupBuyOrderListReq.setOrderId(tradeRefundOrderEntity.getOrderId());
-
-        int updateUnpaid2RefundCount = groupBuyOrderListDao.unpaid2Refund(groupBuyOrderListReq);
-        if (1 != updateUnpaid2RefundCount) {
-            log.error("逆向流程-unpaid2Refund，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyUnpaidOrderClosed(
-                tradeRefundOrderEntity.getOutTradeNo(),
-                tradeRefundOrderEntity.getOrderId(),
-                tradeRefundOrderEntity.getUserId(),
-                MDC.get("trace-id")));
-        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
-
-        GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
-        groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
-        groupBuyOrderReq.setLockCount(groupBuyProgress.getLockCount());
-
-        int updateTeamUnpaid2Refund = groupBuyOrderDao.unpaid2Refund(groupBuyOrderReq);
-        if (1 != updateTeamUnpaid2Refund) {
-            log.error("逆向流程-unpaid2Refund，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyProgressSlotReleased(
-                tradeRefundOrderEntity.getTeamId(),
-                tradeRefundOrderEntity.getOrderId(),
-                tradeRefundOrderEntity.getUserId(),
-                MDC.get("trace-id"),
-                "unpaid group buy team slot released"));
-
-        NotifyTaskEntity notifyTaskEntity = tradeNotifyTaskPort.createRefundTask(
-                tradeRefundOrderEntity,
-                RefundTypeEnumVO.UNPAID_UNLOCK,
-                topic_team_refund);
-        groupBuyStockFlowPort.record(GroupBuyStockFlowEntity.unpaidRefunded(
-                tradeRefundOrderEntity,
-                MDC.get("trace-id")));
-
-        return notifyTaskEntity;
-    }
-
-    @Override
-    @Transactional(timeout = 5000)
-    public NotifyTaskEntity paid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
-        TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
-        GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
-
-        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
-        // 保留userId，企业中往往会根据 userId 作为分库分表路由键，如果将来做分库分表也可以方便处理
-        groupBuyOrderListReq.setUserId(tradeRefundOrderEntity.getUserId());
-        groupBuyOrderListReq.setOrderId(tradeRefundOrderEntity.getOrderId());
-
-        int updatePaid2RefundCount = groupBuyOrderListDao.paid2Refund(groupBuyOrderListReq);
-        if (1 != updatePaid2RefundCount) {
-            log.error("逆向流程-paid2Refund，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyPaidOrderRefunded(
-                tradeRefundOrderEntity.getOutTradeNo(),
-                tradeRefundOrderEntity.getOrderId(),
-                tradeRefundOrderEntity.getUserId(),
-                MDC.get("trace-id"),
-                "paid unformed group buy order refunded"));
-        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
-
-        GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
-        groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
-        groupBuyOrderReq.setLockCount(groupBuyProgress.getLockCount());
-        groupBuyOrderReq.setCompleteCount(groupBuyProgress.getCompleteCount());
-
-        int updateTeamPaid2Refund = groupBuyOrderDao.paid2Refund(groupBuyOrderReq);
-        if (1 != updateTeamPaid2Refund) {
-            log.error("逆向流程-paid2Refund，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyProgressSlotReleased(
-                tradeRefundOrderEntity.getTeamId(),
-                tradeRefundOrderEntity.getOrderId(),
-                tradeRefundOrderEntity.getUserId(),
-                MDC.get("trace-id"),
-                "paid unformed group buy team slot released"));
-
-        NotifyTaskEntity notifyTaskEntity = tradeNotifyTaskPort.createRefundTask(
-                tradeRefundOrderEntity,
-                RefundTypeEnumVO.PAID_UNFORMED,
-                topic_team_refund);
-        groupBuyStockFlowPort.record(GroupBuyStockFlowEntity.paidUnformedRefunded(
-                tradeRefundOrderEntity,
-                MDC.get("trace-id")));
-
-        return notifyTaskEntity;
-    }
-
-    @Override
-    @Transactional(timeout = 5000)
-    public NotifyTaskEntity paidTeam2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
-        TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
-        GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
-        GroupBuyOrderEnumVO groupBuyOrderEnumVO = groupBuyRefundAggregate.getGroupBuyOrderEnumVO();
-
-        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
-        // 保留userId，企业中往往会根据 userId 作为分库分表路由键，如果将来做分库分表也可以方便处理
-        groupBuyOrderListReq.setUserId(tradeRefundOrderEntity.getUserId());
-        groupBuyOrderListReq.setOrderId(tradeRefundOrderEntity.getOrderId());
-
-        int updatePaid2RefundCount = groupBuyOrderListDao.paidTeam2Refund(groupBuyOrderListReq);
-        if (1 != updatePaid2RefundCount) {
-            log.error("逆向流程-paidTeam2Refund，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-            throw new AppException(ResponseCode.UPDATE_ZERO);
-        }
-        orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyPaidOrderRefunded(
-                tradeRefundOrderEntity.getOutTradeNo(),
-                tradeRefundOrderEntity.getOrderId(),
-                tradeRefundOrderEntity.getUserId(),
-                MDC.get("trace-id"),
-                "paid formed group buy order refunded"));
-        tradeLockRequestPort.removeLockResult(tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOutTradeNo());
-
-        GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
-        groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
-        groupBuyOrderReq.setLockCount(groupBuyProgress.getLockCount());
-        groupBuyOrderReq.setCompleteCount(groupBuyProgress.getCompleteCount());
-
-        // 根据拼团组队量更新状态。组队最后一个人->更新组队失败，组队还有其他人->更新组队完成含退单
-        if (GroupBuyOrderEnumVO.COMPLETE_FAIL.equals(groupBuyOrderEnumVO)) {
-            int updateTeamPaid2Refund = groupBuyOrderDao.paidTeam2Refund(groupBuyOrderReq);
-            if (1 != updateTeamPaid2Refund) {
-                log.error("逆向流程-paidTeam2Refund，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-                throw new AppException(ResponseCode.UPDATE_ZERO);
-            }
-            orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyTeamPartialRefund(
-                    tradeRefundOrderEntity.getTeamId(),
-                    tradeRefundOrderEntity.getOrderId(),
-                    tradeRefundOrderEntity.getUserId(),
-                    MDC.get("trace-id")));
-        } else if (GroupBuyOrderEnumVO.FAIL.equals(groupBuyOrderEnumVO)){
-            int updateTeamPaid2RefundFail = groupBuyOrderDao.paidTeam2RefundFail(groupBuyOrderReq);
-            if (1 != updateTeamPaid2RefundFail) {
-                log.error("逆向流程-updateTeamPaid2RefundFail，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
-                throw new AppException(ResponseCode.UPDATE_ZERO);
-            }
-            orderStateFlowPort.record(OrderStateTransitionEntity.groupBuyTeamAllRefunded(
-                    tradeRefundOrderEntity.getTeamId(),
-                    tradeRefundOrderEntity.getOrderId(),
-                    tradeRefundOrderEntity.getUserId(),
-                    MDC.get("trace-id")));
-        }
-
-        NotifyTaskEntity notifyTaskEntity = tradeNotifyTaskPort.createRefundTask(
-                tradeRefundOrderEntity,
-                RefundTypeEnumVO.PAID_FORMED,
-                topic_team_refund);
-        groupBuyStockFlowPort.record(GroupBuyStockFlowEntity.paidFormedRefunded(
-                tradeRefundOrderEntity,
-                MDC.get("trace-id")));
-
-        return notifyTaskEntity;
     }
 
     @Override

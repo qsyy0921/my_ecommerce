@@ -2,12 +2,9 @@ package cn.bugstack.domain.trade.adapter.repository;
 
 import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
-import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
-import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.MarketPayOrderEntity;
-import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.model.valobj.GroupBuyProgressVO;
 
 import java.util.List;
@@ -31,15 +28,7 @@ public interface ITradeRepository {
 
     GroupBuyTeamEntity queryGroupBuyTeamByTeamId(String teamId);
 
-    NotifyTaskEntity settlementMarketPayOrder(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
-
     boolean isSCBlackIntercept(String source, String channel);
-
-    NotifyTaskEntity unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
-
-    NotifyTaskEntity paid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
-
-    NotifyTaskEntity paidTeam2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 
     List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList();
 

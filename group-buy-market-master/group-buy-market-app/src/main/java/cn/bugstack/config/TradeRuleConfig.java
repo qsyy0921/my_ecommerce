@@ -1,6 +1,7 @@
 package cn.bugstack.config;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
@@ -114,26 +115,29 @@ public class TradeRuleConfig {
 
     @Bean("unpaid2RefundStrategy")
     public IRefundOrderStrategy unpaid2RefundStrategy(ITradeRepository tradeRepository,
+                                                      IGroupBuyRefundPort groupBuyRefundPort,
                                                       IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                       ITradeTaskService tradeTaskService,
                                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new Unpaid2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new Unpaid2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paid2RefundStrategy")
     public IRefundOrderStrategy paid2RefundStrategy(ITradeRepository tradeRepository,
+                                                    IGroupBuyRefundPort groupBuyRefundPort,
                                                     IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                     ITradeTaskService tradeTaskService,
                                                     IDomainTaskExecutor domainTaskExecutor) {
-        return new Paid2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new Paid2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paidTeam2RefundStrategy")
     public IRefundOrderStrategy paidTeam2RefundStrategy(ITradeRepository tradeRepository,
+                                                        IGroupBuyRefundPort groupBuyRefundPort,
                                                         IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                         ITradeTaskService tradeTaskService,
                                                         IDomainTaskExecutor domainTaskExecutor) {
-        return new PaidTeam2RefundStrategy(tradeRepository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new PaidTeam2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
 }

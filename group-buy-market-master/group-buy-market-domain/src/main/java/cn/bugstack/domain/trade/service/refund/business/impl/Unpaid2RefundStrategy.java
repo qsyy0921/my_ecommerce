@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.refund.business.impl;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
@@ -21,17 +22,18 @@ import lombok.extern.slf4j.Slf4j;
 public class Unpaid2RefundStrategy extends AbstractRefundOrderStrategy {
 
     public Unpaid2RefundStrategy(ITradeRepository repository,
+                                 IGroupBuyRefundPort groupBuyRefundPort,
                                  IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                  ITradeTaskService tradeTaskService,
                                  IDomainTaskExecutor domainTaskExecutor) {
-        super(repository, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        super(repository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Override
     public void refundOrder(TradeRefundOrderEntity tradeRefundOrderEntity) {
         log.info("退单；未支付，未成团 userId:{} teamId:{} orderId:{}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getTeamId(), tradeRefundOrderEntity.getOrderId());
         // 1. 退单；未支付，未成团
-        NotifyTaskEntity notifyTaskEntity = repository.unpaid2Refund(GroupBuyRefundAggregate.buildUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
+        NotifyTaskEntity notifyTaskEntity = groupBuyRefundPort.unpaid2Refund(GroupBuyRefundAggregate.buildUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
 
         // 2. 发送MQ消息 - 发送MQ，恢复锁单库存量使用
         sendRefundNotifyMessage(notifyTaskEntity, "未支付，未成团");

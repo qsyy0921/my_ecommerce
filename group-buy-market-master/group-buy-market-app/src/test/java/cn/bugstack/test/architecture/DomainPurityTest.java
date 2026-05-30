@@ -78,6 +78,29 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void tradeRepositoryShouldNotExposeSettlementAndRefundWrites() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
+        String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenMethods = Arrays.asList(
+                "settlementMarketPayOrder",
+                "unpaid2Refund",
+                "paid2Refund",
+                "paidTeam2Refund"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String method : forbiddenMethods) {
+            if (source.contains(method)) {
+                violations.add(method);
+            }
+        }
+
+        Assert.assertTrue("ITradeRepository must keep group-buy settlement and refund writes behind dedicated ports: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillRepositoryShouldNotExposeMaintenanceJobMethods() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path seckillRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");

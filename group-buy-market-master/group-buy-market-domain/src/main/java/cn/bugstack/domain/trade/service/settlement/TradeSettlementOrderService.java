@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.settlement;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuySettlementPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
@@ -24,15 +25,18 @@ import java.util.*;
 public class TradeSettlementOrderService implements ITradeSettlementOrderService {
 
     private final ITradeRepository repository;
+    private final IGroupBuySettlementPort groupBuySettlementPort;
     private final IDomainTaskExecutor domainTaskExecutor;
     private final ITradeTaskService tradeTaskService;
     private final BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter;
 
     public TradeSettlementOrderService(ITradeRepository repository,
+                                       IGroupBuySettlementPort groupBuySettlementPort,
                                        IDomainTaskExecutor domainTaskExecutor,
                                        ITradeTaskService tradeTaskService,
                                        BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter) {
         this.repository = repository;
+        this.groupBuySettlementPort = groupBuySettlementPort;
         this.domainTaskExecutor = domainTaskExecutor;
         this.tradeTaskService = tradeTaskService;
         this.tradeSettlementRuleFilter = tradeSettlementRuleFilter;
@@ -75,7 +79,7 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
                 .build();
 
         // 4. 拼团交易结算
-        NotifyTaskEntity notifyTaskEntity = repository.settlementMarketPayOrder(groupBuyTeamSettlementAggregate);
+        NotifyTaskEntity notifyTaskEntity = groupBuySettlementPort.settlementMarketPayOrder(groupBuyTeamSettlementAggregate);
 
         // 5. 组队回调处理 - 处理失败也会有定时任务补偿，通过这样的方式，可以减轻任务调度，提高时效性
         if (null != notifyTaskEntity) {

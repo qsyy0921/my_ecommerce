@@ -1,6 +1,7 @@
 package cn.bugstack.domain.trade.service.refund.business;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
@@ -24,15 +25,18 @@ import java.util.Map;
 public abstract class AbstractRefundOrderStrategy implements IRefundOrderStrategy {
 
     protected final ITradeRepository repository;
+    protected final IGroupBuyRefundPort groupBuyRefundPort;
     protected final IGroupBuyTeamStockPort groupBuyTeamStockPort;
     protected final ITradeTaskService tradeTaskService;
     protected final IDomainTaskExecutor domainTaskExecutor;
 
     protected AbstractRefundOrderStrategy(ITradeRepository repository,
+                                          IGroupBuyRefundPort groupBuyRefundPort,
                                           IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                           ITradeTaskService tradeTaskService,
                                           IDomainTaskExecutor domainTaskExecutor) {
         this.repository = repository;
+        this.groupBuyRefundPort = groupBuyRefundPort;
         this.groupBuyTeamStockPort = groupBuyTeamStockPort;
         this.tradeTaskService = tradeTaskService;
         this.domainTaskExecutor = domainTaskExecutor;
