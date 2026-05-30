@@ -1,7 +1,9 @@
 package cn.bugstack.domain.trade.model.valobj;
 
 import cn.bugstack.domain.trade.model.entity.TradeRefundOrderEntity;
+import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.enums.GroupBuyOrderEnumVO;
+import cn.bugstack.types.exception.AppException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -59,7 +61,7 @@ public enum RefundTypeEnumVO {
         return Arrays.stream(values())
                 .filter(refundType -> refundType.matches(groupBuyOrderEnumVO, tradeOrderStatusEnumVO))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("不支持的退款状态组合: groupBuyOrderStatus=" + groupBuyOrderEnumVO + ", tradeOrderStatus=" + tradeOrderStatusEnumVO));
+                .orElseThrow(() -> new AppException(ResponseCode.E0108));
     }
 
     public static RefundTypeEnumVO getRefundTypeEnumVOByCode(String code) {

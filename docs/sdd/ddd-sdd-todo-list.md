@@ -98,8 +98,10 @@
   - 本次完成：新增 `SeckillOrderLockPortUnitTest`，覆盖预扣成功、重复参与、库存不足、售罄短路、消息入队失败回滚、pending retry 隔离策略和库存流水幂等 `flowNo`。
   - 边界说明：Redis Stream `XAUTOCLAIM`、ACK 和人工补偿 Stream 写入属于中间件集成行为，纯单元测试先覆盖 retry policy 和库存回滚不变量，故障演练脚本继续验证真实 Redis 行为。
 
-- [ ] 补退款策略测试。
+- [x] 补退款策略测试。
   - 覆盖：未支付释放、已支付未成团退款、已支付已成团退款、重复退款、非法状态退款。
+  - 本次完成：新增 `TradeRefundOrderServiceUnitTest`，覆盖三类拼团退单策略路由、重复退单幂等、非法状态业务异常和锁单库存恢复边界。
+  - 本次治理：新增 `E0108` 业务错误码，`RefundTypeEnumVO` 不再用普通 `RuntimeException` 表达非法退单状态组合。
 
 - [ ] 补对账重放契约测试。
   - 覆盖：支付成功但营销未结算、营销结算成功但商城未完成、退款成功但库存未恢复。
