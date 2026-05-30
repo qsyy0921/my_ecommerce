@@ -106,6 +106,7 @@
 - [x] 拼团退单基础设施实现继续拆成未支付、已支付未成团、已支付已成团三个处理器，`GroupBuyRefundPort` 只保留门面委托。
 - [x] 拼团读模型查询拆到 `IGroupBuyQueryPort`，超时未支付扫描拆到 `IGroupBuyTimeoutOrderPort`，渠道黑名单策略拆到 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
 - [x] 拼团交易 HTTP 入口 `MarketTradeController` 拆出 `GroupBuyTradeRequestValidator`、`GroupBuyTradeCommandAssembler` 和 `GroupBuyTradeResponseAssembler`，Controller 不再直接维护校验矩阵、通知类型解析、领域命令 builder 和响应 DTO builder。
+- [x] 拼团交易 HTTP 入口继续拆出锁单、结算、退单 3 个用例支撑组件，Controller 不再直接编排首页试算、领域服务、结构化日志和异常响应。
 - [x] 拼团首页 HTTP 入口 `MarketIndexController` 已拆出请求校验、领域命令组装和首页响应 DTO 组装组件。
 - [x] 拼团通知任务发送已从泛化 `ITradePort` / `TradePort` 拆到显式 `ITradeNotificationPort`，并拆出 Redis 锁和 HTTP/MQ 渠道分发支撑组件。
 - [x] 拼团通知任务端口已从通用 `ITradeNotifyTaskPort` 拆成创建端口和执行端口，并拆出 payload 工厂与 PO/Entity 映射组件。

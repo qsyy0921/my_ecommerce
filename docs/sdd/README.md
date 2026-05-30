@@ -26,6 +26,7 @@
 - `2026-05-30-group-buy-refund-processor-split.md`：记录 `GroupBuyRefundPort` 继续拆成三类退单处理器，门面只保留委托职责。
 - `2026-05-30-group-buy-query-timeout-port-split.md`：记录拼团读模型、超时扫描和渠道策略从通用 `TradeRepository` 拆到独立端口，并删除通用交易仓储。
 - `2026-05-30-group-buy-trade-controller-support-split.md`：记录 `MarketTradeController` 拆出请求校验、领域命令组装和响应 DTO 组装组件。
+- `2026-05-30-group-buy-trade-controller-usecase-support-split.md`：记录 `MarketTradeController` 继续拆出锁单、结算、退单 3 个 HTTP 用例支撑组件，入口层只保留路由。
 - `2026-05-30-payment-callback-idempotency.md`：记录支付回调流水幂等和重复回调后续动作拦截方案。
 - `2026-05-30-seckill-prewarm-rate-limit.md`：记录秒杀活动预热、活动/用户/IP 三维限流和入口指标方案。
 - `2026-05-30-rabbitmq-dlq-ops.md`：记录 RabbitMQ DLQ 失败台账、指标和人工处理入口方案。

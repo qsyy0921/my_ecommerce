@@ -941,7 +941,30 @@ public class DomainPurityTest {
                 "PayDiscountEntity.builder()",
                 "NotifyConfigVO.builder()",
                 "TradePaySuccessEntity.builder()",
-                "TradeRefundCommandEntity.builder()"
+                "TradeRefundCommandEntity.builder()",
+                "IIndexGroupBuyMarketService",
+                "ITradeLockOrderService",
+                "ITradeSettlementOrderService",
+                "ITradeRefundOrderService",
+                "StructuredBusinessLogger",
+                "GroupBuyTradeRequestValidator",
+                "GroupBuyTradeCommandAssembler",
+                "GroupBuyTradeResponseAssembler",
+                "TrialBalanceEntity",
+                "GroupBuyActivityDiscountVO",
+                "MarketPayOrderEntity",
+                "TradePaySettlementEntity",
+                "TradeRefundBehaviorEntity",
+                "GroupBuyProgressVO",
+                "NotifyTypeEnumVO",
+                "JSON.toJSONString",
+                "indexMarketTrial",
+                "queryNoPayMarketPayOrderByOutTradeNo",
+                "queryGroupBuyProgress",
+                "tradeOrderService.lockMarketPayOrder",
+                "tradeSettlementOrderService.settlementMarketPayOrder",
+                "tradeRefundOrderService.refundOrder",
+                "businessLogger."
         );
 
         List<String> violations = new ArrayList<>();
@@ -954,7 +977,10 @@ public class DomainPurityTest {
         List<Path> requiredSupportFiles = Arrays.asList(
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeRequestValidator.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeCommandAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeResponseAssembler.java")
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeResponseAssembler.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyLockOrderSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuySettlementSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyRefundSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -962,7 +988,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("MarketTradeController must delegate request validation, command assembly and response DTO mapping details: " + violations, violations.isEmpty());
+        Assert.assertTrue("MarketTradeController must delegate request validation, usecase orchestration, command assembly, logging and response DTO mapping details: " + violations, violations.isEmpty());
     }
 
     @Test
