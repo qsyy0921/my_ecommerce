@@ -87,6 +87,45 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");
+        String source = new String(Files.readAllBytes(refundAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IGroupBuyOrderDao",
+                "IGroupBuyOrderListDao",
+                "IOrderStateFlowPort",
+                "ITradeNotifyTaskPort",
+                "IGroupBuyStockFlowPort",
+                "ITradeLockRequestPort",
+                "@Transactional",
+                "GroupBuyOrderList",
+                "GroupBuyOrderEnumVO"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredProcessors = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyUnpaidRefundProcessor.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidUnformedRefundProcessor.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidFormedRefundProcessor.java")
+        );
+        for (Path processor : requiredProcessors) {
+            if (!Files.exists(processor)) {
+                violations.add("missing processor:" + processor.getFileName());
+            }
+        }
+
+        Assert.assertTrue("GroupBuyRefundPort adapter must stay a facade and delegate scenario details to processors: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void genericSeckillRepositoryShouldStayDeleted() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path seckillRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
@@ -122,6 +161,36 @@ public class DomainPurityTest {
         }
 
         Assert.assertTrue("ISeckillQueryPort must only expose seckill read-model queries: " + violations, violations.isEmpty());
+    }
+
+    @Test
+    public void seckillOrderCommandPortShouldStaySplitByLifecycle() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path commandPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCommandPort.java");
+        Path commandAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCommandPort.java");
+        Assert.assertFalse("Generic ISeckillOrderCommandPort should stay deleted; use create, settlement and refund ports instead.", Files.exists(commandPort));
+        Assert.assertFalse("Generic SeckillOrderCommandPort adapter should stay deleted; use create, settlement and refund adapters instead.", Files.exists(commandAdapter));
+
+        Path createPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCreatePort.java");
+        Path settlementPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillSettlementPort.java");
+        Path refundPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillRefundPort.java");
+
+        String createSource = new String(Files.readAllBytes(createPort), StandardCharsets.UTF_8);
+        String settlementSource = new String(Files.readAllBytes(settlementPort), StandardCharsets.UTF_8);
+        String refundSource = new String(Files.readAllBytes(refundPort), StandardCharsets.UTF_8);
+
+        List<String> violations = new ArrayList<>();
+        if (createSource.contains("settlementSeckillOrder") || createSource.contains("refundSeckillOrder")) {
+            violations.add("ISeckillOrderCreatePort exposes settlement/refund");
+        }
+        if (settlementSource.contains("createSeckillOrder") || settlementSource.contains("refundSeckillOrder")) {
+            violations.add("ISeckillSettlementPort exposes create/refund");
+        }
+        if (refundSource.contains("createSeckillOrder") || refundSource.contains("settlementSeckillOrder")) {
+            violations.add("ISeckillRefundPort exposes create/settlement");
+        }
+
+        Assert.assertTrue("Seckill order lifecycle ports must stay split by command responsibility: " + violations, violations.isEmpty());
     }
 
     @Test

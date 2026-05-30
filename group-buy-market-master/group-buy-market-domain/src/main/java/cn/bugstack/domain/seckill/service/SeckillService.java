@@ -1,9 +1,11 @@
 package cn.bugstack.domain.seckill.service;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCommandPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCreatePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillRefundPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillSettlementPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillActivityEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
@@ -28,20 +30,26 @@ public class SeckillService implements ISeckillService {
     private final ISeckillStockAvailabilityPort seckillStockAvailabilityPort;
     private final ISeckillOrderLockPort seckillOrderLockPort;
     private final ISeckillMaintenancePort seckillMaintenancePort;
-    private final ISeckillOrderCommandPort seckillOrderCommandPort;
+    private final ISeckillOrderCreatePort seckillOrderCreatePort;
+    private final ISeckillSettlementPort seckillSettlementPort;
+    private final ISeckillRefundPort seckillRefundPort;
     private final Integer maxConcurrentPerActivity;
 
     public SeckillService(ISeckillQueryPort seckillQueryPort,
                           ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
                           ISeckillOrderLockPort seckillOrderLockPort,
                           ISeckillMaintenancePort seckillMaintenancePort,
-                          ISeckillOrderCommandPort seckillOrderCommandPort,
+                          ISeckillOrderCreatePort seckillOrderCreatePort,
+                          ISeckillSettlementPort seckillSettlementPort,
+                          ISeckillRefundPort seckillRefundPort,
                           Integer maxConcurrentPerActivity) {
         this.seckillQueryPort = seckillQueryPort;
         this.seckillStockAvailabilityPort = seckillStockAvailabilityPort;
         this.seckillOrderLockPort = seckillOrderLockPort;
         this.seckillMaintenancePort = seckillMaintenancePort;
-        this.seckillOrderCommandPort = seckillOrderCommandPort;
+        this.seckillOrderCreatePort = seckillOrderCreatePort;
+        this.seckillSettlementPort = seckillSettlementPort;
+        this.seckillRefundPort = seckillRefundPort;
         this.maxConcurrentPerActivity = maxConcurrentPerActivity;
     }
 
@@ -123,22 +131,22 @@ public class SeckillService implements ISeckillService {
 
     @Override
     public void createSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
-        seckillOrderCommandPort.createSeckillOrder(seckillOrderEntity);
+        seckillOrderCreatePort.createSeckillOrder(seckillOrderEntity);
     }
 
     @Override
     public void createSeckillOrders(List<SeckillOrderEntity> seckillOrderEntities) {
-        seckillOrderCommandPort.createSeckillOrders(seckillOrderEntities);
+        seckillOrderCreatePort.createSeckillOrders(seckillOrderEntities);
     }
 
     @Override
     public SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo) {
-        return seckillOrderCommandPort.settlementSeckillOrder(userId, outTradeNo);
+        return seckillSettlementPort.settlementSeckillOrder(userId, outTradeNo);
     }
 
     @Override
     public SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason) {
-        return seckillOrderCommandPort.refundSeckillOrder(userId, outTradeNo, refundReason);
+        return seckillRefundPort.refundSeckillOrder(userId, outTradeNo, refundReason);
     }
 
     @Override

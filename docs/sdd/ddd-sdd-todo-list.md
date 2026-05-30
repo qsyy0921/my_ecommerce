@@ -15,8 +15,8 @@
 - [x] 拆分 `TradeRepository` 的剩余写职责。
   - 目标：把拼团锁单落库、结算状态更新、退单状态更新拆成更小端口或仓储适配器。
   - 建议拆分：`GroupBuyOrderRepository`、`GroupBuySettlementRepository`、`GroupBuyRefundRepository`。
-  - 进展：拼团锁单落库已拆到 `IGroupBuyOrderPort`，拼团结算已拆到 `IGroupBuySettlementPort`，三类退单已拆到 `IGroupBuyRefundPort`。
-  - 验收：`ITradeRepository` 不再暴露锁单、结算和退单写方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过。
+  - 进展：拼团锁单落库已拆到 `IGroupBuyOrderPort`，拼团结算已拆到 `IGroupBuySettlementPort`，三类退单已拆到 `IGroupBuyRefundPort`；基础设施侧 `GroupBuyRefundPort` 继续拆成三类退单处理器，门面不再直接持有 DAO、事务和状态流水细节。
+  - 验收：`ITradeRepository` 不再暴露锁单、结算和退单写方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过；架构测试防止 `GroupBuyRefundPort` 门面重新膨胀。
 
 - [x] 拆分 `TradeRepository` 的剩余读职责。
   - 目标：把活动、队伍、订单、进度、超时未支付扫描拆成更清晰的读模型端口。
@@ -45,8 +45,8 @@
 
 - [x] 拆分 `SeckillRepository` 的订单命令职责。
   - 目标：把异步落库、批量落库、支付结算、退款状态更新从秒杀主仓储中移出。
-  - 实际拆分：`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`。
-  - 验收：`ISeckillRepository` 不再暴露订单命令方法；`SeckillRepository` 不再直接处理批量插入、支付成功和退款状态更新。
+  - 实际拆分：先拆到订单命令端口，后续继续拆成 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，并用 `SeckillOrderTableGateway`、`SeckillOrderAssembler`、`SeckillStockReleaseSupport` 隔离分片表访问、对象转换和库存释放/回滚。
+  - 验收：`ISeckillRepository` / `SeckillRepository` 已删除；`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除；秒杀领域服务按订单生命周期依赖创建、结算、退款端口。
 
 - [x] 拆分 `SeckillRepository` 的查询和库存可用性职责。
   - 目标：把活动查询、订单查询、结果查询、库存初始化/查询和本地售罄短缓存继续拆开。
@@ -103,12 +103,15 @@
   - 本次完成：新增 `TradeRefundOrderServiceUnitTest`，覆盖三类拼团退单策略路由、重复退单幂等、非法状态业务异常和锁单库存恢复边界。
   - 本次治理：新增 `E0108` 业务错误码，`RefundTypeEnumVO` 不再用普通 `RuntimeException` 表达非法退单状态组合。
 
-- [ ] 补对账重放契约测试。
+- [x] 补对账重放契约测试。
   - 覆盖：支付成功但营销未结算、营销结算成功但商城未完成、退款成功但库存未恢复。
+  - 本次完成：新增 `OrderReconcileServiceReplayContractTest`，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 差错单跳过和重放失败备注。
+  - 门禁修复：商城 app 的 surefire 配置改为 `<skipTests>${skipTests}</skipTests>`，`-DskipTests=false` 能真实运行对账契约测试。
 
-- [ ] 保留生产容量边界。
+- [x] 保留生产容量边界。
   - 当前事实：本机 Windows + Docker Desktop 只能证明趋势，不能证明生产 QPS。
   - 后续条件：独立 Linux 压测机、多服务多实例、固定 CPU/内存水位、独立 Redis/MySQL/MQ 节点。
+  - 本次完成：新增 `docs/sdd/2026-05-30-production-capacity-boundary.md`，明确本机能证明的内容、不能证明的内容和面试表达边界。
 
 ## 每次任务验收命令
 

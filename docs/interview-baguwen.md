@@ -117,8 +117,9 @@ types           异常、枚举、常量、通用类型
 - 新增 `IDomainTaskExecutor` 端口，domain 不再直接依赖具体 `ThreadPoolExecutor`。
 - 状态迁移已抽成 `OrderStateMachine`、`OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，Repository 不再直接拼接状态流水 PO。
 - 拼团锁单落库、支付结算、三类退单写操作已分别拆到 `IGroupBuyOrderPort`、`IGroupBuySettlementPort` 和 `IGroupBuyRefundPort`。
+- `GroupBuyRefundPort` 基础设施实现继续拆成三类退单处理器，未支付释放、已支付未成团、已支付已成团不再堆在一个大实现类里。
 - 拼团读模型查询、超时未支付扫描、渠道黑名单策略已分别拆到 `IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort` 和 `ITradePolicyPort`，通用 `ITradeRepository` / `TradeRepository` 已删除。
-- 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单命令、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCommandPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
+- 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、订单创建、支付结算、退款、Redis 库存预扣、库存流水、结果缓存和订单分片路由已分别拆到 `ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillOrderMessagePort`、`ISeckillMaintenancePort`、`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`、`ISeckillStockReservationPort`、`ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - 新增 `SeckillOrderLockPortUnitTest` 和 `SeckillPendingRetryPolicy`，用 fake port 覆盖秒杀库存预扣、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - 新增 `TradeRefundOrderServiceUnitTest`，用 fake port 覆盖拼团未支付未成团、已支付未成团、已支付已成团、重复退单、非法退单状态和锁单库存恢复边界。
 
@@ -169,7 +170,9 @@ types           异常、枚举、常量、通用类型
 - 秒杀锁单适配器：`group-buy-market-infrastructure/.../adapter/port/SeckillOrderLockPort.java`
 - 秒杀下单消息适配器：`group-buy-market-infrastructure/.../adapter/port/SeckillOrderMessagePort.java`
 - 秒杀维护适配器：`group-buy-market-infrastructure/.../adapter/port/SeckillMaintenancePort.java`
-- 秒杀订单命令端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillOrderCommandPort.java`
+- 秒杀订单创建端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillOrderCreatePort.java`
+- 秒杀支付结算端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillSettlementPort.java`
+- 秒杀退款端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillRefundPort.java`
 - 秒杀结果缓存端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillResultCachePort.java`
 - 秒杀库存预扣端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillStockReservationPort.java`
 - 秒杀库存流水端口：`group-buy-market-domain/.../seckill/adapter/port/ISeckillStockFlowPort.java`
@@ -529,7 +532,8 @@ http://127.0.0.1:8088/seckill-ops.html
 - 状态机和状态迁移对象沉在 domain 层。
 - 状态流水落库通过领域端口适配。
 - 拼团通知任务 Outbox、库存流水审计、队伍库存占位、锁单请求锁、结果缓存、锁单落库、支付结算、退单写操作、读模型查询、超时扫描和渠道策略已从通用 `TradeRepository` 拆成端口适配，旧仓储已删除。
-- 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存流水、结果缓存、订单分片路由、订单创建/结算/退款命令都已拆到独立端口和路由组件，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
+- 拼团退单适配器继续拆成未支付、已支付未成团、已支付已成团三个处理器，门面只做委托。
+- 秒杀活动查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存流水、结果缓存、订单分片路由、订单创建、支付结算、退款都已拆到独立端口和路由组件，通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort` 已删除。
 - trigger 只做入口适配。
 - infrastructure 负责技术实现。
 
@@ -718,11 +722,11 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 数据：秒杀订单表是应用侧分片，能降低单表压力，但还没有完整分库治理、跨分片查询、扩容迁移和归档策略。
 - 消息：RabbitMQ 和 Redis Stream 已有幂等、DLQ、pending、补偿台，但如果规模更大，秒杀下单消息可以演进到 RocketMQ/Kafka/Pulsar 这类专业 MQ。
 - 观测：已有 traceId、结构化日志、Prometheus 指标、Grafana/Alertmanager 样例和本地 OpenTelemetry/Jaeger Trace；生产还缺 Collector、采样策略、Trace 存储周期和日志指标跳转联动。
-- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试和异步执行端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单命令都收敛到业务语义端口；后续仍要补专业 MQ Adapter 演进和对账重放契约测试。
+- 代码质量：DDD 边界和 domain 纯净化已经做了，也补了架构测试、核心状态机单测、拼团锁单纯单元测试、秒杀库存纯单元测试、退款策略纯单元测试、对账重放契约测试和异步执行端口；拼团侧通用 `TradeRepository` 已删除，读写能力都收敛到业务语义端口；秒杀侧通用 `SeckillRepository` 已删除，查询、库存可用性、锁单、下单消息、维护任务、订单创建、支付结算、退款都收敛到业务语义端口。
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、领域异步执行端口和大 Repository 拆分我已经补了；秒杀下单消息也已经抽成 `ISeckillOrderMessagePort`，后续替换 RocketMQ/Kafka 不需要改锁单主流程。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及专业 MQ Adapter 的契约测试和对账重放契约测试。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；秒杀下单消息也已经抽成 `ISeckillOrderMessagePort`，订单生命周期命令也拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及专业 MQ Adapter 的契约测试。
 
 ## 六、当前已修复的问题
 
@@ -754,6 +758,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 秒杀结果缓存端口：`ISeckillResultCachePort` 承接结果缓存查询、写入和删除。
 - 秒杀库存预扣端口：`ISeckillStockReservationPort` 承接 Redis 库存桶、用户占位、Lua 预扣、库存初始化锁、库存释放和回滚。
 - 秒杀订单分片路由：`SeckillOrderShardRouter` 承接分片表名、分片数和批量分发表逻辑。
+- 秒杀订单生命周期端口：`ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort` 分别承接异步落库、支付结算和退款恢复库存；旧 `ISeckillOrderCommandPort` 已删除。
 - 秒杀库存纯单元测试：`SeckillOrderLockPortUnitTest` 覆盖预扣成功、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存释放幂等 `flowNo`。
 - RabbitMQ DLQ。
 - RabbitMQ 死信台账、DLQ 指标和人工标记处理接口。
@@ -831,9 +836,9 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 ### 7. DDD 质量问题
 
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
-- 现在已新增 `DomainPurityTest`、`OrderStateMachineTest`、`TradeLockOrderServiceUnitTest`、`SeckillOrderLockPortUnitTest` 和 `TradeRefundOrderServiceUnitTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过、通用交易仓储回流，或拼团锁单、秒杀库存、退款策略规则被破坏。
+- 现在已新增 `DomainPurityTest`、`OrderStateMachineTest`、`TradeLockOrderServiceUnitTest`、`SeckillOrderLockPortUnitTest`、`TradeRefundOrderServiceUnitTest` 和 `OrderReconcileServiceReplayContractTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过、通用交易仓储回流，或拼团锁单、秒杀库存、退款策略、对账重放规则被破坏。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；营销侧已把通知任务扫描移到 `ITradeNotifyTaskPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`；拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由和订单命令拆到独立端口/组件，并删除通用 `ISeckillRepository` / `SeckillRepository`；秒杀库存规则已补纯单元测试；但还需要补对账重放契约测试，以及专业 MQ 演进后的消息契约。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；营销侧已把通知任务扫描移到 `ITradeNotifyTaskPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`；拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；后续还需要补专业 MQ 演进后的消息契约。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -928,6 +933,9 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分秒杀订单生命周期命令，删除 `ISeckillOrderCommandPort` / `SeckillOrderCommandPort`，新增 `ISeckillOrderCreatePort`、`ISeckillSettlementPort`、`ISeckillRefundPort`，并把分片表访问、PO/Entity 转换、库存释放/回滚拆到 `SeckillOrderTableGateway`、`SeckillOrderAssembler`、`SeckillStockReleaseSupport`；新增 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-decomposition.md`。
+- 2026-05-30：继续拆分拼团退单基础设施实现，`GroupBuyRefundPort` 改为薄门面，新增 `GroupBuyUnpaidRefundProcessor`、`GroupBuyPaidUnformedRefundProcessor`、`GroupBuyPaidFormedRefundProcessor` 和 `GroupBuyRefundSupport`，并新增架构测试防止门面回流 DAO/事务细节。
+- 2026-05-30：补齐对账重放契约测试，新增 `OrderReconcileServiceReplayContractTest`，覆盖拼团/秒杀营销结算重放、待支付关闭、退款重放、MQ 失败重放、非 OPEN 跳过和失败备注；修复商城 app surefire 配置，让 `-DskipTests=false` 能真实运行测试，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-replay-contract-tests.md`。
 - 2026-05-30：补齐拼团退款策略纯单元测试，新增 `TradeRefundOrderServiceUnitTest`，覆盖未支付未成团、已支付未成团、已支付已成团、重复退单、非法退单状态和恢复锁单库存边界；新增 `E0108` 业务错误码，并新增 SDD 记录 `docs/sdd/2026-05-30-refund-strategy-unit-tests.md`。
 - 2026-05-30：补齐秒杀库存纯单元测试，新增 `SeckillPendingRetryPolicy` 和 `SeckillOrderLockPortUnitTest`，覆盖预扣成功、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等 `flowNo`，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-stock-unit-tests.md`。
 - 2026-05-30：补齐拼团锁单纯单元测试，新增 `TradeLockOrderServiceUnitTest`，覆盖重复请求、活动不可用、参与次数上限、队伍满员、Redis 占位失败、DB 唯一索引冲突回滚、新开团、参团成功和人群标签试算拦截，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-lock-unit-tests.md`。

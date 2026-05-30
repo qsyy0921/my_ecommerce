@@ -4,14 +4,10 @@ import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 
 import java.util.List;
 
-public interface ISeckillOrderCommandPort {
+public interface ISeckillOrderCreatePort {
 
     void createSeckillOrder(SeckillOrderEntity seckillOrderEntity);
 
     void createSeckillOrders(List<SeckillOrderEntity> seckillOrderEntities);
-
-    SeckillOrderEntity settlementSeckillOrder(String userId, String outTradeNo);
-
-    SeckillOrderEntity refundSeckillOrder(String userId, String outTradeNo, String refundReason);
 
 }

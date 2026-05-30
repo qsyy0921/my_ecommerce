@@ -4,9 +4,11 @@ import cn.bugstack.domain.message.adapter.repository.IMessageRecordRepository;
 import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCommandPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCreatePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillRefundPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillSettlementPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import cn.bugstack.domain.seckill.service.SeckillService;
@@ -56,9 +58,11 @@ public class DomainServiceConfig {
                                           ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
                                           ISeckillOrderLockPort seckillOrderLockPort,
                                           ISeckillMaintenancePort seckillMaintenancePort,
-                                          ISeckillOrderCommandPort seckillOrderCommandPort,
+                                          ISeckillOrderCreatePort seckillOrderCreatePort,
+                                          ISeckillSettlementPort seckillSettlementPort,
+                                          ISeckillRefundPort seckillRefundPort,
                                           @Value("${app.seckill.lock.max-concurrent-per-activity:200}") Integer maxConcurrentPerActivity) {
-        return new SeckillService(seckillQueryPort, seckillStockAvailabilityPort, seckillOrderLockPort, seckillMaintenancePort, seckillOrderCommandPort, maxConcurrentPerActivity);
+        return new SeckillService(seckillQueryPort, seckillStockAvailabilityPort, seckillOrderLockPort, seckillMaintenancePort, seckillOrderCreatePort, seckillSettlementPort, seckillRefundPort, maxConcurrentPerActivity);
     }
 
     @Bean
