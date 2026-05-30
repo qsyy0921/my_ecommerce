@@ -60,10 +60,10 @@
   - 当前策略：Redis 继续做资格预扣、防重和本机演示削峰；跨服务通知继续用 RabbitMQ；真正大促订单排队建议演进 RocketMQ 或 Kafka。
   - 验收：补充 `docs/sdd/mq-evolution.md` 的选型结论、迁移步骤、消息模型和回滚方案。
 
-- [ ] 为秒杀异步下单增加 MQ 抽象端口。
+- [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。
-  - 建议端口：`ISeckillOrderMessagePort`。
-  - 验收：Redis Stream 成为一个 Adapter；生产级 MQ 只需要新增 Adapter，不改秒杀领域服务主流程。
+  - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
+  - 验收：Redis Stream、RabbitMQ、Redis Queue、本地队列投递选择收敛到消息 Adapter；锁单适配器不再感知具体中间件。
 
 - [ ] 补齐 Stream 人工补偿治理。
   - 目标：人工补偿 Stream 不只是失败隔离，还要有可查询、可重放、可审计能力。

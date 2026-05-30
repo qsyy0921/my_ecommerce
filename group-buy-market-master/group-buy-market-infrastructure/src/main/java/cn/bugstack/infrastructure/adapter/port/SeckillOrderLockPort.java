@@ -1,6 +1,7 @@
 package cn.bugstack.infrastructure.adapter.port;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderMessagePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockFlowPort;
@@ -9,11 +10,8 @@ import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillStockFlowEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillStockReservationEntity;
 import cn.bugstack.infrastructure.adapter.support.SeckillSoldOutCache;
-import cn.bugstack.infrastructure.event.EventPublisher;
-import cn.bugstack.infrastructure.event.SeckillOrderCreateBuffer;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,8 +25,6 @@ public class SeckillOrderLockPort implements ISeckillOrderLockPort {
 
     @Value("${app.seckill.stock-bucket-try-count:64}")
     private Integer stockBucketTryCount;
-    @Value("${spring.rabbitmq.config.producer.topic_seckill_order_create.routing_key}")
-    private String topicSeckillOrderCreate;
 
     @Resource
     private ISeckillStockAvailabilityPort seckillStockAvailabilityPort;
@@ -37,11 +33,9 @@ public class SeckillOrderLockPort implements ISeckillOrderLockPort {
     @Resource
     private ISeckillStockFlowPort seckillStockFlowPort;
     @Resource
+    private ISeckillOrderMessagePort seckillOrderMessagePort;
+    @Resource
     private SeckillSoldOutCache seckillSoldOutCache;
-    @Resource
-    private EventPublisher eventPublisher;
-    @Resource
-    private SeckillOrderCreateBuffer seckillOrderCreateBuffer;
     @Resource
     private ISeckillMetricsPort seckillMetricsPort;
 
@@ -78,14 +72,7 @@ public class SeckillOrderLockPort implements ISeckillOrderLockPort {
     }
 
     private void enqueueOrderCreate(SeckillOrderEntity seckillOrderEntity) {
-        String message = JSON.toJSONString(seckillOrderEntity);
-        if (seckillOrderCreateBuffer.useMq()) {
-            eventPublisher.publishWithoutConfirm(topicSeckillOrderCreate, message);
-            return;
-        }
-        String routeKey = seckillOrderEntity.getActivityId() + ":" + seckillOrderEntity.getUserId() + ":" + seckillOrderEntity.getOutTradeNo();
-        boolean offered = seckillOrderCreateBuffer.offer(message, routeKey);
-        if (!offered) {
+        if (!seckillOrderMessagePort.publishOrderCreate(seckillOrderEntity)) {
             throw new AppException(ResponseCode.RATE_LIMITER);
         }
     }

@@ -61,4 +61,4 @@ flowchart LR
 
 - 后续已继续治理秒杀侧，订单命令、查询、库存可用性、锁单预扣和维护任务都已拆到独立端口，通用 `ISeckillRepository` / `SeckillRepository` 已删除。
 - 补拼团锁单、退单策略、秒杀库存和对账重放的纯单元测试/契约测试。
-- 设计专业 MQ 演进方案和 `ISeckillOrderMessagePort`，避免秒杀主流程长期绑定 Redis Stream。
+- 后续已新增 `ISeckillOrderMessagePort`，避免秒杀锁单主流程长期绑定 Redis Stream；专业 MQ 演进方案仍需继续沉淀选型和迁移文档。

@@ -174,6 +174,32 @@ public class DomainPurityTest {
         Assert.assertTrue("Seckill lock and stock availability adapters must not own order lifecycle command details: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void seckillOrderLockPortShouldNotOwnMessageMiddlewareRouting() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
+        String source = new String(Files.readAllBytes(lockPort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "EventPublisher",
+                "SeckillOrderCreateBuffer",
+                "topicSeckillOrderCreate",
+                "publishWithoutConfirm",
+                "JSON.toJSONString",
+                "useMq()",
+                ".offer("
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Assert.assertTrue("Seckill order lock adapter must delegate message middleware routing to ISeckillOrderMessagePort: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

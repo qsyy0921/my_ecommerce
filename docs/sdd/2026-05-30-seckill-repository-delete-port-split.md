@@ -62,6 +62,6 @@ flowchart LR
 
 秒杀通用仓储已删除。后续 DDD 治理重点转向：
 
-- `ISeckillOrderMessagePort`：把 Redis Stream / RabbitMQ / RocketMQ 的消息投递从锁单适配器中继续解耦。
+- 后续 SDD 记录 `2026-05-30-seckill-order-message-port.md` 已新增 `ISeckillOrderMessagePort`，把 Redis Stream / RabbitMQ / Redis Queue / 本地队列投递选择从锁单适配器中解耦。
 - 领域用例测试：秒杀库存不足、重复参与、异步落库失败、pending 重放、支付结算、退款恢复库存。
 - 更完整的 MQ 演进方案：明确 Redis Stream 在本机项目中的边界，以及 RocketMQ/Kafka 的生产迁移方案。
