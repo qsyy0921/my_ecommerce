@@ -897,6 +897,51 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillOrderLockPortShouldDelegateStockGuardAndPublishDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
+        String source = new String(Files.readAllBytes(lockPort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "ISeckillStockAvailabilityPort",
+                "ISeckillStockReservationPort",
+                "ISeckillStockFlowPort",
+                "ISeckillOrderMessagePort",
+                "SeckillSoldOutCache",
+                "ISeckillMetricsPort",
+                "SeckillStockReservationEntity",
+                "SeckillStockFlowEntity",
+                "MDC",
+                "isSoldOut",
+                "reserve(",
+                "publishOrderCreate",
+                "rollbackReservation",
+                "markSoldOut",
+                "recordStockNotEnough",
+                "recordDuplicate"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockGuardSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillReservationPublishSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillOrderLockPort must stay a facade and delegate stock guard / publish details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOpsControllerShouldDependOnManualCompensationPortsOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillOpsController.java");

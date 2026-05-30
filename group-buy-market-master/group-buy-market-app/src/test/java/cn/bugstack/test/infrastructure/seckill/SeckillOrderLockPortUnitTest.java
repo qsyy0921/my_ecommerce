@@ -10,7 +10,10 @@ import cn.bugstack.domain.seckill.model.entity.SeckillStockFlowEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillStockReservationEntity;
 import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
 import cn.bugstack.infrastructure.adapter.port.SeckillOrderLockPort;
+import cn.bugstack.infrastructure.adapter.support.SeckillReservationPublishSupport;
 import cn.bugstack.infrastructure.adapter.support.SeckillSoldOutCache;
+import cn.bugstack.infrastructure.adapter.support.SeckillStockGuardSupport;
+import cn.bugstack.infrastructure.adapter.support.SeckillStockReleaseSupport;
 import cn.bugstack.infrastructure.event.SeckillPendingRetryPolicy;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
@@ -180,6 +183,9 @@ public class SeckillOrderLockPortUnitTest {
 
     private static class Fixture {
         private final SeckillOrderLockPort lockPort = new SeckillOrderLockPort();
+        private final SeckillReservationPublishSupport reservationPublishSupport = new SeckillReservationPublishSupport();
+        private final SeckillStockGuardSupport stockGuardSupport = new SeckillStockGuardSupport();
+        private final SeckillStockReleaseSupport stockReleaseSupport = new SeckillStockReleaseSupport();
         private final FakeStockAvailabilityPort stockAvailabilityPort = new FakeStockAvailabilityPort();
         private final FakeStockReservationPort reservationPort = new FakeStockReservationPort();
         private final FakeStockFlowPort stockFlowPort = new FakeStockFlowPort();
@@ -190,12 +196,22 @@ public class SeckillOrderLockPortUnitTest {
         private Fixture() {
             setField(soldOutCache, "soldOutCacheTtlMillis", 60_000L);
             setField(lockPort, "stockBucketTryCount", 64);
-            setField(lockPort, "seckillStockAvailabilityPort", stockAvailabilityPort);
-            setField(lockPort, "seckillStockReservationPort", reservationPort);
-            setField(lockPort, "seckillStockFlowPort", stockFlowPort);
-            setField(lockPort, "seckillOrderMessagePort", messagePort);
-            setField(lockPort, "seckillSoldOutCache", soldOutCache);
-            setField(lockPort, "seckillMetricsPort", metricsPort);
+            setField(lockPort, "seckillReservationPublishSupport", reservationPublishSupport);
+
+            setField(reservationPublishSupport, "seckillStockReservationPort", reservationPort);
+            setField(reservationPublishSupport, "seckillOrderMessagePort", messagePort);
+            setField(reservationPublishSupport, "seckillMetricsPort", metricsPort);
+            setField(reservationPublishSupport, "seckillStockGuardSupport", stockGuardSupport);
+            setField(reservationPublishSupport, "seckillStockReleaseSupport", stockReleaseSupport);
+
+            setField(stockGuardSupport, "seckillStockAvailabilityPort", stockAvailabilityPort);
+            setField(stockGuardSupport, "seckillStockReservationPort", reservationPort);
+            setField(stockGuardSupport, "seckillSoldOutCache", soldOutCache);
+            setField(stockGuardSupport, "seckillMetricsPort", metricsPort);
+
+            setField(stockReleaseSupport, "seckillStockFlowPort", stockFlowPort);
+            setField(stockReleaseSupport, "seckillStockReservationPort", reservationPort);
+            setField(stockReleaseSupport, "seckillSoldOutCache", soldOutCache);
         }
     }
 

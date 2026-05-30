@@ -1,25 +1,13 @@
 package cn.bugstack.infrastructure.adapter.port;
 
-import cn.bugstack.domain.seckill.adapter.port.ISeckillMetricsPort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderMessagePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillStockFlowPort;
-import cn.bugstack.domain.seckill.adapter.port.ISeckillStockReservationPort;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
-import cn.bugstack.domain.seckill.model.entity.SeckillStockFlowEntity;
-import cn.bugstack.domain.seckill.model.entity.SeckillStockReservationEntity;
-import cn.bugstack.infrastructure.adapter.support.SeckillSoldOutCache;
-import cn.bugstack.types.enums.ResponseCode;
-import cn.bugstack.types.exception.AppException;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
+import cn.bugstack.infrastructure.adapter.support.SeckillReservationPublishSupport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
-@Slf4j
 @Service
 public class SeckillOrderLockPort implements ISeckillOrderLockPort {
 
@@ -27,72 +15,11 @@ public class SeckillOrderLockPort implements ISeckillOrderLockPort {
     private Integer stockBucketTryCount;
 
     @Resource
-    private ISeckillStockAvailabilityPort seckillStockAvailabilityPort;
-    @Resource
-    private ISeckillStockReservationPort seckillStockReservationPort;
-    @Resource
-    private ISeckillStockFlowPort seckillStockFlowPort;
-    @Resource
-    private ISeckillOrderMessagePort seckillOrderMessagePort;
-    @Resource
-    private SeckillSoldOutCache seckillSoldOutCache;
-    @Resource
-    private ISeckillMetricsPort seckillMetricsPort;
+    private SeckillReservationPublishSupport seckillReservationPublishSupport;
 
     @Override
     public SeckillOrderEntity lockSeckillOrder(SeckillOrderEntity seckillOrderEntity) {
-        Long activityId = seckillOrderEntity.getActivityId();
-        seckillOrderEntity.setTraceId(MDC.get("trace-id"));
-        if (seckillSoldOutCache.isSoldOut(activityId)) {
-            seckillMetricsPort.recordStockNotEnough();
-            throw new AppException(ResponseCode.E0203);
-        }
-        ensureStockInitialized(activityId);
-
-        SeckillStockReservationEntity reservation = seckillStockReservationPort.reserve(seckillOrderEntity, stockBucketTryCount);
-        if (reservation.isDuplicate()) {
-            seckillMetricsPort.recordDuplicate();
-            throw new AppException(ResponseCode.E0204);
-        }
-        if (reservation.isSuccess()) {
-            try {
-                enqueueOrderCreate(seckillOrderEntity);
-                return seckillOrderEntity;
-            } catch (RuntimeException e) {
-                rollbackReservation(seckillOrderEntity, true, "enqueue order create failed");
-                throw e;
-            }
-        }
-
-        if (seckillStockAvailabilityPort.queryAvailableStock(activityId) <= 0) {
-            seckillSoldOutCache.markSoldOut(activityId);
-            seckillMetricsPort.recordStockNotEnough();
-        }
-        throw new AppException(ResponseCode.E0203);
-    }
-
-    private void enqueueOrderCreate(SeckillOrderEntity seckillOrderEntity) {
-        if (!seckillOrderMessagePort.publishOrderCreate(seckillOrderEntity)) {
-            throw new AppException(ResponseCode.RATE_LIMITER);
-        }
-    }
-
-    private void ensureStockInitialized(Long activityId) {
-        if (seckillStockReservationPort.isStockInitialized(activityId)) {
-            return;
-        }
-        seckillStockAvailabilityPort.queryAvailableStock(activityId);
-    }
-
-    private void rollbackReservation(SeckillOrderEntity seckillOrderEntity, boolean removeResult, String reason) {
-        seckillStockReservationPort.rollback(seckillOrderEntity, removeResult);
-        seckillSoldOutCache.clear(seckillOrderEntity.getActivityId());
-        try {
-            seckillStockFlowPort.record(SeckillStockFlowEntity.rollback(seckillOrderEntity, SeckillStockFlowEntity.ROLLBACK, 1, reason));
-        } catch (Exception e) {
-            log.error("record seckill stock rollback flow failed activityId:{} userId:{} outTradeNo:{}",
-                    seckillOrderEntity.getActivityId(), seckillOrderEntity.getUserId(), seckillOrderEntity.getOutTradeNo(), e);
-        }
+        return seckillReservationPublishSupport.reserveAndPublish(seckillOrderEntity, stockBucketTryCount);
     }
 
 }

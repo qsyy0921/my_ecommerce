@@ -89,6 +89,11 @@
   - 实际拆分：`SeckillStockBucketInventorySupport`、`SeckillQualificationReservationSupport`。
   - 验收：`SeckillStockReservationPort` 只保留 `ISeckillStockReservationPort` 门面委托；Redis API、Lua 预扣、JSON 序列化、初始化锁、库存桶汇总和用户占位释放进入支撑组件；库存单元测试通过。
 
+- [x] 拆分秒杀锁单端口内部支撑。
+  - 目标：避免 `SeckillOrderLockPort` 作为高并发入口继续同时承担售罄短路、库存初始化、资格预扣分支、消息投递和失败回滚。
+  - 实际拆分：`SeckillStockGuardSupport`、`SeckillReservationPublishSupport`。
+  - 验收：`SeckillOrderLockPort` 只保留入口门面和库存桶尝试次数配置；库存闸门、预扣发布、消息失败回滚和指标记录进入支撑组件；架构测试防止回流。
+
 - [x] 拆分 `SeckillRepository` 的结果缓存职责。
   - 目标：把秒杀结果缓存、DB 回源后的结果补缓存、缓存失效从主仓储移出。
   - 建议端口：`ISeckillResultCachePort`。
