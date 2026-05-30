@@ -767,7 +767,18 @@ public class DomainPurityTest {
                 "private boolean authorized",
                 "private <T> Response<T> noLogin",
                 "private String resolveOperator",
-                "private void audit"
+                "private void audit",
+                "IOrderReconcileService",
+                "ReconcileAdminSupport",
+                "ReconcileQuerySupport",
+                "JSON.toJSONString",
+                "orderReconcileService.",
+                "adminSupport.",
+                "querySupport.",
+                "for (String caseNo",
+                "handleReconcileCase",
+                "replayReconcileCase",
+                "importThirdPartyBillCsv"
         );
 
         List<String> violations = new ArrayList<>();
@@ -777,12 +788,21 @@ public class DomainPurityTest {
             }
         }
 
-        Path supportFile = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAdminSupport.java");
-        if (!Files.exists(supportFile)) {
-            violations.add("missing support:" + supportFile.getFileName());
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAdminSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseOperationSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseReplaySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileBillImportSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAlertWebhookSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
         }
 
-        Assert.assertTrue("Mall ReconcileCaseController must delegate admin auth, operator resolution, audit and request preview details: " + violations, violations.isEmpty());
+        Assert.assertTrue("Mall ReconcileCaseController must delegate admin auth, operator resolution, audit, request preview and reconcile usecase details: " + violations, violations.isEmpty());
     }
 
     @Test
@@ -811,7 +831,8 @@ public class DomainPurityTest {
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileCaseResponseDTO.java"),
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileOperationLogResponseDTO.java"),
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileResponseAssembler.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileQuerySupport.java")
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileQuerySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {

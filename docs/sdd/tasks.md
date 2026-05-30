@@ -134,6 +134,7 @@
 - [x] 商城商品端口和营销交易端口已拆分，通用 `IProductPort` 已删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
 - [x] 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、CSV 解析和实体映射细节。
 - [x] 商城 `ReconcileCaseController` 拆出 `ReconcileAdminSupport`，后台入口不再直接持有管理员 token、操作人兜底解析、操作审计写入和导入账单预览截断细节。
+- [x] 商城 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件，Controller 不再直接编排对账服务、审计、批量循环和 JSON 请求快照。
 - [x] 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，`ReconcileCaseController` 不再把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 作为 HTTP 响应契约。
 - [x] 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和订单列表 DTO 映射细节。
 - [x] 营销活动通用仓储已拆成 `IActivityTrialQueryPort`、`ICrowdTagPort`、`IActivitySwitchPort`、`IGroupBuyDisplayPort`，通用 `IActivityRepository` / `ActivityRepository` 已删除，首页试算、折扣人群标签、DCC 开关和队伍展示不再共用过宽端口。

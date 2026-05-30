@@ -152,6 +152,11 @@
   - 实际拆分：`ReconcileAdminSupport`。
   - 验收：`DomainPurityTest` 防止 `@Value`、`adminToken`、`recordReconcileOperation`、`local-admin` 和 CSV `substring` 预览截断回流到 Controller。
 
+- [x] 拆分对账后台 HTTP 用例编排。
+  - 目标：避免 `ReconcileCaseController` 继续承担扫描、查询、处理、确认、忽略、关闭、备注、批量处理、重放、批量重放、账单导入和告警 webhook 编排。
+  - 实际拆分：`ReconcileCaseQueryEndpointSupport`、`ReconcileCaseOperationSupport`、`ReconcileCaseReplaySupport`、`ReconcileBillImportSupport`、`ReconcileAlertWebhookSupport`，并把请求体拆成独立 trigger request。
+  - 验收：`ReconcileCaseController` 不再直接依赖对账领域服务、管理员支撑、查询支撑和 JSON 序列化；架构测试防止这些用例编排细节回流。
+
 - [x] 治理对账查询 HTTP 响应 DTO 边界。
   - 目标：避免 `ReconcileCaseController` 直接把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 暴露成 HTTP API 契约。
   - 实际拆分：`ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler`、`ReconcileQuerySupport`。

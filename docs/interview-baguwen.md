@@ -133,6 +133,7 @@ types           异常、枚举、常量、通用类型
 - `SeckillMarketController` 继续拆出活动查询、锁单、结果查询、结算、退款 5 个用例支撑组件，入口类不再直接编排领域服务、限流、指标和结构化日志。
 - 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、三方账单 CSV 解析和 PO/Entity 映射细节。
 - 商城 `ReconcileCaseController` 拆出 `ReconcileAdminSupport`，对账后台入口不再直接持有管理员 token、操作人兜底解析、操作审计写入和导入账单请求预览截断细节。
+- 商城 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件，入口类不再直接编排对账服务、审计、批量循环和 JSON 请求快照。
 - 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，通过 `ReconcileQuerySupport` 和 `ReconcileResponseAssembler` 转换，HTTP API 不再直接暴露 domain entity。
 - 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和用户订单 DTO 映射细节。
 - 商城商品查询和营销交易能力已拆开，通用 `IProductPort` 删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
@@ -232,6 +233,7 @@ types           异常、枚举、常量、通用类型
 - 对账中心：`s-pay-mall-ddd-trigger/.../ReconcileCaseController.java`
 - 对账后台管理支撑：`s-pay-mall-ddd-trigger/.../support/ReconcileAdminSupport.java`
 - 对账查询响应组装：`s-pay-mall-ddd-trigger/.../support/ReconcileQuerySupport.java`、`ReconcileResponseAssembler.java`
+- 对账后台用例支撑：`s-pay-mall-ddd-trigger/.../support/ReconcileCaseQueryEndpointSupport.java`、`ReconcileCaseOperationSupport.java`、`ReconcileCaseReplaySupport.java`、`ReconcileBillImportSupport.java`、`ReconcileAlertWebhookSupport.java`
 - 对账仓储支持组件：`s-pay-mall-ddd-infrastructure/.../adapter/support`
 - 对账页面：`s-pay-mall-ddd-market-master/docs/dev-ops/nginx/html/reconcile-admin.html`
 - 架构测试：`group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java`
@@ -889,7 +891,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
 - 现在已新增 `DomainPurityTest`、`OrderStateMachineTest`、`TradeLockOrderServiceUnitTest`、`SeckillOrderLockPortUnitTest`、`TradeRefundOrderServiceUnitTest` 和 `OrderReconcileServiceReplayContractTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过、通用交易仓储回流，或拼团锁单、秒杀库存、退款策略、对账重放规则被破坏。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；订单支付成功消息发布已拆到 `IOrderPaySuccessMessagePort`，`OrderRepository` 不再直接依赖 MQ 事件和 JSON 序列化；营销侧已把通知任务创建和执行拆到 `ITradeNotifyTaskCreatePort` / `ITradeNotifyTaskExecutionPort`，把通知发送移到 `ITradeNotificationPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`、`ITradePort` / `TradePort`、`ITradeNotifyTaskPort` / `TradeNotifyTaskPort`；拼团交易 HTTP 入口也拆成锁单、结算、退单 3 个用例支撑组件，拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射、指标采样和人工补偿 Stream 端口适配，HTTP 入口也拆成 5 个用例支撑组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；后续还需要补专业 MQ 演进后的消息契约。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；对账后台入口也拆成查询、处理、重放、账单导入和告警 webhook 用例支撑组件；订单支付成功消息发布已拆到 `IOrderPaySuccessMessagePort`，`OrderRepository` 不再直接依赖 MQ 事件和 JSON 序列化；营销侧已把通知任务创建和执行拆到 `ITradeNotifyTaskCreatePort` / `ITradeNotifyTaskExecutionPort`，把通知发送移到 `ITradeNotificationPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`、`ITradePort` / `TradePort`、`ITradeNotifyTaskPort` / `TradeNotifyTaskPort`；拼团交易 HTTP 入口也拆成锁单、结算、退单 3 个用例支撑组件，拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射、指标采样和人工补偿 Stream 端口适配，HTTP 入口也拆成 5 个用例支撑组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；后续还需要补专业 MQ 演进后的消息契约。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -984,6 +986,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-30：继续拆分商城对账后台入口用例编排，新增 `ReconcileCaseQueryEndpointSupport`、`ReconcileCaseOperationSupport`、`ReconcileCaseReplaySupport`、`ReconcileBillImportSupport`、`ReconcileAlertWebhookSupport` 和独立请求体类，`ReconcileCaseController` 只保留路由和请求体类型，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口用例编排，新增 `GroupBuyLockOrderSupport`、`GroupBuySettlementSupport`、`GroupBuyRefundSupport`，`MarketTradeController` 只保留路由和接口实现，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分秒杀 HTTP 入口用例编排，新增 `SeckillMarketConfigQuerySupport`、`SeckillLockOrderSupport`、`SeckillOrderResultQuerySupport`、`SeckillSettlementSupport`、`SeckillRefundSupport`，`SeckillMarketController` 只保留路由、接口实现和限流注解，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分秒杀人工补偿 Stream 端口实现，新增 `SeckillManualCompensationStream` 和 `SeckillManualCompensationPort`，人工补偿查询/重放不再由 `SeckillOrderCreateBuffer` 直接实现，并新增 SDD 记录 `docs/sdd/2026-05-30-seckill-manual-compensation-port-split.md`。
