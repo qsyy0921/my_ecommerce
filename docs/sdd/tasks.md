@@ -114,6 +114,7 @@
 - [x] 拼团通知任务端口已从通用 `ITradeNotifyTaskPort` 拆成创建端口和执行端口，并拆出 payload 工厂与 PO/Entity 映射组件。
 - [x] 拼团锁单纯单元测试已补齐，覆盖重复请求、队伍满员、活动不可用、人群标签试算拦截、Redis 占位失败和 DB 唯一索引兜底回滚。
 - [x] 秒杀库存同步、活动预热、超时未支付释放拆到 `ISeckillMaintenancePort`，`ISeckillRepository` 不再暴露 Job 维护方法。
+- [x] 秒杀维护端口内部继续拆出库存同步、超时未支付释放和活动预热三个支撑组件，`SeckillMaintenancePort` 只保留门面委托。
 - [x] 秒杀库存流水拆到 `ISeckillStockFlowPort`，`SeckillRepository` 不再直接构建库存流水 PO。
 - [x] 秒杀结果缓存拆到 `ISeckillResultCachePort`，`SeckillRepository` 不再直接维护结果缓存 Key 和 Redis get/set。
 - [x] 秒杀订单分片路由拆到 `SeckillOrderShardRouter`，分片表名和路由规则从主仓储移出。
@@ -148,6 +149,7 @@
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
 - [x] `DomainPurityTest` 增加通用 `ISeckillRepository` / `SeckillRepository` 删除守护，以及秒杀查询、库存可用性、锁单端口职责守护。
+- [x] `DomainPurityTest` 增加秒杀维护端口边界守护，避免库存同步、超时释放、预热扫描和状态流水细节回流。
 - [x] `DomainPurityTest` 增加秒杀锁单适配器消息中间件路由回流守护。
 - [x] `DomainPurityTest` 增加秒杀补偿台 Controller 边界守护，避免 trigger 直接依赖 Redis Stream 实现类。
 - [x] `DomainPurityTest` 增加秒杀市场 Controller 边界守护，避免请求校验、客户端 IP 解析和 DTO 组装回流到 HTTP 入口。

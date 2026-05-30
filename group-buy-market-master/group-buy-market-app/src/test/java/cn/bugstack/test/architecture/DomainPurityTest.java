@@ -348,6 +348,52 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillMaintenancePortShouldDelegateScenarioDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path maintenancePort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillMaintenancePort.java");
+        String source = new String(Files.readAllBytes(maintenancePort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "ISeckillActivityDao",
+                "ISeckillOrderDao",
+                "IOrderStateFlowPort",
+                "ISeckillStockFlowPort",
+                "ISeckillStockReservationPort",
+                "ISeckillQueryPort",
+                "ISeckillStockAvailabilityPort",
+                "SeckillOrderShardRouter",
+                "SeckillSoldOutCache",
+                "countActiveOrdersFromTable",
+                "queryTimeoutUnpaidOrdersFromTable",
+                "closeTimeoutUnpaidOrder",
+                "SeckillStockFlowEntity.rollback",
+                "OrderStateTransitionEntity.seckillTimeoutClosed",
+                "queryPrewarmActivities",
+                "for (int shardIndex"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityStockSyncSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillTimeoutUnpaidReleaseSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityPrewarmSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("SeckillMaintenancePort must stay a facade and delegate maintenance scenario details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOrderCommandPortShouldStaySplitByLifecycle() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path commandPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCommandPort.java");

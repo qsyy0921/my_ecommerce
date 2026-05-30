@@ -94,6 +94,11 @@
   - 实际拆分：`ISeckillQueryPort`、`ISeckillStockAvailabilityPort`、`ISeckillOrderLockPort`、`ISeckillMaintenancePort`。
   - 验收：`ISeckillRepository` / `SeckillRepository` 已删除，架构测试防止通用秒杀仓储回流。
 
+- [x] 拆分秒杀维护端口内部场景支撑。
+  - 目标：避免 `SeckillMaintenancePort` 在删除通用仓储后继续膨胀成新的维护任务大类。
+  - 实际拆分：`SeckillActivityStockSyncSupport`、`SeckillTimeoutUnpaidReleaseSupport`、`SeckillActivityPrewarmSupport`。
+  - 验收：`SeckillMaintenancePort` 只保留 `ISeckillMaintenancePort` 门面委托；库存同步、超时释放、预热扫描、库存释放和状态流水细节进入支撑组件；架构测试防止回流。
+
 ## P1 高并发与消息可靠性
 
 - [x] 设计专业 MQ 演进方案。

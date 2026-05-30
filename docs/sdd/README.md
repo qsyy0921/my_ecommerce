@@ -38,6 +38,7 @@
 - `2026-05-30-pressure-resource-watermark.md`：记录压测资源水位采集、联动报告脚本和本机验证结果。
 - `2026-05-30-seckill-refund-stock-closure.md`：记录秒杀支付结算、已支付退款、未支付取消和库存流水闭环。
 - `2026-05-30-seckill-maintenance-port-split.md`：记录秒杀维护任务端口拆分，隔离用户主链路和 Job 补偿能力。
+- `2026-05-31-seckill-maintenance-support-split.md`：记录秒杀维护端口内部拆出库存同步、超时释放和活动预热三个支撑组件。
 - `2026-05-30-seckill-repository-split.md`：记录秒杀库存流水、结果缓存、订单分片路由从主仓储拆出。
 - `2026-05-30-seckill-stock-reservation-port.md`：记录秒杀 Redis 库存桶、Lua 预扣、用户占位和库存释放从主仓储拆出。
 - `2026-05-30-seckill-stock-reservation-internal-split.md`：记录 `SeckillStockReservationPort` 内部继续拆出 Redis Key、库存桶路由和初始化短缓存。
