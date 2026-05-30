@@ -67,7 +67,7 @@ sequenceDiagram
 - 新开团没有现有 `teamId`，不走队伍名额占位；首单由 DB 插入新队伍表达。
 - 用户维度占位约束的是“同一用户同一队伍”，不是全活动全局禁入；全活动参与次数仍由用户参与次数规则和 DB 约束兜底。
 - 结果缓存只用于锁单入口幂等查询，结算和退单继续查 DB，避免缓存状态滞后影响状态机判断。
-- 锁单请求锁和锁单结果缓存已经拆成 `ITradeLockRequestPort` / `TradeLockRequestPort`；`ITradeRepository` 只保留订单查询和订单写入能力。
+- 锁单请求锁和锁单结果缓存已经拆成 `ITradeLockRequestPort` / `TradeLockRequestPort`；后续订单写入、读模型查询和超时扫描也已继续拆到独立端口，通用 `ITradeRepository` 已删除。
 
 ## 验收记录
 
@@ -76,7 +76,7 @@ sequenceDiagram
 - `scripts/check-domain-purity.ps1`：通过。
 - SQL 迁移 `docs/sql/2026-05-30-group-buy-lock-idempotency.sql` 已执行到本地 Docker MySQL。
 - 本地三实例 8091 / 8092 / 8093 + Nginx 8080 健康检查：`UP`。
-- 2026-05-30 追加治理：`ITradeRepository` 移除请求锁、结果缓存、缓存清理方法，Redis 幂等设施收敛到 `ITradeLockRequestPort`。
+- 2026-05-30 追加治理：`ITradeRepository` 移除请求锁、结果缓存、缓存清理方法，Redis 幂等设施收敛到 `ITradeLockRequestPort`；后续通用 `ITradeRepository` 已删除。
 
 冒烟结果：
 

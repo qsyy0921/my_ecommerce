@@ -1,9 +1,9 @@
 package cn.bugstack.domain.trade.service.refund.business.impl;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
@@ -23,19 +23,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PaidTeam2RefundStrategy extends AbstractRefundOrderStrategy {
 
-    public PaidTeam2RefundStrategy(ITradeRepository repository,
+    private final IGroupBuyQueryPort groupBuyQueryPort;
+
+    public PaidTeam2RefundStrategy(IGroupBuyQueryPort groupBuyQueryPort,
                                    IGroupBuyRefundPort groupBuyRefundPort,
                                    IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                    ITradeTaskService tradeTaskService,
                                    IDomainTaskExecutor domainTaskExecutor) {
-        super(repository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        super(groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        this.groupBuyQueryPort = groupBuyQueryPort;
     }
 
     @Override
     public void refundOrder(TradeRefundOrderEntity tradeRefundOrderEntity) {
         log.info("退单；已支付，已成团 userId:{} teamId:{} orderId:{}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getTeamId(), tradeRefundOrderEntity.getOrderId());
 
-        GroupBuyTeamEntity groupBuyTeamEntity = repository.queryGroupBuyTeamByTeamId(tradeRefundOrderEntity.getTeamId());
+        GroupBuyTeamEntity groupBuyTeamEntity = groupBuyQueryPort.queryGroupBuyTeamByTeamId(tradeRefundOrderEntity.getTeamId());
         Integer completeCount = groupBuyTeamEntity.getCompleteCount();
 
         // 最后一笔也退单，则更新拼团订单为失败

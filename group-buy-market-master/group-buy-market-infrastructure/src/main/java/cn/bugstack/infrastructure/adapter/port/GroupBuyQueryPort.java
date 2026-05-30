@@ -1,34 +1,28 @@
-package cn.bugstack.infrastructure.adapter.repository;
+package cn.bugstack.infrastructure.adapter.port;
 
-import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
-import cn.bugstack.domain.trade.model.entity.*;
-import cn.bugstack.domain.trade.model.valobj.*;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
+import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
+import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
+import cn.bugstack.domain.trade.model.entity.MarketPayOrderEntity;
+import cn.bugstack.domain.trade.model.valobj.GroupBuyProgressVO;
+import cn.bugstack.domain.trade.model.valobj.NotifyConfigVO;
+import cn.bugstack.domain.trade.model.valobj.NotifyTypeEnumVO;
+import cn.bugstack.domain.trade.model.valobj.TradeOrderStatusEnumVO;
 import cn.bugstack.infrastructure.dao.IGroupBuyActivityDao;
 import cn.bugstack.infrastructure.dao.IGroupBuyOrderDao;
 import cn.bugstack.infrastructure.dao.IGroupBuyOrderListDao;
 import cn.bugstack.infrastructure.dao.po.GroupBuyActivity;
 import cn.bugstack.infrastructure.dao.po.GroupBuyOrder;
 import cn.bugstack.infrastructure.dao.po.GroupBuyOrderList;
-import cn.bugstack.infrastructure.dcc.DCCService;
 import cn.bugstack.types.enums.ActivityStatusEnumVO;
 import cn.bugstack.types.enums.GroupBuyOrderEnumVO;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
-import java.util.stream.Collectors;
 
-/**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 交易仓储服务
- * @create 2025-01-11 09:17
- */
-@Slf4j
-@Repository
-public class TradeRepository implements ITradeRepository {
+@Service
+public class GroupBuyQueryPort implements IGroupBuyQueryPort {
 
     @Resource
     private IGroupBuyActivityDao groupBuyActivityDao;
@@ -36,11 +30,9 @@ public class TradeRepository implements ITradeRepository {
     private IGroupBuyOrderDao groupBuyOrderDao;
     @Resource
     private IGroupBuyOrderListDao groupBuyOrderListDao;
-    @Resource
-    private DCCService dccService;
 
     @Value("${spring.rabbitmq.config.producer.topic_team_success.routing_key}")
-    private String topic_team_success;
+    private String topicTeamSuccess;
 
     @Override
     public MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo) {
@@ -115,63 +107,9 @@ public class TradeRepository implements ITradeRepository {
                 .notifyConfigVO(NotifyConfigVO.builder()
                         .notifyType(NotifyTypeEnumVO.valueOf(groupBuyOrder.getNotifyType()))
                         .notifyUrl(groupBuyOrder.getNotifyUrl())
-                        // MQ 是固定的
-                        .notifyMQ(topic_team_success)
+                        .notifyMQ(topicTeamSuccess)
                         .build())
                 .build();
-    }
-
-    @Override
-    public boolean isSCBlackIntercept(String source, String channel) {
-        return dccService.isSCBlackIntercept(source, channel);
-    }
-
-    @Override
-    public List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList() {
-        List<GroupBuyOrderList> groupBuyOrderLists = groupBuyOrderListDao.queryTimeoutUnpaidOrderList();
-        if (null == groupBuyOrderLists || groupBuyOrderLists.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        // 获取所有teamId
-        Set<String> teamIds = groupBuyOrderLists.stream()
-                .map(GroupBuyOrderList::getTeamId)
-                .collect(Collectors.toSet());
-        
-        // 查询团队信息
-        List<GroupBuyOrder> groupBuyOrders = groupBuyOrderDao.queryGroupBuyTeamByTeamIds(teamIds);
-        if (null == groupBuyOrders || groupBuyOrders.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        Map<String, GroupBuyOrder> groupBuyOrderMap = groupBuyOrders.stream()
-                .collect(Collectors.toMap(GroupBuyOrder::getTeamId, order -> order));
-        
-        // 转换数据
-        List<UserGroupBuyOrderDetailEntity> userGroupBuyOrderDetailEntities = new ArrayList<>();
-        for (GroupBuyOrderList groupBuyOrderList : groupBuyOrderLists) {
-            String teamId = groupBuyOrderList.getTeamId();
-            GroupBuyOrder groupBuyOrder = groupBuyOrderMap.get(teamId);
-            if (null == groupBuyOrder) continue;
-            
-            UserGroupBuyOrderDetailEntity userGroupBuyOrderDetailEntity = UserGroupBuyOrderDetailEntity.builder()
-                    .userId(groupBuyOrderList.getUserId())
-                    .teamId(groupBuyOrder.getTeamId())
-                    .activityId(groupBuyOrder.getActivityId())
-                    .targetCount(groupBuyOrder.getTargetCount())
-                    .completeCount(groupBuyOrder.getCompleteCount())
-                    .lockCount(groupBuyOrder.getLockCount())
-                    .validStartTime(groupBuyOrder.getValidStartTime())
-                    .validEndTime(groupBuyOrder.getValidEndTime())
-                    .outTradeNo(groupBuyOrderList.getOutTradeNo())
-                    .source(groupBuyOrderList.getSource())
-                    .channel(groupBuyOrderList.getChannel())
-                    .build();
-            
-            userGroupBuyOrderDetailEntities.add(userGroupBuyOrderDetailEntity);
-        }
-        
-        return userGroupBuyOrderDetailEntities;
     }
 
 }

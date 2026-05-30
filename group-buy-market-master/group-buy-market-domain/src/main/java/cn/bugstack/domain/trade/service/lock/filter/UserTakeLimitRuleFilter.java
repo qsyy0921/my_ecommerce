@@ -1,6 +1,6 @@
 package cn.bugstack.domain.trade.service.lock.filter;
 
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
@@ -18,10 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UserTakeLimitRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
 
-    public UserTakeLimitRuleFilter(ITradeRepository repository) {
-        this.repository = repository;
+    public UserTakeLimitRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        this.groupBuyQueryPort = groupBuyQueryPort;
     }
 
     @Override
@@ -31,7 +31,7 @@ public class UserTakeLimitRuleFilter implements ILogicHandler<TradeLockRuleComma
         GroupBuyActivityEntity groupBuyActivity = dynamicContext.getGroupBuyActivity();
 
         // 查询用户在一个拼团活动上参与的次数
-        Integer count = repository.queryOrderCountByActivityId(requestParameter.getActivityId(), requestParameter.getUserId());
+        Integer count = groupBuyQueryPort.queryOrderCountByActivityId(requestParameter.getActivityId(), requestParameter.getUserId());
 
         if (null != groupBuyActivity.getTakeLimitCount() && count >= groupBuyActivity.getTakeLimitCount()) {
             log.info("用户参与次数校验，已达可参与上限 activityId:{}", requestParameter.getActivityId());

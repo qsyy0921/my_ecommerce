@@ -47,7 +47,7 @@ flowchart LR
 
 ## 后续
 
-`TradeRepository` 现在主要是读模型仓储：订单查询、活动查询、队伍查询、拼团进度查询、超时未支付扫描。下一步可以继续按读模型拆：
+本次完成后 `TradeRepository` 主要剩余读模型职责：订单查询、活动查询、队伍查询、拼团进度查询、超时未支付扫描。后续 `2026-05-30-group-buy-query-timeout-port-split.md` 已继续删除通用仓储，并按读模型、超时扫描和渠道策略拆分：
 
 - `GroupBuyQueryPort`：活动、队伍、进度、订单查询。
 - `GroupBuyTimeoutOrderPort`：超时未支付补偿扫描。

@@ -3,7 +3,6 @@ package cn.bugstack.domain.trade.service.refund.business.impl;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.bugstack.domain.trade.model.entity.NotifyTaskEntity;
 import cn.bugstack.domain.trade.model.entity.TradeRefundOrderEntity;
@@ -21,12 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Unpaid2RefundStrategy extends AbstractRefundOrderStrategy {
 
-    public Unpaid2RefundStrategy(ITradeRepository repository,
-                                 IGroupBuyRefundPort groupBuyRefundPort,
+    public Unpaid2RefundStrategy(IGroupBuyRefundPort groupBuyRefundPort,
                                  IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                  ITradeTaskService tradeTaskService,
                                  IDomainTaskExecutor domainTaskExecutor) {
-        super(repository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        super(groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Override

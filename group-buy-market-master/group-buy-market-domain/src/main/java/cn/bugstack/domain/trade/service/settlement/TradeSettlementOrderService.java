@@ -2,7 +2,6 @@ package cn.bugstack.domain.trade.service.settlement;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuySettlementPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
 import cn.bugstack.domain.trade.service.ITradeSettlementOrderService;
@@ -24,18 +23,15 @@ import java.util.*;
 @Slf4j
 public class TradeSettlementOrderService implements ITradeSettlementOrderService {
 
-    private final ITradeRepository repository;
     private final IGroupBuySettlementPort groupBuySettlementPort;
     private final IDomainTaskExecutor domainTaskExecutor;
     private final ITradeTaskService tradeTaskService;
     private final BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter;
 
-    public TradeSettlementOrderService(ITradeRepository repository,
-                                       IGroupBuySettlementPort groupBuySettlementPort,
+    public TradeSettlementOrderService(IGroupBuySettlementPort groupBuySettlementPort,
                                        IDomainTaskExecutor domainTaskExecutor,
                                        ITradeTaskService tradeTaskService,
                                        BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter) {
-        this.repository = repository;
         this.groupBuySettlementPort = groupBuySettlementPort;
         this.domainTaskExecutor = domainTaskExecutor;
         this.tradeTaskService = tradeTaskService;

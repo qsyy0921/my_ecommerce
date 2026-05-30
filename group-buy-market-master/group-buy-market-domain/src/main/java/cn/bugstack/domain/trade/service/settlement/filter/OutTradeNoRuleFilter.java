@@ -1,6 +1,6 @@
 package cn.bugstack.domain.trade.service.settlement.filter;
 
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.bugstack.domain.trade.model.entity.TradeSettlementRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeSettlementRuleFilterBackEntity;
@@ -19,10 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OutTradeNoRuleFilter implements ILogicHandler<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
 
-    public OutTradeNoRuleFilter(ITradeRepository repository) {
-        this.repository = repository;
+    public OutTradeNoRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        this.groupBuyQueryPort = groupBuyQueryPort;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class OutTradeNoRuleFilter implements ILogicHandler<TradeSettlementRuleCo
         log.info("结算规则过滤-外部单号校验{} outTradeNo:{}", requestParameter.getUserId(), requestParameter.getOutTradeNo());
 
         // 查询拼团信息
-        MarketPayOrderEntity marketPayOrderEntity = repository.queryMarketPayOrderEntityByOutTradeNo(requestParameter.getUserId(), requestParameter.getOutTradeNo());
+        MarketPayOrderEntity marketPayOrderEntity = groupBuyQueryPort.queryMarketPayOrderEntityByOutTradeNo(requestParameter.getUserId(), requestParameter.getOutTradeNo());
 
         if (null == marketPayOrderEntity || TradeOrderStatusEnumVO.CLOSE.equals(marketPayOrderEntity.getTradeOrderStatusEnumVO())) {
             log.error("不存在的外部交易单号或用户已退单，不需要做支付订单结算:{} outTradeNo:{}", requestParameter.getUserId(), requestParameter.getOutTradeNo());

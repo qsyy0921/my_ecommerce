@@ -47,48 +47,33 @@ public class DomainPurityTest {
     }
 
     @Test
-    public void tradeRepositoryShouldNotExposeInfrastructureSidePorts() throws Exception {
+    public void genericTradeRepositoryShouldStayDeleted() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
-        String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
+        Path tradeRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
+        Path tradeRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/TradeRepository.java");
 
-        List<String> forbiddenMethods = Arrays.asList(
-                "queryUnExecutedNotifyTaskList",
-                "updateNotifyTaskStatusSuccess",
-                "updateNotifyTaskStatusError",
-                "updateNotifyTaskStatusRetry",
-                "occupyTeamStock",
-                "recoveryTeamStock",
-                "releaseUserTeamOccupy",
-                "refund2AddRecovery",
-                "queryLockMarketPayOrderEntityByOutTradeNo",
-                "tryAcquireLockRequest",
-                "releaseLockRequest",
-                "cacheLockResult"
-        );
-
-        List<String> violations = new ArrayList<>();
-        for (String method : forbiddenMethods) {
-            if (source.contains(method)) {
-                violations.add(method);
-            }
-        }
-
-        Assert.assertTrue("ITradeRepository must keep notify task, team stock and lock request operations behind dedicated ports: " + violations, violations.isEmpty());
+        Assert.assertFalse("Generic ITradeRepository should stay deleted; use dedicated trade ports instead.", Files.exists(tradeRepositoryPort));
+        Assert.assertFalse("Generic TradeRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(tradeRepositoryAdapter));
     }
 
     @Test
-    public void tradeRepositoryShouldNotExposeGroupBuyWrites() throws Exception {
+    public void groupBuyQueryPortShouldNotExposeWriteOrCompensationOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path tradeRepository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
-        String source = new String(Files.readAllBytes(tradeRepository), StandardCharsets.UTF_8);
+        Path queryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/IGroupBuyQueryPort.java");
+        String source = new String(Files.readAllBytes(queryPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenMethods = Arrays.asList(
                 "lockMarketPayOrder",
                 "settlementMarketPayOrder",
                 "unpaid2Refund",
                 "paid2Refund",
-                "paidTeam2Refund"
+                "paidTeam2Refund",
+                "queryTimeoutUnpaidOrderList",
+                "queryUnExecutedNotifyTaskList",
+                "updateNotifyTaskStatus",
+                "occupyTeamStock",
+                "tryAcquireLockRequest",
+                "isSCBlackIntercept"
         );
 
         List<String> violations = new ArrayList<>();
@@ -98,7 +83,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("ITradeRepository must keep group-buy order, settlement and refund writes behind dedicated ports: " + violations, violations.isEmpty());
+        Assert.assertTrue("IGroupBuyQueryPort must only expose group-buy read-model queries: " + violations, violations.isEmpty());
     }
 
     @Test

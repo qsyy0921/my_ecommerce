@@ -63,7 +63,7 @@ flowchart LR
 ## 验收
 
 - `TradeRepository` 中不能再出现 `NotifyTask` PO 和 `GroupBuyStockFlow` PO。
-- `DomainPurityTest.tradeRepositoryShouldNotExposeInfrastructureSidePorts` 能防止通知任务扫描、状态更新、队伍库存占位、退单恢复、请求锁和结果缓存方法回流到 `ITradeRepository`。
+- 后续架构测试已升级为删除守护：通用 `ITradeRepository` / `TradeRepository` 不能回流，通知任务、队伍库存、请求锁和结果缓存必须继续走专用端口。
 - domain 不依赖 infrastructure。
 - `scripts/check-domain-purity.ps1` 通过。
 - `mvn -q -DskipTests compile` 通过。
@@ -78,7 +78,7 @@ flowchart LR
 - 通知任务查询和状态更新不再挂在 `ITradeRepository` 上，`TradeTaskService` 直接通过 `ITradeNotifyTaskPort` 完成任务扫描和状态推进。
 - 新增 `IGroupBuyTeamStockPort` 和 `GroupBuyTeamStockPort`，锁单规则、锁单失败补偿和退单策略通过专用端口处理 Redis 队伍库存占位。
 - 新增 `ITradeLockRequestPort` 和 `TradeLockRequestPort`，锁单请求锁、结果缓存和缓存清理通过专用端口处理。
-- `DomainPurityTest` 增加回归用例，防止通知任务执行方法、队伍库存占位方法和锁单请求缓存方法重新回流到 `ITradeRepository`。
+- `DomainPurityTest` 增加回归用例，后续已升级为防止通用 `ITradeRepository` / `TradeRepository` 重新出现。
 
 ## 当前验证
 

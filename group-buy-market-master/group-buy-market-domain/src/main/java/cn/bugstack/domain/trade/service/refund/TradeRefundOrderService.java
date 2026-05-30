@@ -1,7 +1,7 @@
 package cn.bugstack.domain.trade.service.refund;
 
 import cn.bugstack.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTimeoutOrderPort;
 import cn.bugstack.domain.trade.model.entity.*;
 import cn.bugstack.domain.trade.model.valobj.RefundTypeEnumVO;
 import cn.bugstack.domain.trade.model.valobj.TeamRefundSuccess;
@@ -23,14 +23,14 @@ import java.util.Map;
 @Slf4j
 public class TradeRefundOrderService implements ITradeRefundOrderService {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyTimeoutOrderPort groupBuyTimeoutOrderPort;
     private final Map<String, IRefundOrderStrategy> refundOrderStrategyMap;
     private final BusinessLinkedList<TradeRefundCommandEntity, TradeRefundRuleFilterFactory.DynamicContext, TradeRefundBehaviorEntity> tradeRefundRuleFilter;
 
-    public TradeRefundOrderService(ITradeRepository repository,
+    public TradeRefundOrderService(IGroupBuyTimeoutOrderPort groupBuyTimeoutOrderPort,
                                    Map<String, IRefundOrderStrategy> refundOrderStrategyMap,
                                    BusinessLinkedList<TradeRefundCommandEntity, TradeRefundRuleFilterFactory.DynamicContext, TradeRefundBehaviorEntity> tradeRefundRuleFilter) {
-        this.repository = repository;
+        this.groupBuyTimeoutOrderPort = groupBuyTimeoutOrderPort;
         this.refundOrderStrategyMap = refundOrderStrategyMap;
         this.tradeRefundRuleFilter = tradeRefundRuleFilter;
     }
@@ -57,7 +57,7 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
     @Override
     public List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList() {
         log.info("扫描数据，超时组队未支付订单");
-        return repository.queryTimeoutUnpaidOrderList();
+        return groupBuyTimeoutOrderPort.queryTimeoutUnpaidOrderList();
     }
 
 }

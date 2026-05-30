@@ -1,9 +1,10 @@
 package cn.bugstack.config;
 
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyRefundPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.ITradePolicyPort;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.bugstack.domain.trade.model.entity.TradeRefundBehaviorEntity;
@@ -38,19 +39,19 @@ import java.util.Map;
 public class TradeRuleConfig {
 
     @Bean
-    public ActivityUsabilityRuleFilter activityUsabilityRuleFilter(ITradeRepository tradeRepository) {
-        return new ActivityUsabilityRuleFilter(tradeRepository);
+    public ActivityUsabilityRuleFilter activityUsabilityRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        return new ActivityUsabilityRuleFilter(groupBuyQueryPort);
     }
 
     @Bean
-    public UserTakeLimitRuleFilter userTakeLimitRuleFilter(ITradeRepository tradeRepository) {
-        return new UserTakeLimitRuleFilter(tradeRepository);
+    public UserTakeLimitRuleFilter userTakeLimitRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        return new UserTakeLimitRuleFilter(groupBuyQueryPort);
     }
 
     @Bean
-    public TeamStockOccupyRuleFilter teamStockOccupyRuleFilter(ITradeRepository tradeRepository,
+    public TeamStockOccupyRuleFilter teamStockOccupyRuleFilter(IGroupBuyQueryPort groupBuyQueryPort,
                                                                IGroupBuyTeamStockPort groupBuyTeamStockPort) {
-        return new TeamStockOccupyRuleFilter(tradeRepository, groupBuyTeamStockPort);
+        return new TeamStockOccupyRuleFilter(groupBuyQueryPort, groupBuyTeamStockPort);
     }
 
     @Bean("tradeRuleFilter")
@@ -62,18 +63,18 @@ public class TradeRuleConfig {
     }
 
     @Bean
-    public SCRuleFilter scRuleFilter(ITradeRepository tradeRepository) {
-        return new SCRuleFilter(tradeRepository);
+    public SCRuleFilter scRuleFilter(ITradePolicyPort tradePolicyPort) {
+        return new SCRuleFilter(tradePolicyPort);
     }
 
     @Bean
-    public OutTradeNoRuleFilter outTradeNoRuleFilter(ITradeRepository tradeRepository) {
-        return new OutTradeNoRuleFilter(tradeRepository);
+    public OutTradeNoRuleFilter outTradeNoRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        return new OutTradeNoRuleFilter(groupBuyQueryPort);
     }
 
     @Bean
-    public SettableRuleFilter settableRuleFilter(ITradeRepository tradeRepository) {
-        return new SettableRuleFilter(tradeRepository);
+    public SettableRuleFilter settableRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        return new SettableRuleFilter(groupBuyQueryPort);
     }
 
     @Bean
@@ -91,8 +92,8 @@ public class TradeRuleConfig {
     }
 
     @Bean
-    public DataNodeFilter dataNodeFilter(ITradeRepository tradeRepository) {
-        return new DataNodeFilter(tradeRepository);
+    public DataNodeFilter dataNodeFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        return new DataNodeFilter(groupBuyQueryPort);
     }
 
     @Bean
@@ -114,30 +115,28 @@ public class TradeRuleConfig {
     }
 
     @Bean("unpaid2RefundStrategy")
-    public IRefundOrderStrategy unpaid2RefundStrategy(ITradeRepository tradeRepository,
-                                                      IGroupBuyRefundPort groupBuyRefundPort,
+    public IRefundOrderStrategy unpaid2RefundStrategy(IGroupBuyRefundPort groupBuyRefundPort,
                                                       IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                       ITradeTaskService tradeTaskService,
                                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new Unpaid2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new Unpaid2RefundStrategy(groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paid2RefundStrategy")
-    public IRefundOrderStrategy paid2RefundStrategy(ITradeRepository tradeRepository,
-                                                    IGroupBuyRefundPort groupBuyRefundPort,
+    public IRefundOrderStrategy paid2RefundStrategy(IGroupBuyRefundPort groupBuyRefundPort,
                                                     IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                     ITradeTaskService tradeTaskService,
                                                     IDomainTaskExecutor domainTaskExecutor) {
-        return new Paid2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new Paid2RefundStrategy(groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
     @Bean("paidTeam2RefundStrategy")
-    public IRefundOrderStrategy paidTeam2RefundStrategy(ITradeRepository tradeRepository,
+    public IRefundOrderStrategy paidTeam2RefundStrategy(IGroupBuyQueryPort groupBuyQueryPort,
                                                         IGroupBuyRefundPort groupBuyRefundPort,
                                                         IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                                         ITradeTaskService tradeTaskService,
                                                         IDomainTaskExecutor domainTaskExecutor) {
-        return new PaidTeam2RefundStrategy(tradeRepository, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
+        return new PaidTeam2RefundStrategy(groupBuyQueryPort, groupBuyRefundPort, groupBuyTeamStockPort, tradeTaskService, domainTaskExecutor);
     }
 
 }

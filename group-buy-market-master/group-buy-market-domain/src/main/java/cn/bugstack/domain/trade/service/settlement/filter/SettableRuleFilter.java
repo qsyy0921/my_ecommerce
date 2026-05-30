@@ -1,6 +1,6 @@
 package cn.bugstack.domain.trade.service.settlement.filter;
 
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.bugstack.domain.trade.model.entity.TradeSettlementRuleCommandEntity;
@@ -21,10 +21,10 @@ import java.util.Date;
 @Slf4j
 public class SettableRuleFilter implements ILogicHandler<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
 
-    public SettableRuleFilter(ITradeRepository repository) {
-        this.repository = repository;
+    public SettableRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        this.groupBuyQueryPort = groupBuyQueryPort;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class SettableRuleFilter implements ILogicHandler<TradeSettlementRuleComm
         MarketPayOrderEntity marketPayOrderEntity = dynamicContext.getMarketPayOrderEntity();
 
         // 查询拼团对象
-        GroupBuyTeamEntity groupBuyTeamEntity = repository.queryGroupBuyTeamByTeamId(marketPayOrderEntity.getTeamId());
+        GroupBuyTeamEntity groupBuyTeamEntity = groupBuyQueryPort.queryGroupBuyTeamByTeamId(marketPayOrderEntity.getTeamId());
 
         // 外部交易时间 - 也就是用户支付完成的时间，这个时间要在拼团有效时间范围内
         Date outTradeTime = requestParameter.getOutTradeTime();

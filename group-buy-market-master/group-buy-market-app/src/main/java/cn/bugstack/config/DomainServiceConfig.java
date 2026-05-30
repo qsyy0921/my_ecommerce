@@ -12,12 +12,13 @@ import cn.bugstack.domain.tag.adapter.repository.ITagRepository;
 import cn.bugstack.domain.tag.service.ITagService;
 import cn.bugstack.domain.tag.service.TagService;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyOrderPort;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyTimeoutOrderPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuySettlementPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeNotifyTaskPort;
 import cn.bugstack.domain.trade.adapter.port.ITradePort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.bugstack.domain.trade.model.entity.TradeRefundBehaviorEntity;
@@ -71,30 +72,29 @@ public class DomainServiceConfig {
 
     @Bean
     public ITradeLockOrderService tradeLockOrderService(
-            ITradeRepository tradeRepository,
+            IGroupBuyQueryPort groupBuyQueryPort,
             IGroupBuyOrderPort groupBuyOrderPort,
             IGroupBuyTeamStockPort groupBuyTeamStockPort,
             ITradeLockRequestPort tradeLockRequestPort,
             @Qualifier("tradeRuleFilter") BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
-        return new TradeLockOrderService(tradeRepository, groupBuyOrderPort, groupBuyTeamStockPort, tradeLockRequestPort, tradeRuleFilter);
+        return new TradeLockOrderService(groupBuyQueryPort, groupBuyOrderPort, groupBuyTeamStockPort, tradeLockRequestPort, tradeRuleFilter);
     }
 
     @Bean
     public ITradeSettlementOrderService tradeSettlementOrderService(
-            ITradeRepository tradeRepository,
             IGroupBuySettlementPort groupBuySettlementPort,
             IDomainTaskExecutor domainTaskExecutor,
             ITradeTaskService tradeTaskService,
             @Qualifier("tradeSettlementRuleFilter") BusinessLinkedList<TradeSettlementRuleCommandEntity, TradeSettlementRuleFilterFactory.DynamicContext, TradeSettlementRuleFilterBackEntity> tradeSettlementRuleFilter) {
-        return new TradeSettlementOrderService(tradeRepository, groupBuySettlementPort, domainTaskExecutor, tradeTaskService, tradeSettlementRuleFilter);
+        return new TradeSettlementOrderService(groupBuySettlementPort, domainTaskExecutor, tradeTaskService, tradeSettlementRuleFilter);
     }
 
     @Bean
     public ITradeRefundOrderService tradeRefundOrderService(
-            ITradeRepository tradeRepository,
+            IGroupBuyTimeoutOrderPort groupBuyTimeoutOrderPort,
             Map<String, IRefundOrderStrategy> refundOrderStrategyMap,
             @Qualifier("tradeRefundRuleFilter") BusinessLinkedList<TradeRefundCommandEntity, TradeRefundRuleFilterFactory.DynamicContext, TradeRefundBehaviorEntity> tradeRefundRuleFilter) {
-        return new TradeRefundOrderService(tradeRepository, refundOrderStrategyMap, tradeRefundRuleFilter);
+        return new TradeRefundOrderService(groupBuyTimeoutOrderPort, refundOrderStrategyMap, tradeRefundRuleFilter);
     }
 
 }

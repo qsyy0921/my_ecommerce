@@ -1,6 +1,6 @@
 package cn.bugstack.domain.trade.service.lock.filter;
 
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
@@ -21,10 +21,10 @@ import java.util.Date;
 @Slf4j
 public class ActivityUsabilityRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
 
-    public ActivityUsabilityRuleFilter(ITradeRepository repository) {
-        this.repository = repository;
+    public ActivityUsabilityRuleFilter(IGroupBuyQueryPort groupBuyQueryPort) {
+        this.groupBuyQueryPort = groupBuyQueryPort;
     }
 
     @Override
@@ -32,7 +32,7 @@ public class ActivityUsabilityRuleFilter implements ILogicHandler<TradeLockRuleC
         log.info("交易规则过滤-活动的可用性校验{} activityId:{}", requestParameter.getUserId(), requestParameter.getActivityId());
 
         // 查询拼团活动
-        GroupBuyActivityEntity groupBuyActivity = repository.queryGroupBuyActivityEntityByActivityId(requestParameter.getActivityId());
+        GroupBuyActivityEntity groupBuyActivity = groupBuyQueryPort.queryGroupBuyActivityEntityByActivityId(requestParameter.getActivityId());
         if (null == groupBuyActivity) {
             log.info("活动的可用性校验，不存在 activityId:{}", requestParameter.getActivityId());
             throw new AppException(ResponseCode.E0101);

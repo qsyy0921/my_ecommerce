@@ -1,9 +1,9 @@
 package cn.bugstack.domain.trade.service.lock;
 
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyOrderPort;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
 import cn.bugstack.domain.trade.adapter.port.ITradeLockRequestPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
 import cn.bugstack.domain.trade.model.aggregate.GroupBuyOrderAggregate;
 import cn.bugstack.domain.trade.model.entity.*;
 import cn.bugstack.domain.trade.model.valobj.GroupBuyProgressVO;
@@ -22,18 +22,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TradeLockOrderService implements ITradeLockOrderService {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
     private final IGroupBuyOrderPort groupBuyOrderPort;
     private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
     private final ITradeLockRequestPort tradeLockRequestPort;
     private final BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter;
 
-    public TradeLockOrderService(ITradeRepository repository,
+    public TradeLockOrderService(IGroupBuyQueryPort groupBuyQueryPort,
                                  IGroupBuyOrderPort groupBuyOrderPort,
                                  IGroupBuyTeamStockPort groupBuyTeamStockPort,
                                  ITradeLockRequestPort tradeLockRequestPort,
                                  BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter) {
-        this.repository = repository;
+        this.groupBuyQueryPort = groupBuyQueryPort;
         this.groupBuyOrderPort = groupBuyOrderPort;
         this.groupBuyTeamStockPort = groupBuyTeamStockPort;
         this.tradeLockRequestPort = tradeLockRequestPort;
@@ -49,7 +49,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
     @Override
     public GroupBuyProgressVO queryGroupBuyProgress(String teamId) {
         log.info("拼团交易-查询拼单进度:{}", teamId);
-        return repository.queryGroupBuyProgress(teamId);
+        return groupBuyQueryPort.queryGroupBuyProgress(teamId);
     }
 
     @Override
@@ -121,7 +121,7 @@ public class TradeLockOrderService implements ITradeLockOrderService {
             return cached;
         }
 
-        MarketPayOrderEntity marketPayOrderEntity = repository.queryMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
+        MarketPayOrderEntity marketPayOrderEntity = groupBuyQueryPort.queryMarketPayOrderEntityByOutTradeNo(userId, outTradeNo);
         if (null != marketPayOrderEntity) {
             tradeLockRequestPort.cacheLockResult(userId, outTradeNo, marketPayOrderEntity, validTime);
         }

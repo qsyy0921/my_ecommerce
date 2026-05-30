@@ -1,7 +1,7 @@
 package cn.bugstack.domain.trade.service.lock.filter;
 
 import cn.bugstack.domain.trade.adapter.port.IGroupBuyTeamStockPort;
-import cn.bugstack.domain.trade.adapter.repository.ITradeRepository;
+import cn.bugstack.domain.trade.adapter.port.IGroupBuyQueryPort;
 import cn.bugstack.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.bugstack.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.bugstack.domain.trade.model.entity.TradeLockRuleCommandEntity;
@@ -25,11 +25,11 @@ import java.util.Objects;
 @Slf4j
 public class TeamStockOccupyRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
-    private final ITradeRepository repository;
+    private final IGroupBuyQueryPort groupBuyQueryPort;
     private final IGroupBuyTeamStockPort groupBuyTeamStockPort;
 
-    public TeamStockOccupyRuleFilter(ITradeRepository repository, IGroupBuyTeamStockPort groupBuyTeamStockPort) {
-        this.repository = repository;
+    public TeamStockOccupyRuleFilter(IGroupBuyQueryPort groupBuyQueryPort, IGroupBuyTeamStockPort groupBuyTeamStockPort) {
+        this.groupBuyQueryPort = groupBuyQueryPort;
         this.groupBuyTeamStockPort = groupBuyTeamStockPort;
     }
 
@@ -47,7 +47,7 @@ public class TeamStockOccupyRuleFilter implements ILogicHandler<TradeLockRuleCom
 
         // 2. 抢占库存；通过抢占 Redis 缓存库存，来降低对数据库的操作压力。
         GroupBuyActivityEntity groupBuyActivity = dynamicContext.getGroupBuyActivity();
-        GroupBuyTeamEntity groupBuyTeam = repository.queryGroupBuyTeamByTeamId(teamId);
+        GroupBuyTeamEntity groupBuyTeam = groupBuyQueryPort.queryGroupBuyTeamByTeamId(teamId);
         if (null == groupBuyTeam || !Objects.equals(groupBuyActivity.getActivityId(), groupBuyTeam.getActivityId())) {
             log.warn("交易规则过滤-组队库存校验{} activityId:{} 队伍不存在或活动不匹配:{}", requestParameter.getUserId(), requestParameter.getActivityId(), teamId);
             throw new AppException(ResponseCode.E0107);
