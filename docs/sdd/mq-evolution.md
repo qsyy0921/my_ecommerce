@@ -151,7 +151,7 @@ DEAD -> INIT
 - Tag：`create`。
 - Key：`messageId`。
 - Queue selector：使用 `routeKey`。
-- 消费端继续复用 `ISeckillOrderCommandPort.createSeckillOrders(...)` 批量落库。
+- 消费端继续复用 `ISeckillOrderCreatePort.createSeckillOrders(...)` 批量落库。
 
 第四阶段：灰度双写和影子消费。
 

@@ -26,7 +26,8 @@
 - [x] 拆分 `SeckillRepository` 的 Redis 库存职责。
   - 目标：把库存桶、Lua 预扣、库存释放、用户占位从秒杀主仓储中移出。
   - 建议端口：`ISeckillStockPort` 或 `ISeckillStockReservationPort`。
-  - 验收：`SeckillRepository` 不直接拼 Redis stock key，不直接执行库存预扣 Lua；库存不足、重复参与、释放库存语义保持不变。
+  - 本次深化：`SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，预扣主适配器不再直接维护 Redis Key 常量、CRC32 路由和本地初始化缓存。
+  - 验收：`SeckillRepository` 不直接拼 Redis stock key，不直接执行库存预扣 Lua；`SeckillStockReservationPort` 只保留预扣/初始化/查询/释放流程；库存不足、重复参与、释放库存语义保持不变。
 
 - [x] 拆分 `SeckillRepository` 的结果缓存职责。
   - 目标：把秒杀结果缓存、DB 回源后的结果补缓存、缓存失效从主仓储移出。

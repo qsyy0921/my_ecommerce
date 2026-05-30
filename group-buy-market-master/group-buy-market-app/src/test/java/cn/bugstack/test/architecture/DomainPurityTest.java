@@ -244,6 +244,50 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void seckillStockReservationPortShouldDelegateKeyRoutingAndInitCache() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path reservationPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockReservationPort.java");
+        String source = new String(Files.readAllBytes(reservationPort), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "SECKILL_STOCK_KEY",
+                "SECKILL_USER_LOCK_KEY",
+                "SECKILL_STOCK_INIT_LOCK_KEY",
+                "ConcurrentHashMap",
+                "CRC32",
+                "StandardCharsets",
+                "stockBucketCount",
+                "stockInitCacheTtlMillis",
+                "private String stockBucketKey",
+                "private String userLockKey",
+                "private int bucketOf",
+                "private int bucketCount",
+                "private boolean isStockInitializedRecently",
+                "private void markStockInitialized"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockKeyBuilder.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketRouter.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationCache.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Seckill stock reservation adapter must delegate key building, bucket routing and init cache: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void seckillOrderLockPortShouldNotOwnMessageMiddlewareRouting() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
