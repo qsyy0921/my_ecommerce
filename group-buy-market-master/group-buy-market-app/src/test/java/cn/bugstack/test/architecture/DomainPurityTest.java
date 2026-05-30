@@ -271,6 +271,47 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void groupBuyOrderPortAdapterShouldStayTransactionalFacade() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path orderAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyOrderPort.java");
+        String source = new String(Files.readAllBytes(orderAdapter), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IGroupBuyOrderDao",
+                "IGroupBuyOrderListDao",
+                "IOrderStateFlowPort",
+                "IGroupBuyStockFlowPort",
+                "GroupBuyOrder.builder",
+                "GroupBuyOrderList.builder",
+                "RandomStringUtils",
+                "Calendar",
+                "DuplicateKeyException",
+                "GroupBuyStockFlowEntity.orderLocked",
+                "OrderStateTransitionEntity.groupBuyTeamOpened",
+                "OrderStateTransitionEntity.groupBuyOrderLocked"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamLockSupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderListCreateSupport.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("GroupBuyOrderPort must stay a transactional facade and delegate team/order-list write details: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");

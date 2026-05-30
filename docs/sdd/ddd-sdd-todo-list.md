@@ -28,6 +28,11 @@
   - 进展：拼团锁单落库已拆到 `IGroupBuyOrderPort`，拼团结算已拆到 `IGroupBuySettlementPort`，三类退单已拆到 `IGroupBuyRefundPort`；基础设施侧 `GroupBuyRefundPort` 继续拆成三类退单处理器，门面不再直接持有 DAO、事务和状态流水细节。
   - 验收：`ITradeRepository` 不再暴露锁单、结算和退单写方法；拼团领域服务只依赖业务语义端口；现有拼团锁单、结算、退单流程编译通过；架构测试防止 `GroupBuyRefundPort` 门面重新膨胀。
 
+- [x] 拆分拼团锁单端口内部支撑。
+  - 目标：避免 `GroupBuyOrderPort` 在拆出业务语义端口后继续同时承担队伍锁定、订单明细落库、状态流水和库存流水。
+  - 实际拆分：`GroupBuyTeamLockSupport`、`GroupBuyOrderListCreateSupport`。
+  - 验收：`GroupBuyOrderPort` 保留事务门面和 `MarketPayOrderEntity` 组装；队伍写入、订单明细写入、唯一索引异常转换、状态流水和库存流水进入支撑组件；架构测试防止回流。
+
 - [x] 拆分 `TradeRepository` 的剩余读职责。
   - 目标：把活动、队伍、订单、进度、超时未支付扫描拆成更清晰的读模型端口。
   - 实际拆分：`IGroupBuyQueryPort`、`IGroupBuyTimeoutOrderPort`、`ITradePolicyPort`。
