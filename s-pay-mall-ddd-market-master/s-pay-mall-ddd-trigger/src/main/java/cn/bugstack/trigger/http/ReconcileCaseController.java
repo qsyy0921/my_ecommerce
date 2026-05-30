@@ -1,10 +1,11 @@
 package cn.bugstack.trigger.http;
 
+import cn.bugstack.api.dto.ReconcileCaseResponseDTO;
+import cn.bugstack.api.dto.ReconcileOperationLogResponseDTO;
 import cn.bugstack.api.response.Response;
-import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity;
-import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity;
 import cn.bugstack.domain.order.service.IOrderReconcileService;
 import cn.bugstack.trigger.support.ReconcileAdminSupport;
+import cn.bugstack.trigger.support.ReconcileQuerySupport;
 import cn.bugstack.types.common.Constants;
 import com.alibaba.fastjson.JSON;
 import lombok.Data;
@@ -32,6 +33,9 @@ public class ReconcileCaseController {
     @Resource
     private ReconcileAdminSupport adminSupport;
 
+    @Resource
+    private ReconcileQuerySupport querySupport;
+
     @RequestMapping(value = "scan", method = RequestMethod.POST)
     public Response<Integer> scan(@RequestHeader(value = "x-admin-token", required = false) String token,
                                   @RequestHeader(value = "x-admin-operator", required = false) String operator) {
@@ -56,26 +60,26 @@ public class ReconcileCaseController {
     }
 
     @RequestMapping(value = "case_list", method = RequestMethod.GET)
-    public Response<List<ReconcileCaseEntity>> queryCaseList(@RequestParam(required = false) Integer caseStatus,
-                                                             @RequestParam(required = false) String caseType,
-                                                             @RequestParam(required = false) Long lastId,
-                                                             @RequestParam(required = false, defaultValue = "20") Integer pageSize,
-                                                             @RequestHeader(value = "x-admin-token", required = false) String token,
-                                                             @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+    public Response<List<ReconcileCaseResponseDTO>> queryCaseList(@RequestParam(required = false) Integer caseStatus,
+                                                                  @RequestParam(required = false) String caseType,
+                                                                  @RequestParam(required = false) Long lastId,
+                                                                  @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+                                                                  @RequestHeader(value = "x-admin-token", required = false) String token,
+                                                                  @RequestHeader(value = "x-admin-operator", required = false) String operator) {
         if (!adminSupport.authorized(token)) {
             return adminSupport.noLogin();
         }
         try {
-            List<ReconcileCaseEntity> caseList = orderReconcileService.queryReconcileCaseList(caseStatus, caseType, lastId, pageSize);
+            List<ReconcileCaseResponseDTO> caseList = querySupport.queryCaseList(caseStatus, caseType, lastId, pageSize);
             adminSupport.audit(operator, "QUERY", caseType, "caseStatus=" + caseStatus + ", lastId=" + lastId + ", pageSize=" + pageSize, "count=" + caseList.size());
-            return Response.<List<ReconcileCaseEntity>>builder()
+            return Response.<List<ReconcileCaseResponseDTO>>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
                     .data(caseList)
                     .build();
         } catch (Exception e) {
             log.error("query reconcile case list failed", e);
-            return Response.<List<ReconcileCaseEntity>>builder()
+            return Response.<List<ReconcileCaseResponseDTO>>builder()
                     .code(Constants.ResponseCode.UN_ERROR.getCode())
                     .info(Constants.ResponseCode.UN_ERROR.getInfo())
                     .build();
@@ -196,25 +200,25 @@ public class ReconcileCaseController {
     }
 
     @RequestMapping(value = "operation_logs", method = RequestMethod.GET)
-    public Response<List<ReconcileOperationLogEntity>> queryOperationLogs(@RequestParam(required = false) String bizId,
-                                                                          @RequestParam(required = false) Long lastId,
-                                                                          @RequestParam(required = false, defaultValue = "50") Integer pageSize,
-                                                                          @RequestHeader(value = "x-admin-token", required = false) String token,
-                                                                          @RequestHeader(value = "x-admin-operator", required = false) String operator) {
+    public Response<List<ReconcileOperationLogResponseDTO>> queryOperationLogs(@RequestParam(required = false) String bizId,
+                                                                               @RequestParam(required = false) Long lastId,
+                                                                               @RequestParam(required = false, defaultValue = "50") Integer pageSize,
+                                                                               @RequestHeader(value = "x-admin-token", required = false) String token,
+                                                                               @RequestHeader(value = "x-admin-operator", required = false) String operator) {
         if (!adminSupport.authorized(token)) {
             return adminSupport.noLogin();
         }
         try {
-            List<ReconcileOperationLogEntity> operationLogList = orderReconcileService.queryReconcileOperationLogList(bizId, lastId, pageSize);
+            List<ReconcileOperationLogResponseDTO> operationLogList = querySupport.queryOperationLogList(bizId, lastId, pageSize);
             adminSupport.audit(operator, "QUERY_LOG", bizId, "lastId=" + lastId + ", pageSize=" + pageSize, "count=" + operationLogList.size());
-            return Response.<List<ReconcileOperationLogEntity>>builder()
+            return Response.<List<ReconcileOperationLogResponseDTO>>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
                     .data(operationLogList)
                     .build();
         } catch (Exception e) {
             log.error("query reconcile operation logs failed bizId:{}", bizId, e);
-            return Response.<List<ReconcileOperationLogEntity>>builder()
+            return Response.<List<ReconcileOperationLogResponseDTO>>builder()
                     .code(Constants.ResponseCode.UN_ERROR.getCode())
                     .info(Constants.ResponseCode.UN_ERROR.getInfo())
                     .build();

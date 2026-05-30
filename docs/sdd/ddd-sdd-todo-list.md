@@ -107,6 +107,11 @@
   - 实际拆分：`ReconcileAdminSupport`。
   - 验收：`DomainPurityTest` 防止 `@Value`、`adminToken`、`recordReconcileOperation`、`local-admin` 和 CSV `substring` 预览截断回流到 Controller。
 
+- [x] 治理对账查询 HTTP 响应 DTO 边界。
+  - 目标：避免 `ReconcileCaseController` 直接把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 暴露成 HTTP API 契约。
+  - 实际拆分：`ReconcileCaseResponseDTO`、`ReconcileOperationLogResponseDTO`、`ReconcileResponseAssembler`、`ReconcileQuerySupport`。
+  - 验收：`DomainPurityTest` 防止对账查询接口重新声明 `Response<List<ReconcileCaseEntity>>` 或 `Response<List<ReconcileOperationLogEntity>>`。
+
 - [x] 拆分商城对账仓储内部技术细节。
   - 目标：避免 `OrderReconcileRepository` 继续承担差错单构建、MQ 重放、三方账单 CSV 解析和 PO/Entity 映射。
   - 实际拆分：`ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser`、`OrderReconcileEntityMapper`。

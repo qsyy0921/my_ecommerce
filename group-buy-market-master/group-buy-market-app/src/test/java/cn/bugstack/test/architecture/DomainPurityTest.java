@@ -531,6 +531,43 @@ public class DomainPurityTest {
     }
 
     @Test
+    public void mallReconcileControllerShouldReturnApiDtosInsteadOfDomainEntities() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "import cn.bugstack.domain.order.model.entity.ReconcileCaseEntity",
+                "import cn.bugstack.domain.order.model.entity.ReconcileOperationLogEntity",
+                "Response<List<ReconcileCaseEntity>>",
+                "Response<List<ReconcileOperationLogEntity>>",
+                "List<ReconcileCaseEntity>",
+                "List<ReconcileOperationLogEntity>"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredFiles = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileCaseResponseDTO.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileOperationLogResponseDTO.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileResponseAssembler.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileQuerySupport.java")
+        );
+        for (Path requiredFile : requiredFiles) {
+            if (!Files.exists(requiredFile)) {
+                violations.add("missing file:" + requiredFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Mall ReconcileCaseController query APIs must return API DTOs and keep domain entities out of HTTP response contracts: " + violations, violations.isEmpty());
+    }
+
+    @Test
     public void mallAliPayControllerShouldDelegatePaymentChannelAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java");
