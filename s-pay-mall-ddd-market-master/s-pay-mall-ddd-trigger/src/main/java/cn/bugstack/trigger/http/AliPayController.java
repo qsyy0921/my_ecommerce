@@ -13,29 +13,18 @@ import cn.bugstack.domain.order.model.entity.PayOrderEntity;
 import cn.bugstack.domain.order.model.entity.ShopCartEntity;
 import cn.bugstack.domain.order.model.valobj.MarketTypeVO;
 import cn.bugstack.domain.order.service.IOrderService;
-import cn.bugstack.trigger.metrics.PaymentCallbackMetrics;
+import cn.bugstack.trigger.support.ActivePayNotifySupport;
+import cn.bugstack.trigger.support.AlipayNotifySupport;
+import cn.bugstack.trigger.support.OrderListResponseAssembler;
 import cn.bugstack.trigger.support.StructuredBusinessLogger;
 import cn.bugstack.types.common.Constants;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alipay.api.AlipayApiException;
-import com.alipay.api.AlipayClient;
-import com.alipay.api.domain.AlipayTradeQueryModel;
-import com.alipay.api.internal.util.AlipaySignature;
-import com.alipay.api.request.AlipayTradeQueryRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController()
@@ -43,18 +32,14 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/alipay/")
 public class AliPayController implements IPayService {
 
-    @Value("${alipay.alipay_public_key}")
-    private String alipayPublicKey;
-    @Value("${mock-pay.enabled:false}")
-    private boolean mockPayEnabled;
-
     @Resource
     private IOrderService orderService;
-    
     @Resource
-    private AlipayClient alipayClient;
+    private AlipayNotifySupport alipayNotifySupport;
     @Resource
-    private PaymentCallbackMetrics paymentCallbackMetrics;
+    private ActivePayNotifySupport activePayNotifySupport;
+    @Resource
+    private OrderListResponseAssembler orderListResponseAssembler;
     @Resource
     private StructuredBusinessLogger businessLogger;
 
@@ -159,68 +144,19 @@ public class AliPayController implements IPayService {
      * http://xfg-studio.natapp1.cc/api/v1/alipay/alipay_notify_url
      */
     @RequestMapping(value = "alipay_notify_url", method = RequestMethod.POST)
-    public String payNotify(HttpServletRequest request) throws AlipayApiException, ParseException {
+    public String payNotify(HttpServletRequest request) {
         long startMillis = System.currentTimeMillis();
         log.info("支付回调，消息接收 {}", request.getParameter("trade_status"));
-
-        String tradeStatus = request.getParameter("trade_status");
-        if (!"TRADE_SUCCESS".equals(tradeStatus)) {
-            paymentCallbackMetrics.recordFail("trade_status");
-            businessLogger.warn("mall_pay_notify", "ignored_trade_status", businessLogger.fields(
-                    "tradeStatus", tradeStatus,
+        try {
+            return alipayNotifySupport.handle(request, startMillis);
+        } catch (Exception e) {
+            log.error("支付回调处理失败 outTradeNo:{}", request.getParameter("out_trade_no"), e);
+            businessLogger.error("mall_pay_notify", "system_error", businessLogger.fields(
+                    "tradeStatus", request.getParameter("trade_status"),
                     "outTradeNo", request.getParameter("out_trade_no"),
-                    "costMs", System.currentTimeMillis() - startMillis));
+                    "costMs", System.currentTimeMillis() - startMillis), e);
             return "false";
         }
-
-        Map<String, String> params = new HashMap<>();
-        Map<String, String[]> requestParams = request.getParameterMap();
-        for (String name : requestParams.keySet()) {
-            params.put(name, request.getParameter(name));
-        }
-
-        String tradeNo = params.get("out_trade_no");
-        String gmtPayment = params.get("gmt_payment");
-        String alipayTradeNo = params.get("trade_no");
-
-        String sign = params.get("sign");
-        String content = AlipaySignature.getSignCheckContentV1(params);
-        boolean checkSignature = AlipaySignature.rsa256CheckContent(content, sign, alipayPublicKey, "UTF-8"); // 验证签名
-        // 支付宝验签
-        if (!checkSignature) {
-            paymentCallbackMetrics.recordFail("signature");
-            businessLogger.warn("mall_pay_notify", "signature_failed", businessLogger.fields(
-                    "tradeStatus", tradeStatus,
-                    "outTradeNo", tradeNo,
-                    "alipayTradeNo", alipayTradeNo,
-                    "costMs", System.currentTimeMillis() - startMillis));
-            return "false";
-        }
-
-        // 验签通过
-        log.info("支付回调，交易名称: {}", params.get("subject"));
-        log.info("支付回调，交易状态: {}", params.get("trade_status"));
-        log.info("支付回调，支付宝交易凭证号: {}", params.get("trade_no"));
-        log.info("支付回调，商户订单号: {}", params.get("out_trade_no"));
-        log.info("支付回调，交易金额: {}", params.get("total_amount"));
-        log.info("支付回调，买家在支付宝唯一id: {}", params.get("buyer_id"));
-        log.info("支付回调，买家付款时间: {}", params.get("gmt_payment"));
-        log.info("支付回调，买家付款金额: {}", params.get("buyer_pay_amount"));
-        log.info("支付回调，支付回调，更新订单 {}", tradeNo);
-
-        orderService.changeOrderPaySuccess(tradeNo,
-                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(params.get("gmt_payment")),
-                "alipay",
-                alipayTradeNo,
-                JSON.toJSONString(params));
-
-        businessLogger.info("mall_pay_notify", "success", businessLogger.fields(
-                "tradeStatus", tradeStatus,
-                "outTradeNo", tradeNo,
-                "alipayTradeNo", alipayTradeNo,
-                "payChannel", "alipay",
-                "costMs", System.currentTimeMillis() - startMillis));
-        return "success";
     }
 
     /**
@@ -251,31 +187,9 @@ public class AliPayController implements IPayService {
                 orderList = orderList.subList(0, pageSize);
             }
             
-            // 转换为响应对象
-            List<QueryOrderListResponseDTO.OrderInfo> orderInfoList = orderList.stream().map(order -> {
-                QueryOrderListResponseDTO.OrderInfo orderInfo = new QueryOrderListResponseDTO.OrderInfo();
-                orderInfo.setId(order.getId());
-                orderInfo.setUserId(order.getUserId());
-                orderInfo.setProductId(order.getProductId());
-                orderInfo.setProductName(order.getProductName());
-                orderInfo.setOrderId(order.getOrderId());
-                orderInfo.setOrderTime(order.getOrderTime());
-                orderInfo.setTotalAmount(order.getTotalAmount());
-                orderInfo.setStatus(order.getOrderStatusVO() != null ? order.getOrderStatusVO().getCode() : null);
-                orderInfo.setPayUrl(order.getPayUrl());
-                orderInfo.setMarketType(order.getMarketType());
-                orderInfo.setMarketDeductionAmount(order.getMarketDeductionAmount());
-                orderInfo.setPayAmount(order.getPayAmount());
-                orderInfo.setPayTime(order.getPayTime());
-                return orderInfo;
-            }).collect(Collectors.toList());
+            QueryOrderListResponseDTO responseDTO = orderListResponseAssembler.assemble(orderList, hasMore);
             
-            QueryOrderListResponseDTO responseDTO = new QueryOrderListResponseDTO();
-            responseDTO.setOrderList(orderInfoList);
-            responseDTO.setHasMore(hasMore);
-            responseDTO.setLastId(!orderList.isEmpty() ? orderList.get(orderList.size() - 1).getId() : null);
-            
-            log.info("查询用户订单列表完成 userId:{} 返回订单数量:{} hasMore:{}", userId, orderInfoList.size(), hasMore);
+            log.info("查询用户订单列表完成 userId:{} 返回订单数量:{} hasMore:{}", userId, responseDTO.getOrderList().size(), hasMore);
             return Response.<QueryOrderListResponseDTO>builder()
                     .code(Constants.ResponseCode.SUCCESS.getCode())
                     .info(Constants.ResponseCode.SUCCESS.getInfo())
@@ -362,107 +276,7 @@ public class AliPayController implements IPayService {
      */
     @RequestMapping(value = "active_pay_notify", method = RequestMethod.POST)
     public Response<String> activePayNotify(@RequestParam String outTradeNo) {
-        long startMillis = System.currentTimeMillis();
-        try {
-            if (mockPayEnabled) {
-                orderService.changeOrderPaySuccess(outTradeNo, new Date(), "mock", "MOCK:" + outTradeNo, "active_pay_notify_mock");
-                businessLogger.info("mall_active_pay_notify", "mock_success", businessLogger.fields(
-                        "outTradeNo", outTradeNo,
-                        "payChannel", "mock",
-                        "costMs", System.currentTimeMillis() - startMillis));
-                return Response.<String>builder()
-                        .code(Constants.ResponseCode.SUCCESS.getCode())
-                        .info(Constants.ResponseCode.SUCCESS.getInfo())
-                        .data("mock pay success")
-                        .build();
-            }
-
-            log.info("测试回调接口，开始查询订单: {}", outTradeNo);
-            
-            // 构建支付宝交易查询请求
-            AlipayTradeQueryModel bizModel = new AlipayTradeQueryModel();
-            bizModel.setOutTradeNo(outTradeNo);
-            
-            AlipayTradeQueryRequest queryRequest = new AlipayTradeQueryRequest();
-            queryRequest.setBizModel(bizModel);
-            
-            // 调用支付宝API查询交易状态
-            String body = alipayClient.execute(queryRequest).getBody();
-            log.info("支付宝查询结果: {}", body);
-            
-            // 解析查询结果
-            JSONObject responseJson = JSON.parseObject(body);
-            JSONObject queryResponse = responseJson.getJSONObject("alipay_trade_query_response");
-            
-            if (queryResponse != null && "10000".equals(queryResponse.getString("code"))) {
-                String tradeStatus = queryResponse.getString("trade_status");
-                String tradeNo = queryResponse.getString("trade_no");
-                String totalAmount = queryResponse.getString("total_amount");
-                String gmtPayment = queryResponse.getString("send_pay_date");
-                
-                log.info("查询成功 - 交易状态: {}, 支付宝交易号: {}, 金额: {}, 支付时间: {}", 
-                        tradeStatus, tradeNo, totalAmount, gmtPayment);
-                
-                // 如果交易成功，执行后续流程处理
-                if ("TRADE_SUCCESS".equals(tradeStatus)) {
-                    log.info("交易成功，开始处理后续流程，订单号: {}", outTradeNo);
-                    
-                    // 调用订单服务更新订单状态
-                    orderService.changeOrderPaySuccess(outTradeNo,
-                            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(gmtPayment),
-                            "alipay_query",
-                            tradeNo,
-                            body);
-                    
-                    log.info("订单状态更新成功，订单号: {}", outTradeNo);
-                    businessLogger.info("mall_active_pay_notify", "alipay_query_success", businessLogger.fields(
-                            "outTradeNo", outTradeNo,
-                            "alipayTradeNo", tradeNo,
-                            "payChannel", "alipay_query",
-                            "costMs", System.currentTimeMillis() - startMillis));
-                    
-                    return Response.<String>builder()
-                            .code(Constants.ResponseCode.SUCCESS.getCode())
-                            .info(Constants.ResponseCode.SUCCESS.getInfo())
-                            .data("交易成功，订单状态已更新")
-                            .build();
-                } else {
-                    log.info("交易状态非成功状态: {}, 订单号: {}", tradeStatus, outTradeNo);
-                    businessLogger.warn("mall_active_pay_notify", "trade_not_success", businessLogger.fields(
-                            "outTradeNo", outTradeNo,
-                            "tradeStatus", tradeStatus,
-                            "costMs", System.currentTimeMillis() - startMillis));
-                    return Response.<String>builder()
-                            .code(Constants.ResponseCode.SUCCESS.getCode())
-                            .info(Constants.ResponseCode.SUCCESS.getInfo())
-                            .data("交易状态: " + tradeStatus)
-                            .build();
-                }
-            } else {
-                String errorMsg = queryResponse != null ? queryResponse.getString("msg") : "查询失败";
-                log.error("支付宝查询失败: {}, 订单号: {}", errorMsg, outTradeNo);
-                businessLogger.warn("mall_active_pay_notify", "alipay_query_failed", businessLogger.fields(
-                        "outTradeNo", outTradeNo,
-                        "errorMessage", errorMsg,
-                        "costMs", System.currentTimeMillis() - startMillis));
-                return Response.<String>builder()
-                        .code(Constants.ResponseCode.UN_ERROR.getCode())
-                        .info(Constants.ResponseCode.UN_ERROR.getInfo())
-                        .data("查询失败: " + errorMsg)
-                        .build();
-            }
-            
-        } catch (Exception e) {
-            log.error("测试回调接口异常，订单号: {}", outTradeNo, e);
-            businessLogger.error("mall_active_pay_notify", "system_error", businessLogger.fields(
-                    "outTradeNo", outTradeNo,
-                    "costMs", System.currentTimeMillis() - startMillis), e);
-            return Response.<String>builder()
-                    .code(Constants.ResponseCode.UN_ERROR.getCode())
-                    .info(Constants.ResponseCode.UN_ERROR.getInfo())
-                    .data("系统异常: " + e.getMessage())
-                    .build();
-        }
+        return activePayNotifySupport.handle(outTradeNo, System.currentTimeMillis());
     }
 
 }

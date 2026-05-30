@@ -497,6 +497,48 @@ public class DomainPurityTest {
         Assert.assertTrue("Mall reconcile case closed-loop operations must stay explicit and terminal-safe: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void mallAliPayControllerShouldDelegatePaymentChannelAndDtoMappingDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java");
+        String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "@Value",
+                "AlipayClient",
+                "AlipaySignature",
+                "AlipayTradeQueryModel",
+                "AlipayTradeQueryRequest",
+                "PaymentCallbackMetrics",
+                "JSONObject",
+                "SimpleDateFormat",
+                "new HashMap",
+                "getParameterMap",
+                "Collectors.toList",
+                "new QueryOrderListResponseDTO.OrderInfo"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        List<Path> requiredSupportFiles = Arrays.asList(
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/AlipayNotifySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ActivePayNotifySupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/OrderListResponseAssembler.java")
+        );
+        for (Path supportFile : requiredSupportFiles) {
+            if (!Files.exists(supportFile)) {
+                violations.add("missing support:" + supportFile.getFileName());
+            }
+        }
+
+        Assert.assertTrue("Mall AliPayController must delegate payment channel SDK, callback parsing and order-list DTO mapping details: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

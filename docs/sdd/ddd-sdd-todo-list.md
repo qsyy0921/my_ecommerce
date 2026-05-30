@@ -97,6 +97,11 @@
   - 实际拆分：`ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser`、`OrderReconcileEntityMapper`。
   - 验收：`DomainPurityTest` 防止 `EventPublisher`、routing key 解析、CSV 解析、金额/时间解析和 builder 映射回流到对账仓储。
 
+- [x] 拆分商城支付 Controller 技术细节。
+  - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
+  - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
+  - 验收：`DomainPurityTest` 防止 `AlipayClient`、`AlipaySignature`、`AlipayTradeQueryModel`、`JSONObject`、`SimpleDateFormat`、`getParameterMap`、`Collectors.toList` 和 `QueryOrderListResponseDTO.OrderInfo` 构造回流到 Controller。
+
 ## P3 测试和容量验证
 
 - [x] 补拼团锁单纯单元测试。

@@ -123,6 +123,7 @@ types           异常、枚举、常量、通用类型
 - `SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter` 和 `SeckillStockInitializationCache`，Redis Key、桶路由、本地初始化短缓存不再堆在预扣主适配器里。
 - `SeckillOrderCreateBuffer` 内部继续拆出 `SeckillOrderBufferMessage`、`SeckillStreamShardRouter`、`SeckillStreamMessageMapper` 和 `SeckillStreamMetricsSampler`，Redis Stream 分片 hash、retry key、StreamAddArgs、DLQ payload、人工补偿消息解析和 pending/lag 采样 Lua 不再堆在缓冲主类里。
 - 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、三方账单 CSV 解析和 PO/Entity 映射细节。
+- 商城 `AliPayController` 拆出 `AlipayNotifySupport`、`ActivePayNotifySupport` 和 `OrderListResponseAssembler`，HTTP 入口不再直接持有支付宝 SDK、回调验签、主动查询和用户订单 DTO 映射细节。
 - 新增 `SeckillOrderLockPortUnitTest` 和 `SeckillPendingRetryPolicy`，用 fake port 覆盖秒杀库存预扣、重复参与、库存不足、售罄短路、异步入队失败回滚、pending retry 隔离策略和库存流水幂等键。
 - 新增 `TradeRefundOrderServiceUnitTest`，用 fake port 覆盖拼团未支付未成团、已支付未成团、已支付已成团、重复退单、非法退单状态和锁单库存恢复边界。
 
@@ -190,6 +191,9 @@ types           异常、枚举、常量、通用类型
 
 - 下单和支付：`s-pay-mall-ddd-domain/.../order`
 - 支付适配：`s-pay-mall-ddd-infrastructure/.../port/PayPort.java`
+- 支付 HTTP 入口：`s-pay-mall-ddd-trigger/.../AliPayController.java`
+- 支付回调/主动查询支撑：`s-pay-mall-ddd-trigger/.../support/AlipayNotifySupport.java`、`ActivePayNotifySupport.java`
+- 用户订单响应组装：`s-pay-mall-ddd-trigger/.../support/OrderListResponseAssembler.java`
 - 对账中心：`s-pay-mall-ddd-trigger/.../ReconcileCaseController.java`
 - 对账仓储支持组件：`s-pay-mall-ddd-infrastructure/.../adapter/support`
 - 对账页面：`s-pay-mall-ddd-market-master/docs/dev-ops/nginx/html/reconcile-admin.html`
