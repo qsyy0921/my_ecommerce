@@ -74,6 +74,11 @@
   - 本次深化：`SeckillStockReservationPort` 内部继续拆出 `SeckillStockKeyBuilder`、`SeckillStockBucketRouter`、`SeckillStockInitializationCache`，预扣主适配器不再直接维护 Redis Key 常量、CRC32 路由和本地初始化缓存。
   - 验收：`SeckillRepository` 不直接拼 Redis stock key，不直接执行库存预扣 Lua；`SeckillStockReservationPort` 只保留预扣/初始化/查询/释放流程；库存不足、重复参与、释放库存语义保持不变。
 
+- [x] 拆分秒杀库存预扣端口内部支撑。
+  - 目标：避免 `SeckillStockReservationPort` 同时承担库存初始化/查询和资格预扣/释放两套 Redis 流程。
+  - 实际拆分：`SeckillStockBucketInventorySupport`、`SeckillQualificationReservationSupport`。
+  - 验收：`SeckillStockReservationPort` 只保留 `ISeckillStockReservationPort` 门面委托；Redis API、Lua 预扣、JSON 序列化、初始化锁、库存桶汇总和用户占位释放进入支撑组件；库存单元测试通过。
+
 - [x] 拆分 `SeckillRepository` 的结果缓存职责。
   - 目标：把秒杀结果缓存、DB 回源后的结果补缓存、缓存失效从主仓储移出。
   - 建议端口：`ISeckillResultCachePort`。

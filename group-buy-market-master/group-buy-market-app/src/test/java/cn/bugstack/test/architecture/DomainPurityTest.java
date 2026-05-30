@@ -559,12 +559,26 @@ public class DomainPurityTest {
     }
 
     @Test
-    public void seckillStockReservationPortShouldDelegateKeyRoutingAndInitCache() throws Exception {
+    public void seckillStockReservationPortShouldDelegateRedisAndBucketDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         Path reservationPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockReservationPort.java");
         String source = new String(Files.readAllBytes(reservationPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
+                "IRedisService",
+                "ISeckillResultCachePort",
+                "SeckillFaultInjector",
+                "SeckillStockKeyBuilder",
+                "SeckillStockBucketRouter",
+                "SeckillStockInitializationCache",
+                "JSON.toJSONString",
+                "RLock",
+                "reserveSeckillQualification",
+                "setAtomicLong",
+                "getAtomicLong",
+                "redisService.incr",
+                "redisService.remove",
+                "for (int i = 0",
                 "SECKILL_STOCK_KEY",
                 "SECKILL_USER_LOCK_KEY",
                 "SECKILL_STOCK_INIT_LOCK_KEY",
@@ -591,7 +605,9 @@ public class DomainPurityTest {
         List<Path> requiredSupportFiles = Arrays.asList(
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockKeyBuilder.java"),
                 workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketRouter.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationCache.java")
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationCache.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketInventorySupport.java"),
+                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillQualificationReservationSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -599,7 +615,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("Seckill stock reservation adapter must delegate key building, bucket routing and init cache: " + violations, violations.isEmpty());
+        Assert.assertTrue("Seckill stock reservation adapter must delegate Redis, Lua, bucket and init-cache details: " + violations, violations.isEmpty());
     }
 
     @Test
