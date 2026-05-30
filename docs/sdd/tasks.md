@@ -92,7 +92,7 @@
 - [x] domain 去 Spring 注解，领域对象由 app 层配置类装配。
 - [x] `scripts/check-domain-purity.ps1` 可扫描商城/营销 domain 包。
 - [x] `DomainPurityTest` 可在 Maven 测试阶段防止 domain 重新引入 Spring/container 注解。
-- [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍的合法/非法状态迁移。
+- [x] `OrderStateMachineTest` 覆盖秒杀订单、拼团订单、拼团队伍和售后流程的合法/非法状态迁移。
 - [x] 抽象 `IDomainTaskExecutor`，domain 不再直接依赖 `ThreadPoolExecutor`。
 - [x] `TradeTaskService` 改为依赖 `ITradeNotifyTaskPort`，`ITradeRepository` 不再暴露通知任务扫描和状态更新方法。
 - [x] 拼团队伍库存占位拆到 `IGroupBuyTeamStockPort`，`ITradeRepository` 不再暴露 Redis 队伍名额占用和退单恢复方法。
@@ -111,6 +111,7 @@
 - [x] 秒杀下单消息投递拆到 `ISeckillOrderMessagePort`，`SeckillOrderLockPort` 不再感知 Redis Stream、RabbitMQ、routing key 和 JSON 序列化。
 - [x] 专业 MQ 演进方案已补齐到 `docs/sdd/mq-evolution.md`，明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、迁移步骤和回滚方案。
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
+- [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。
 - [x] `DomainPurityTest` 增加通用 `ITradeRepository` / `TradeRepository` 删除守护，以及 `IGroupBuyQueryPort` 只读职责守护。
 - [x] `DomainPurityTest` 增加 `ISeckillRepository` 维护任务方法回流守护。
 - [x] `DomainPurityTest` 增加通用 `ISeckillRepository` / `SeckillRepository` 删除守护，以及秒杀查询、库存可用性、锁单端口职责守护。

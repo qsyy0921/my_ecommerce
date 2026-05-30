@@ -19,6 +19,10 @@ public class OrderStateMachine {
     public static final String STATE_COMPLETE = "COMPLETE";
     public static final String STATE_CLOSE = "CLOSE";
     public static final String STATE_REFUND = "REFUND";
+    public static final String STATE_REFUNDING = "REFUNDING";
+    public static final String STATE_PARTIAL_REFUND = "PARTIAL_REFUND";
+    public static final String STATE_REFUND_REJECTED = "REFUND_REJECTED";
+    public static final String STATE_FULFILLED = "FULFILLED";
     public static final String STATE_PROGRESS = "PROGRESS";
     public static final String STATE_FAIL = "FAIL";
     public static final String STATE_COMPLETE_FAIL = "COMPLETE_FAIL";
@@ -27,7 +31,11 @@ public class OrderStateMachine {
     public static final String EVENT_ASYNC_ORDER_CREATED = "ASYNC_ORDER_CREATED";
     public static final String EVENT_PAY_SUCCESS = "PAY_SUCCESS";
     public static final String EVENT_TIMEOUT_RELEASE = "TIMEOUT_RELEASE";
+    public static final String EVENT_FULFILL = "FULFILL";
+    public static final String EVENT_REFUND_APPLY = "REFUND_APPLY";
     public static final String EVENT_REFUND_SUCCESS = "REFUND_SUCCESS";
+    public static final String EVENT_REFUND_PARTIAL_SUCCESS = "REFUND_PARTIAL_SUCCESS";
+    public static final String EVENT_REFUND_REJECT = "REFUND_REJECT";
     public static final String EVENT_OPEN_TEAM = "OPEN_TEAM";
     public static final String EVENT_TEAM_FORMED = "TEAM_FORMED";
     public static final String EVENT_TEAM_REFUND_PARTIAL = "TEAM_REFUND_PARTIAL";
@@ -56,11 +64,13 @@ public class OrderStateMachine {
         add(transitions, BIZ_SECKILL_ORDER, STATE_CREATE, EVENT_TIMEOUT_RELEASE, STATE_CLOSE);
         add(transitions, BIZ_SECKILL_ORDER, STATE_CREATE, EVENT_PAY_SUCCESS, STATE_COMPLETE);
         add(transitions, BIZ_SECKILL_ORDER, STATE_COMPLETE, EVENT_REFUND_SUCCESS, STATE_REFUND);
+        addAfterSaleTransitions(transitions, BIZ_SECKILL_ORDER, STATE_REFUND);
 
         add(transitions, BIZ_GROUP_BUY_ORDER_LIST, STATE_INIT, EVENT_LOCK, STATE_CREATE);
         add(transitions, BIZ_GROUP_BUY_ORDER_LIST, STATE_CREATE, EVENT_PAY_SUCCESS, STATE_COMPLETE);
         add(transitions, BIZ_GROUP_BUY_ORDER_LIST, STATE_CREATE, EVENT_TIMEOUT_RELEASE, STATE_CLOSE);
         add(transitions, BIZ_GROUP_BUY_ORDER_LIST, STATE_COMPLETE, EVENT_REFUND_SUCCESS, STATE_CLOSE);
+        addAfterSaleTransitions(transitions, BIZ_GROUP_BUY_ORDER_LIST, STATE_REFUND);
 
         add(transitions, BIZ_GROUP_BUY_TEAM, STATE_INIT, EVENT_OPEN_TEAM, STATE_PROGRESS);
         add(transitions, BIZ_GROUP_BUY_TEAM, STATE_PROGRESS, EVENT_TEAM_FORMED, STATE_COMPLETE);
@@ -70,6 +80,16 @@ public class OrderStateMachine {
         add(transitions, BIZ_GROUP_BUY_TEAM, STATE_COMPLETE, EVENT_TEAM_REFUND_ALL, STATE_FAIL);
         add(transitions, BIZ_GROUP_BUY_TEAM, STATE_COMPLETE_FAIL, EVENT_TEAM_REFUND_ALL, STATE_FAIL);
         return Collections.unmodifiableSet(transitions);
+    }
+
+    private static void addAfterSaleTransitions(Set<String> transitions, String bizType, String finalRefundState) {
+        add(transitions, bizType, STATE_COMPLETE, EVENT_FULFILL, STATE_FULFILLED);
+        add(transitions, bizType, STATE_COMPLETE, EVENT_REFUND_APPLY, STATE_REFUNDING);
+        add(transitions, bizType, STATE_FULFILLED, EVENT_REFUND_APPLY, STATE_REFUNDING);
+        add(transitions, bizType, STATE_REFUNDING, EVENT_REFUND_PARTIAL_SUCCESS, STATE_PARTIAL_REFUND);
+        add(transitions, bizType, STATE_REFUNDING, EVENT_REFUND_SUCCESS, finalRefundState);
+        add(transitions, bizType, STATE_REFUNDING, EVENT_REFUND_REJECT, STATE_REFUND_REJECTED);
+        add(transitions, bizType, STATE_PARTIAL_REFUND, EVENT_REFUND_SUCCESS, finalRefundState);
     }
 
     private static void add(Set<String> transitions, String bizType, String fromStatus, String event, String toStatus) {

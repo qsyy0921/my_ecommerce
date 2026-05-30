@@ -92,6 +92,41 @@ public class OrderStateTransitionEntity {
                 null, message);
     }
 
+    public static OrderStateTransitionEntity seckillOrderFulfilled(String outTradeNo, String orderId,
+                                                                   String operatorId, String traceId) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_COMPLETE, OrderStateMachine.STATE_FULFILLED,
+                OrderStateMachine.EVENT_FULFILL, operatorId, traceId,
+                null, "seckill order fulfilled");
+    }
+
+    public static OrderStateTransitionEntity seckillRefundApplied(String outTradeNo, String orderId,
+                                                                  String fromStatus, String operatorId,
+                                                                  String traceId, String message) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                fromStatus, OrderStateMachine.STATE_REFUNDING,
+                OrderStateMachine.EVENT_REFUND_APPLY, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity seckillPartialRefunded(String outTradeNo, String orderId,
+                                                                    String operatorId, String traceId,
+                                                                    String message) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_REFUNDING, OrderStateMachine.STATE_PARTIAL_REFUND,
+                OrderStateMachine.EVENT_REFUND_PARTIAL_SUCCESS, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity seckillRefundRejected(String outTradeNo, String orderId,
+                                                                   String operatorId, String traceId,
+                                                                   String message) {
+        return of(OrderStateMachine.BIZ_SECKILL_ORDER, outTradeNo, orderId,
+                OrderStateMachine.STATE_REFUNDING, OrderStateMachine.STATE_REFUND_REJECTED,
+                OrderStateMachine.EVENT_REFUND_REJECT, operatorId, traceId,
+                null, message);
+    }
+
     public static OrderStateTransitionEntity groupBuyTeamOpened(String teamId, String operatorId, String traceId) {
         return of(OrderStateMachine.BIZ_GROUP_BUY_TEAM, teamId, null,
                 OrderStateMachine.STATE_INIT, OrderStateMachine.STATE_PROGRESS,
@@ -145,6 +180,41 @@ public class OrderStateTransitionEntity {
         return of(OrderStateMachine.BIZ_GROUP_BUY_ORDER_LIST, outTradeNo, orderId,
                 OrderStateMachine.STATE_COMPLETE, OrderStateMachine.STATE_CLOSE,
                 OrderStateMachine.EVENT_REFUND_SUCCESS, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity groupBuyOrderFulfilled(String outTradeNo, String orderId,
+                                                                    String operatorId, String traceId) {
+        return of(OrderStateMachine.BIZ_GROUP_BUY_ORDER_LIST, outTradeNo, orderId,
+                OrderStateMachine.STATE_COMPLETE, OrderStateMachine.STATE_FULFILLED,
+                OrderStateMachine.EVENT_FULFILL, operatorId, traceId,
+                null, "group buy order fulfilled");
+    }
+
+    public static OrderStateTransitionEntity groupBuyRefundApplied(String outTradeNo, String orderId,
+                                                                   String fromStatus, String operatorId,
+                                                                   String traceId, String message) {
+        return of(OrderStateMachine.BIZ_GROUP_BUY_ORDER_LIST, outTradeNo, orderId,
+                fromStatus, OrderStateMachine.STATE_REFUNDING,
+                OrderStateMachine.EVENT_REFUND_APPLY, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity groupBuyPartialRefunded(String outTradeNo, String orderId,
+                                                                     String operatorId, String traceId,
+                                                                     String message) {
+        return of(OrderStateMachine.BIZ_GROUP_BUY_ORDER_LIST, outTradeNo, orderId,
+                OrderStateMachine.STATE_REFUNDING, OrderStateMachine.STATE_PARTIAL_REFUND,
+                OrderStateMachine.EVENT_REFUND_PARTIAL_SUCCESS, operatorId, traceId,
+                null, message);
+    }
+
+    public static OrderStateTransitionEntity groupBuyRefundRejected(String outTradeNo, String orderId,
+                                                                    String operatorId, String traceId,
+                                                                    String message) {
+        return of(OrderStateMachine.BIZ_GROUP_BUY_ORDER_LIST, outTradeNo, orderId,
+                OrderStateMachine.STATE_REFUNDING, OrderStateMachine.STATE_REFUND_REJECTED,
+                OrderStateMachine.EVENT_REFUND_REJECT, operatorId, traceId,
                 null, message);
     }
 

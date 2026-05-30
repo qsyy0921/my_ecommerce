@@ -72,9 +72,9 @@
 
 ## P2 售后和对账模型
 
-- [ ] 扩展售后状态机。
+- [x] 扩展售后状态机。
   - 目标：覆盖部分退款、拒绝退款、履约后退款、重复退款拦截。
-  - 验收：补充订单状态机测试，非法迁移必须失败。
+  - 验收：`OrderStateMachine` 已补 `REFUNDING/PARTIAL_REFUND/REFUND_REJECTED/FULFILLED` 和 `REFUND_APPLY/REFUND_PARTIAL_SUCCESS/REFUND_REJECT/FULFILL`，`OrderStateMachineTest` 已覆盖合法售后迁移和非法重复退款拦截。
 
 - [ ] 增加独立支付流水和退款流水模型。
   - 目标：商城订单状态不再替代支付事实，支付成功、退款申请、退款成功、退款失败独立留痕。

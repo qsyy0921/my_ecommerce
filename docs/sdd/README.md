@@ -14,6 +14,7 @@
 - `ddd-sdd-todo-list.md`：后续 DDD 治理 TODO，约束所有后续改动必须按 SDD 先规格、后设计、再实现。
 - `big-factory-alignment.md`：面向大厂工程实践的差距分析和路线图。
 - `mq-evolution.md`：秒杀消息队列从 Redis Stream 演进 RocketMQ 的职责边界、消息模型、迁移步骤和回滚方案。
+- `order-state-machine.md`：拼团、秒杀和售后状态机说明。
 - `2026-05-30-ddd-boundary-audit.md`：记录本次 AI 辅助开发的 DDD 边界治理、SDD 输入文档、审核结论和验证命令。
 - `2026-05-30-ddd-architecture-test-guard.md`：记录 DDD 架构测试、domain 纯净化测试和核心状态机单测。
 - `2026-05-30-domain-task-executor-port.md`：记录把 `ThreadPoolExecutor` 从 domain 层抽到 `IDomainTaskExecutor` 端口的治理。
@@ -39,6 +40,7 @@
 - `2026-05-30-seckill-repository-delete-port-split.md`：记录删除通用 `ISeckillRepository` / `SeckillRepository`，拆成查询、库存可用性、锁单和维护端口。
 - `2026-05-30-seckill-order-message-port.md`：记录秒杀下单消息投递从锁单适配器拆到 `ISeckillOrderMessagePort`。
 - `2026-05-30-seckill-manual-compensation-audit.md`：记录秒杀人工补偿 Stream 查询、重放和操作审计闭环。
+- `2026-05-30-after-sale-state-machine.md`：记录售后状态机扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截。
 
 ## SDD 工作流
 

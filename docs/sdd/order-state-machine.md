@@ -35,6 +35,13 @@ stateDiagram-v2
     CREATE --> COMPLETE: 支付结算成功
     CREATE --> CLOSE: 未支付退单/超时退单
     COMPLETE --> CLOSE: 已支付退单
+    COMPLETE --> FULFILLED: 履约完成
+    COMPLETE --> REFUNDING: 退款申请
+    FULFILLED --> REFUNDING: 履约后退款申请
+    REFUNDING --> PARTIAL_REFUND: 部分退款成功
+    REFUNDING --> REFUND: 全额退款成功
+    REFUNDING --> REFUND_REJECTED: 拒绝退款
+    PARTIAL_REFUND --> REFUND: 剩余金额退款成功
 ```
 
 状态语义：
@@ -42,6 +49,11 @@ stateDiagram-v2
 - `CREATE(0)`：锁单成功，等待支付。
 - `COMPLETE(1)`：支付完成，参与成团统计。
 - `CLOSE(2)`：退单关闭。
+- `FULFILLED`：已履约，仍可进入售后申请。
+- `REFUNDING`：退款处理中。
+- `PARTIAL_REFUND`：部分退款成功。
+- `REFUND_REJECTED`：退款被拒绝。
+- `REFUND`：售后全额退款成功。
 
 ## 秒杀订单状态
 
@@ -54,6 +66,13 @@ stateDiagram-v2
     CREATE --> COMPLETE: 支付成功
     CREATE --> CLOSE: 超时未支付释放库存
     COMPLETE --> REFUND: 已支付退款
+    COMPLETE --> FULFILLED: 履约完成
+    COMPLETE --> REFUNDING: 退款申请
+    FULFILLED --> REFUNDING: 履约后退款申请
+    REFUNDING --> PARTIAL_REFUND: 部分退款成功
+    REFUNDING --> REFUND: 全额退款成功
+    REFUNDING --> REFUND_REJECTED: 拒绝退款
+    PARTIAL_REFUND --> REFUND: 剩余金额退款成功
 ```
 
 状态语义：
@@ -63,7 +82,18 @@ stateDiagram-v2
 - `COMPLETE(1)` 预留给支付成功后的秒杀订单状态。
 - `CLOSE(2)` 表示超时未支付或取消关闭，释放库存。
 - `REFUND(3)` 预留给已支付退款后释放库存。
+- `FULFILLED` 表示订单已履约，仍可以按售后规则发起退款申请。
+- `REFUNDING` 表示退款申请处理中。
+- `PARTIAL_REFUND` 表示部分退款成功，不能重复走全额退款以外的非法迁移。
+- `REFUND_REJECTED` 表示退款被拒绝，不能直接变成退款成功。
 - `DUPLICATE/FAIL/NOT_FOUND` 是接口结果状态，不直接作为 DB 主状态。
+
+售后非法迁移：
+
+- `CREATE -> REFUNDING` 不允许，未支付订单应走关闭或释放库存。
+- `CLOSE -> REFUNDING` 不允许，已关闭订单不能再发起售后。
+- `REFUND -> REFUND` with `REFUND_SUCCESS` 不允许，用于拦截重复退款。
+- `REFUND_REJECTED -> REFUND` 不允许，拒绝后不能直接退款成功。
 
 ## 库存流水
 

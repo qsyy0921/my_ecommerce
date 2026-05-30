@@ -801,7 +801,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 - 秒杀现在已覆盖支付结算、超时释放、未支付取消和已支付退款库存恢复。
 - 库存流水已经有 `RESERVE/ROLLBACK_TIMEOUT/ROLLBACK_CANCEL/ROLLBACK_REFUND` 审计，支付后退款会把营销订单从 `COMPLETE` 推进到 `REFUND`。
-- 仍要诚实说明：这是交易库存闭环，不是完整售后系统；已发货/已履约后是否重新开放库存、部分退款、拒绝退款、审批流和正式三方退款账单还属于后续售后治理。
+- 仍要诚实说明：领域状态机已补齐履约后退款、部分退款、拒绝退款和重复退款拦截，但运行时售后单、审批流、金额校验和正式三方退款账单还属于后续售后治理。
 
 ### 4. 补偿台治理问题
 
@@ -929,6 +929,7 @@ MQ：
 - 2026-05-30：继续拆分秒杀消息投递，新增 `ISeckillOrderMessagePort` 和 `SeckillOrderMessagePort`，RabbitMQ/Redis Stream/Redis Queue/本地队列投递选择不再挂在 `SeckillOrderLockPort`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-message-port.md`。
 - 2026-05-30：补齐专业 MQ 演进方案，`docs/sdd/mq-evolution.md` 明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、路由策略、Outbox 兜底、迁移步骤和回滚方案，并同步更新 TODO 状态。
 - 2026-05-30：补齐秒杀人工补偿 Stream 审计闭环，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示，并同步更新 TODO 状态。
+- 2026-05-30：扩展售后状态机，新增 `REFUNDING/PARTIAL_REFUND/REFUND_REJECTED/FULFILLED` 和 `REFUND_APPLY/REFUND_PARTIAL_SUCCESS/REFUND_REJECT/FULFILL`，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并同步更新 TODO 状态。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillOrderCommandPort` 和 `SeckillOrderCommandPort`，订单创建、批量落库、支付结算和退款状态更新不再挂在 `ISeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-order-command-port-split.md`。
 - 2026-05-30：继续拆分秒杀仓储，新增 `ISeckillStockFlowPort`、`ISeckillResultCachePort` 和 `SeckillOrderShardRouter`，库存流水、结果缓存和订单表分片路由不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-repository-split.md`。
 - 2026-05-30：继续拆分秒杀 Redis 库存预扣，新增 `ISeckillStockReservationPort` 和 `SeckillStockReservationPort`，Redis 库存桶、Lua 预扣、用户占位、初始化锁和库存释放不再堆在 `SeckillRepository`，并补充 SDD 记录 `docs/sdd/2026-05-30-seckill-stock-reservation-port.md`。
