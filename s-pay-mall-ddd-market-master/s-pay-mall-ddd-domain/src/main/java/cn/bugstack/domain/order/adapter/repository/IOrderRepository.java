@@ -17,11 +17,9 @@ public interface IOrderRepository {
 
     boolean changeOrderPaySuccess(String orderId, Date payTime);
 
-    boolean changeOrderPaySuccess(String orderId, Date payTime, String payChannel, String channelTradeNo, String rawMessage);
-
     boolean changeMarketOrderPaySuccess(String orderId);
 
-    boolean changeMarketOrderPaySuccess(String orderId, Date payTime, String payChannel, String channelTradeNo, String rawMessage);
+    boolean changeMarketOrderPaySuccess(String orderId, Date payTime);
 
     List<String> queryNoPayNotifyOrder();
 

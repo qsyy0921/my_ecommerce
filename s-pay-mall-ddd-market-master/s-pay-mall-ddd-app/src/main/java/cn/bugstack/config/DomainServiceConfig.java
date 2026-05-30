@@ -10,8 +10,10 @@ import cn.bugstack.domain.message.adapter.repository.IMessageRecordRepository;
 import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.order.adapter.event.PaySuccessMessageEvent;
+import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderReconcileRepository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.service.IOrderReconcileService;
@@ -32,8 +34,10 @@ public class DomainServiceConfig {
     public IOrderService orderService(IOrderRepository orderRepository,
                                       IProductPort productPort,
                                       IPayPort payPort,
+                                      IPaymentFlowPort paymentFlowPort,
+                                      IRefundFlowPort refundFlowPort,
                                       IDomainTaskExecutor domainTaskExecutor) {
-        return new OrderService(orderRepository, productPort, payPort, domainTaskExecutor);
+        return new OrderService(orderRepository, productPort, payPort, paymentFlowPort, refundFlowPort, domainTaskExecutor);
     }
 
     @Bean

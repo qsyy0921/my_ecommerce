@@ -76,9 +76,10 @@
   - 目标：覆盖部分退款、拒绝退款、履约后退款、重复退款拦截。
   - 验收：`OrderStateMachine` 已补 `REFUNDING/PARTIAL_REFUND/REFUND_REJECTED/FULFILLED` 和 `REFUND_APPLY/REFUND_PARTIAL_SUCCESS/REFUND_REJECT/FULFILL`，`OrderStateMachineTest` 已覆盖合法售后迁移和非法重复退款拦截。
 
-- [ ] 增加独立支付流水和退款流水模型。
+- [x] 增加独立支付流水和退款流水模型。
   - 目标：商城订单状态不再替代支付事实，支付成功、退款申请、退款成功、退款失败独立留痕。
-  - 验收：对账中心可基于支付流水、退款流水、商城订单和营销订单生成差错单。
+  - 本次完成：新增 `PaymentFlowEntity`、`RefundFlowEntity`、`IPaymentFlowPort`、`IRefundFlowPort`，并把支付/退款流水 DAO 适配收敛到独立端口。
+  - 验收：`OrderService` 记录支付/退款事实，`OrderRepository` 不再依赖支付/退款流水 DAO/PO，对账仓储可基于支付流水、退款流水、商城订单和营销订单生成差错单。
 
 - [ ] 完善对账差错处理闭环。
   - 目标：差错单支持人工确认、重放、忽略、关闭、备注和审计。

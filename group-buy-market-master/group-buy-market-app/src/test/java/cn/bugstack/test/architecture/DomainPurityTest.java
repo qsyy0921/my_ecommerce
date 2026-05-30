@@ -225,6 +225,38 @@ public class DomainPurityTest {
         Assert.assertTrue("Seckill ops controller must operate through manual compensation domain ports only: " + violations, violations.isEmpty());
     }
 
+    @Test
+    public void mallOrderRepositoryShouldNotOwnReconcileOrFlowDetails() throws Exception {
+        Path workspaceRoot = findWorkspaceRoot();
+        Path orderRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderRepository.java");
+        String source = new String(Files.readAllBytes(orderRepository), StandardCharsets.UTF_8);
+
+        List<String> forbiddenSnippets = Arrays.asList(
+                "IOrderReconcileRepository",
+                "IPaymentFlowDao",
+                "IRefundFlowDao",
+                "PaymentFlow",
+                "RefundFlow",
+                "IReconcileCaseDao",
+                "IReconcileOperationLogDao",
+                "IThirdPartyBillDao",
+                "IMqMessageRecordDao",
+                "insertPaymentFlow",
+                "insertRefundFlow",
+                "scanReconcileCases",
+                "replayMqFailure"
+        );
+
+        List<String> violations = new ArrayList<>();
+        for (String snippet : forbiddenSnippets) {
+            if (source.contains(snippet)) {
+                violations.add(snippet);
+            }
+        }
+
+        Assert.assertTrue("Mall OrderRepository must only own order persistence and order events: " + violations, violations.isEmpty());
+    }
+
     private static void collectViolations(Path domainPath, List<String> violations) throws IOException {
         if (!Files.isDirectory(domainPath)) {
             violations.add("missing domain path: " + domainPath);

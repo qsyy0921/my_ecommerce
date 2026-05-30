@@ -1,7 +1,9 @@
 package cn.bugstack.domain.order.service;
 
+import cn.bugstack.domain.order.adapter.port.IPaymentFlowPort;
 import cn.bugstack.domain.order.adapter.port.IPayPort;
 import cn.bugstack.domain.order.adapter.port.IProductPort;
+import cn.bugstack.domain.order.adapter.port.IRefundFlowPort;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.MarketPayDiscountEntity;
@@ -22,10 +24,19 @@ public class OrderService extends AbstractOrderService {
 
     private final IDomainTaskExecutor domainTaskExecutor;
     private final IPayPort payPort;
+    private final IPaymentFlowPort paymentFlowPort;
+    private final IRefundFlowPort refundFlowPort;
 
-    public OrderService(IOrderRepository repository, IProductPort port, IPayPort payPort, IDomainTaskExecutor domainTaskExecutor) {
+    public OrderService(IOrderRepository repository,
+                        IProductPort port,
+                        IPayPort payPort,
+                        IPaymentFlowPort paymentFlowPort,
+                        IRefundFlowPort refundFlowPort,
+                        IDomainTaskExecutor domainTaskExecutor) {
         super(repository, port);
         this.payPort = payPort;
+        this.paymentFlowPort = paymentFlowPort;
+        this.refundFlowPort = refundFlowPort;
         this.domainTaskExecutor = domainTaskExecutor;
     }
 
@@ -82,21 +93,27 @@ public class OrderService extends AbstractOrderService {
         if (null == orderEntity) return;
 
         if (MarketTypeVO.GROUP_BUY_MARKET.getCode().equals(orderEntity.getMarketType())) {
-            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
+            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime);
+            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
             if (changed) {
                 asyncSettlementMarketPayOrder(orderEntity, payTime);
             } else {
                 log.info("payment callback idempotent hit, skip market settlement orderId:{}", orderId);
             }
         } else if (MarketTypeVO.SECKILL_MARKET.getCode().equals(orderEntity.getMarketType())) {
-            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
+            boolean changed = repository.changeMarketOrderPaySuccess(orderId, payTime);
+            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
             if (changed) {
                 asyncSettlementSeckillPayOrder(orderEntity, payTime);
             } else {
                 log.info("payment callback idempotent hit, skip seckill settlement orderId:{}", orderId);
             }
         } else {
-            repository.changeOrderPaySuccess(orderId, payTime, payChannel, channelTradeNo, rawMessage);
+            boolean changed = repository.changeOrderPaySuccess(orderId, payTime);
+            paymentFlowPort.recordPaySuccess(orderEntity, payChannel, channelTradeNo, rawMessage, payTime);
+            if (!changed) {
+                log.info("payment callback idempotent hit, skip normal order message orderId:{}", orderId);
+            }
         }
 
     }
@@ -171,17 +188,25 @@ public class OrderService extends AbstractOrderService {
 
         // 4. 执行退单操作；CREATE 新创建订单，不需要退款
         if (OrderStatusVO.CREATE.getCode().equals(status) || OrderStatusVO.PAY_WAIT.getCode().equals(status)) {
-            return repository.refundOrder(userId, orderId);
+            boolean result = repository.refundOrder(userId, orderId);
+            if (result) {
+                refundFlowPort.recordRefund(orderEntity, "SUCCESS", "refund order");
+            }
+            return result;
         } else if (MarketTypeVO.SECKILL_MARKET.equals(marketTypeVO)) {
             boolean applied = OrderStatusVO.WAIT_REFUND.getCode().equals(status) || repository.refundMarketOrder(userId, orderId);
             if (!applied) {
                 log.warn("秒杀退单申请失败 userId:{} orderId:{}", userId, orderId);
                 return false;
             }
+            if (!OrderStatusVO.WAIT_REFUND.getCode().equals(status)) {
+                refundFlowPort.recordRefund(orderEntity, "APPLY", "market refund order");
+            }
             return refundPayOrder(userId, orderId);
         } else {
             boolean result = repository.refundMarketOrder(userId, orderId);
             if (result) {
+                refundFlowPort.recordRefund(orderEntity, "APPLY", "market refund order");
                 log.info("退单成功 userId:{} orderId:{}", userId, orderId);
             } else {
                 log.warn("退单失败 userId:{} orderId:{}", userId, orderId);
@@ -207,7 +232,10 @@ public class OrderService extends AbstractOrderService {
         if (!payPort.refund(orderEntity.getOrderId(), orderEntity.getPayAmount())) return false;
 
         // 状态变更
-        repository.refundOrder(userId, orderId);
+        boolean result = repository.refundOrder(userId, orderId);
+        if (result) {
+            refundFlowPort.recordRefund(orderEntity, "SUCCESS", "refund order");
+        }
 
         return true;
     }
