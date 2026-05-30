@@ -155,6 +155,7 @@
 - [x] 商城支付/退款流水拆到 `IPaymentFlowPort` / `IRefundFlowPort`，对账仓储拆到独立 `OrderReconcileRepository`，`OrderRepository` 只保留订单持久化和订单事件。
 - [x] 商城商品端口和营销交易端口已拆分，通用 `IProductPort` 已删除，改为 `IProductQueryPort`、`IMarketOrderLockPort`、`IMarketSettlementPort`、`IMarketRefundPort`，`ProductPort` 只保留商品查询职责。
 - [x] 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser` 和 `OrderReconcileEntityMapper`，对账仓储不再直接持有差错单构建、MQ 重放、CSV 解析和实体映射细节。
+- [x] 商城 `OrderReconcileRepository` 内部继续拆出 `ReconcileCaseScanSupport` 和 `ReconcileOperationLogSupport`，对账仓储不再直接持有多源差错扫描、差错 upsert、操作日志截断和操作日志查询细节。
 - [x] 商城 `ReconcileCaseController` 拆出 `ReconcileAdminSupport`，后台入口不再直接持有管理员 token、操作人兜底解析、操作审计写入和导入账单预览截断细节。
 - [x] 商城 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件，Controller 不再直接编排对账服务、审计、批量循环和 JSON 请求快照。
 - [x] 商城对账查询接口新增 `ReconcileCaseResponseDTO` / `ReconcileOperationLogResponseDTO`，`ReconcileCaseController` 不再把 `ReconcileCaseEntity` / `ReconcileOperationLogEntity` 作为 HTTP 响应契约。
@@ -190,6 +191,7 @@
 - [x] `DomainPurityTest` 增加商城对账查询 API DTO 边界守护，避免 domain entity 重新成为 HTTP 响应契约。
 - [x] `DomainPurityTest` 增加商城 `AliPayController` 边界守护，避免支付宝 SDK、验签解析和 DTO 映射回流到 HTTP Controller。
 - [x] `DomainPurityTest` 增强商城 `OrderRepository` 边界守护，避免 PO/Entity builder 和列表映射细节回流。
+- [x] `DomainPurityTest` 增强商城 `OrderReconcileRepository` 边界守护，避免差错扫描源、支付/退款流水端口、MQ 失败扫描和操作日志截断细节回流。
 - [x] `DomainPurityTest` 增加营销 MQ 记录仓储边界守护，避免 `EventPublisher`、routing key 解析、错误截断和 PO/Entity builder 回流到 `MessageRecordRepository`。
 - [x] `DomainPurityTest` 增加营销 RabbitMQ 发布器边界守护，避免 DAO/PO、MessageDigest 和失败台账记录细节回流到 `EventPublisher`。
 - [x] `DomainPurityTest` 增加商城 MQ 记录仓储和 RabbitMQ 发布器边界守护，保持商城/营销两个服务消息可靠性结构同构。

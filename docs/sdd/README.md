@@ -74,6 +74,7 @@
 - `2026-05-31-mall-order-repository-mapper-split.md`：记录商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，复用订单 PO/Entity 映射。
 - `2026-05-30-reconcile-case-closed-loop.md`：记录对账差错单确认、重放、忽略、关闭、备注和审计查询闭环。
 - `2026-05-30-mall-reconcile-repository-internal-split.md`：记录 `OrderReconcileRepository` 内部拆出差错单工厂、MQ 重放、账单 CSV 解析和实体映射组件。
+- `2026-05-31-mall-reconcile-repository-scan-log-support-split.md`：记录商城对账仓储继续拆出差错扫描和操作日志支撑组件。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

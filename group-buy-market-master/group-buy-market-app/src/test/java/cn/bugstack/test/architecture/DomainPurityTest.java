@@ -1487,7 +1487,28 @@ public class DomainPurityTest {
                 "OrderEntity.builder",
                 "ReconcileCase.builder",
                 "ReconcileCaseEntity.builder",
-                "ReconcileOperationLogEntity.builder"
+                "ReconcileOperationLogEntity.builder",
+                "IPaymentFlowPort",
+                "IRefundFlowPort",
+                "IMqMessageRecordDao",
+                "IReconcileOperationLogDao",
+                "PaymentFlowEntity",
+                "RefundFlowEntity",
+                "MqMessageRecord",
+                "dao.po.ReconcileOperationLog",
+                "ReconcileOperationLog.builder",
+                "queryStaleWaitRefundOrderList",
+                "queryStalePayWaitOrderList",
+                "queryFailedMessageList",
+                "queryMissThirdPartyBillList",
+                "queryUnmatchedBillList",
+                "upsertOrderCases",
+                "upsertPaymentFlowMissBillCases",
+                "upsertRefundFlowMissBillCases",
+                "upsertThirdPartyBillMissLocalCases",
+                "isBlank(",
+                "substring(0, 1024)",
+                "substring(0, 512)"
         );
 
         List<String> violations = new ArrayList<>();
@@ -1501,7 +1522,9 @@ public class DomainPurityTest {
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseFactory.java"),
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MqFailureReplaySupport.java"),
                 workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ThirdPartyBillCsvParser.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/OrderReconcileEntityMapper.java")
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/OrderReconcileEntityMapper.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseScanSupport.java"),
+                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileOperationLogSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1509,7 +1532,7 @@ public class DomainPurityTest {
             }
         }
 
-        Assert.assertTrue("Mall OrderReconcileRepository must delegate case construction, MQ replay, CSV parsing and entity mapping details: " + violations, violations.isEmpty());
+        Assert.assertTrue("Mall OrderReconcileRepository must delegate case scanning, operation logs, replay, CSV parsing and mapping details: " + violations, violations.isEmpty());
     }
 
     @Test

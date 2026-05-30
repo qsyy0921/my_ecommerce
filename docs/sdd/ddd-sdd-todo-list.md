@@ -277,6 +277,11 @@
   - 实际拆分：`ReconcileCaseFactory`、`MqFailureReplaySupport`、`ThirdPartyBillCsvParser`、`OrderReconcileEntityMapper`。
   - 验收：`DomainPurityTest` 防止 `EventPublisher`、routing key 解析、CSV 解析、金额/时间解析和 builder 映射回流到对账仓储。
 
+- [x] 拆分商城对账仓储扫描和操作日志支撑。
+  - 目标：避免 `OrderReconcileRepository` 继续承担多源差错扫描、差错 upsert、操作人兜底、请求/结果截断和操作日志查询。
+  - 实际拆分：`ReconcileCaseScanSupport`、`ReconcileOperationLogSupport`。
+  - 验收：`OrderReconcileRepository` 保留对账端口门面；扫描规则和操作日志细节进入支撑组件；架构测试和操作日志支撑单元测试通过。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
