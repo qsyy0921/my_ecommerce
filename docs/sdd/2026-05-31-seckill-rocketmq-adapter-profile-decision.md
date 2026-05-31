@@ -61,7 +61,7 @@
 
 ## TODO List
 
-- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+- [x] P1：补秒杀 Outbox 查询、状态台账和告警。
   - 原因：Outbox 已能重试和人工重放，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门积压和 DEAD 增长告警。
   - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
   - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
@@ -72,11 +72,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 本轮决策认为单机 adapter 不能证明生产能力，且当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 无法证明生产 QPS、堆积恢复和 broker 故障恢复 | 当前只有单机环境 | 有独立 Linux 压测机、多服务实例和独立 MQ 集群 |
-| Outbox 查询台账和告警 | 未开始 | 运维边界 | P1 | 失败消息可重试但不够容易观察 | 本轮先做 RocketMQ adapter 决策 | 开始完善补偿后台或监控告警 |
+| Outbox 查询台账和告警 | 已完成 | 运维边界 | P1 | 已能查询状态明细和数量，并通过指标/告警发现积压与 DEAD 增长 | 已在 `2026-05-31-seckill-outbox-ops-observability.md` 闭环 | 后续只在建设完整运维后台时扩展页面和批量处理 |
 | 八股文档细粒度短板同步 | 进行中 | 面试口径 | P1 | 容易把“不接本机 RocketMQ”误讲成“消息系统没设计” | 需要每轮同步 | 每次新增 MQ adapter 或变更消息链路 |
 
 ## 面试口径
 
 可以这样说：
 
-> 我没有在本机硬接一个 RocketMQ adapter，因为单 broker 只能证明 SDK 能跑，不能证明生产容量。当前项目已经具备端口隔离、稳定 Envelope、Outbox 和专业 MQ key/tag/partition key 契约。下一步如果有真实环境，会按这个契约接 RocketMQ/Kafka/Pulsar；在当前单机条件下，我更优先补 Outbox 查询台账和告警，因为它能真实提升补偿可观测性。
+> 我没有在本机硬接一个 RocketMQ adapter，因为单 broker 只能证明 SDK 能跑，不能证明生产容量。当前项目已经具备端口隔离、稳定 Envelope、Outbox、Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约。下一步如果有真实环境，会按这个契约接 RocketMQ/Kafka/Pulsar；在当前单机条件下，仍然要把真实容量证明作为边界诚实说明。

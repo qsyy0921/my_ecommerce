@@ -91,7 +91,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
 | RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 后续已完成专业 MQ 契约并决策单机暂不实现 adapter | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
-| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先完成 RocketMQ adapter profile 决策，尚未进入运维台账实现 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
+| 秒杀 Outbox 查询、状态台账和告警 | 已完成 | 业务边界 / 运维边界 | P1 | 已补状态查询、状态数量、重试耗时指标和告警 | 本轮已在 `2026-05-31-seckill-outbox-ops-observability.md` 闭环 | 后续只在建设完整运维后台时扩展页面和批量处理 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 
 ## 面试口径

@@ -198,7 +198,7 @@ DEAD -> INIT
 - Redis Stream、Redis Queue、本地队列和 RabbitMQ 的投递选择集中在基础设施 adapter。
 - `SeckillOrderCreateMessageEntity` 已提供独立消息 Envelope，消费端兼容历史裸订单 JSON。
 - `SeckillOrderCreateMessageContractTest` 已验证 schema、messageId、routeKey、message key、event tag、partition key 和序列化兼容性。
-- `seckill_order_outbox` 已落地代码端口、DAO、自动重试任务和人工重放入口。
+- `seckill_order_outbox` 已落地代码端口、DAO、自动重试任务、人工重放入口、按状态查询、状态计数指标和告警规则。
 - `SeckillOrderOutboxRetrySupportUnitTest` 已验证投递成功、转 dead 和人工重放 dead 记录。
 
 未具备：
@@ -206,7 +206,7 @@ DEAD -> INIT
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
 - 没有 RocketMQ consumer group、DLQ、lag、重试和真实 broker 消费幂等验证。
 
-因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope、Outbox 和专业 MQ key/tag/partition key 契约已经完成；本轮已评估 RocketMQ/Kafka adapter 最小 profile，结论是当前单机环境暂不接入具体 MQ 客户端。后续应先补 Outbox 查询台账和告警；等有真实 MQ 环境或明确演示需求时，再实现 adapter 并补真实 broker 下的 consumer group、DLQ、lag 和堆积恢复验证。
+因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope、Outbox、专业 MQ key/tag/partition key 契约、Outbox 查询台账和告警已经完成；本轮仍不在当前单机环境接入具体 MQ 客户端。后续应等有真实 MQ 环境或明确演示需求时，再实现 adapter 并补真实 broker 下的 consumer group、DLQ、lag 和堆积恢复验证。
 
 ## 面试说法
 

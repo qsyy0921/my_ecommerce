@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * Reliable outbox adapter for seckill order creation messages.
@@ -49,6 +50,16 @@ public class SeckillOrderOutboxPort implements ISeckillOrderOutboxPort {
     @Override
     public int retryManualMessages(int limit) {
         return retrySupport.retryManualMessages(limit);
+    }
+
+    @Override
+    public List<SeckillOrderOutboxEntity> queryMessages(Integer status, int limit) {
+        return seckillOrderOutboxMapper.toEntityList(seckillOrderOutboxDao.queryMessageList(status, limit));
+    }
+
+    @Override
+    public int countMessages(Integer status) {
+        return seckillOrderOutboxDao.countByStatus(status);
     }
 
 }

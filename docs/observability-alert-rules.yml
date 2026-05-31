@@ -55,6 +55,33 @@ groups:
           summary: "seckill stream has manual compensation messages"
           description: "Messages have been isolated to the manual compensation stream."
 
+      - alert: SeckillOrderOutboxPendingHigh
+        expr: sum(market_seckill_order_outbox_messages{job="group-buy-market",status=~"init|failed"}) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill order outbox pending is high"
+          description: "seckill_order_outbox INIT/FAILED backlog is above 100 for 5 minutes."
+
+      - alert: SeckillOrderOutboxDeadIncrease
+        expr: delta(market_seckill_order_outbox_messages{job="group-buy-market",status="dead"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "seckill order outbox dead records increased"
+          description: "seckill_order_outbox DEAD records increased and need manual replay or reconciliation."
+
+      - alert: SeckillOrderOutboxRetrySlow
+        expr: histogram_quantile(0.95, sum(rate(market_seckill_order_outbox_retry_seconds_bucket{job="group-buy-market"}[5m])) by (le,mode)) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "seckill order outbox retry is slow"
+          description: "P95 seckill order outbox retry latency is above 1 second."
+
       - alert: SeckillOrderBatchInsertSlow
         expr: histogram_quantile(0.95, sum(rate(seckill_order_batch_insert_seconds_bucket{job="group-buy-market"}[5m])) by (le)) > 0.5
         for: 3m

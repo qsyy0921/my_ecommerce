@@ -84,7 +84,7 @@ producer adapter 不允许：
   - 结论：后续文档已决策本机暂不实现，见 `2026-05-31-seckill-rocketmq-adapter-profile-decision.md`。
   - 验收：明确 adapter 触发条件，避免把单机 profile 包装成生产容量证明。
 
-- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+- [x] P1：补秒杀 Outbox 查询、状态台账和告警。
   - 原因：Outbox 有重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细。
   - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
   - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
@@ -95,7 +95,7 @@ producer adapter 不允许：
 | --- | --- | --- | --- | --- | --- | --- |
 | RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 后续文档已决策单机 adapter 不能证明生产能力，当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
 | 专业 MQ 真实容量证明 | 已阻塞 | 生产边界 | P0 | 无法证明生产 QPS、堆积恢复和 broker 故障恢复 | 当前只有单机环境 | 有独立 Linux 压测机、多服务实例和独立 MQ 集群 |
-| Outbox 查询台账和告警 | 未开始 | 运维边界 | P1 | 失败消息可重试但不够容易观察 | 本轮先做消息契约，不扩大运维界面 | 开始完善补偿后台或监控告警 |
+| Outbox 查询台账和告警 | 已完成 | 运维边界 | P1 | 已能查询状态明细和数量，并通过指标/告警发现积压与 DEAD 增长 | 已在 `2026-05-31-seckill-outbox-ops-observability.md` 闭环 | 后续只在建设完整运维后台时扩展页面和批量处理 |
 | 八股文档细粒度短板同步 | 进行中 | 面试口径 | P1 | 容易把“契约已固化”误讲成“专业 MQ 已完成” | 需要每轮同步 | 每次新增 MQ adapter 或变更消息链路 |
 
 ## 面试口径

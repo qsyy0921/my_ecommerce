@@ -76,4 +76,27 @@
         limit #{limit}
     </select>
 
+    <select id="queryMessageList" resultMap="dataMap">
+        select id, message_id, route_key, topic, message_body, status, retry_count,
+               next_retry_time, error_message, trace_id, create_time, update_time
+        from seckill_order_outbox
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        order by update_time desc, id desc
+        limit #{limit}
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        select count(1)
+        from seckill_order_outbox
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+    </select>
+
 </mapper>

@@ -30,21 +30,21 @@
 - `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
 - `docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
 - `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`
+- `docs/sdd/2026-05-31-seckill-outbox-ops-observability.md`
 - `docs/sdd/tasks.md`
 - `docs/sdd/ddd-sdd-todo-list.md`
 - `docs/interview-baguwen.md`
 
 ## 本轮刷新结论
 
-Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补齐秒杀订单 Outbox 落库、即时投递、失败重试、DEAD 隔离、定时任务、人工重放入口和单元测试。专业 MQ adapter 也已经先补了 producer/consumer 契约设计和可执行消息契约测试。本轮进一步评估了是否实现 RocketMQ adapter 最小 profile，结论是：当前单机环境不接入具体 MQ 客户端，避免把“能启动”包装成“生产化完成”。
+Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补齐秒杀订单 Outbox 落库、即时投递、失败重试、DEAD 隔离、定时任务、人工重放入口和单元测试。专业 MQ adapter 也已经先补了 producer/consumer 契约设计和可执行消息契约测试。上一轮进一步评估了是否实现 RocketMQ adapter 最小 profile，结论是：当前单机环境不接入具体 MQ 客户端，避免把“能启动”包装成“生产化完成”。
 
-因此当前第 1 风险不再是“有没有 Outbox”，而是更具体的三件事：
+本轮补齐 Outbox 查询台账、状态数量指标、重试耗时指标和告警规则。因此当前第 1 风险不再是“有没有 Outbox”或“Outbox 能不能看见”，而是更具体的两件事：
 
 1. RocketMQ/Kafka/Pulsar adapter 实现保留为生产演进项，本机暂不处理。
-2. Outbox 有重试闭环，但 INIT/FAILED/DEAD 查询台账、指标和告警还没有运维化。
-3. 本机环境仍不能证明生产容量。
+2. 本机环境仍不能证明生产容量。
 
-本轮以契约先行为边界，只补消息 Envelope 的稳定 key/tag/partition key 方法、契约测试和 SDD/面试口径，不接入具体 MQ 客户端。
+本轮不接入具体 MQ 客户端，不改锁单主流程，只补 Outbox 运维可观测性闭环。
 
 ## 当前前 5 个残留风险
 
@@ -52,12 +52,12 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 
 - 类型：生产边界 / 代码风险
 - 优先级：P0
-- 当前状态：Envelope、Outbox 代码闭环和专业 MQ key/tag/partition key 契约已补；本轮决策暂不在单机环境接 RocketMQ adapter；真实容量证明仍未完成
-- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦；秒杀订单创建消息已经补齐独立 Envelope、专业 MQ key/tag/partition key 契约测试；`seckill_order_outbox` 已有代码端口、DAO、自动重试任务和人工重放入口。但主方案仍是 Redis Stream，缺少 RocketMQ/Kafka adapter、broker 堆积恢复验证和真实生产容量证明。
+- 当前状态：Envelope、Outbox 代码闭环、Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约已补；当前决策暂不在单机环境接 RocketMQ adapter；真实容量证明仍未完成
+- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦；秒杀订单创建消息已经补齐独立 Envelope、专业 MQ key/tag/partition key 契约测试；`seckill_order_outbox` 已有代码端口、DAO、自动重试任务、人工重放入口、状态查询、状态计数指标、重试耗时指标和告警规则。但主方案仍是 Redis Stream，缺少 RocketMQ/Kafka adapter、broker 堆积恢复验证和真实生产容量证明。
 - 不完成的影响：面试或评审时如果把本机 QPS 和 Redis Stream 说成大促终局方案，会明显夸大系统成熟度。
 - 当前为什么还没做：缺少真实多机环境、独立压测机和专业 MQ 集群；本机 Docker 环境只能做趋势验证。贸然接一个未验证 RocketMQ adapter 只会把“可启动”误包装成“生产化完成”。
 - 后续触发条件：有 Linux 多实例环境，或明确要把秒杀下单队列从 Redis Stream 演进到 RocketMQ/Kafka/Pulsar。
-- 下一步建议：优先补 Outbox 查询台账和告警；RocketMQ/Kafka/Pulsar adapter 等有真实 MQ 环境或明确演示需求时再做。
+- 下一步建议：RocketMQ/Kafka/Pulsar adapter 等有真实 MQ 环境或明确演示需求时再做；当前单机环境下下一轮更适合审计秒杀服务本地技术决策边界，避免把本地 `Semaphore` 和订单号生成误讲成生产能力。
 
 ### 2. Redis 通用基础设施接口仍然过宽
 
@@ -205,12 +205,17 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
   - 提交：`77761c0`
 
+- [x] 补齐秒杀订单 Outbox 查询台账、指标和告警。
+  - 文件：`ISeckillOrderOutboxPort.java`、`ISeckillOrderOutboxService.java`、`SeckillOrderOutboxService.java`、`ISeckillOrderOutboxDao.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxMetrics.java`、`MqOpsController.java`、`MqOpsSupport.java`、`MqOpsResponseAssembler.java`、`docs/observability-alert-rules.yml`、`docs/sdd/2026-05-31-seckill-outbox-ops-observability.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
+  - 提交：待提交
+
 ## TODO List
 
-- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
-  - 原因：当前 Outbox 有自动重试和人工重放，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门的 Outbox 积压和 DEAD 增长告警。
-  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则；不扩大到完整前端后台。
-  - 验收：能按状态查询 Outbox 明细，指标能暴露 INIT/FAILED/DEAD 数量和重试耗时，告警规则能发现 DEAD 增长。
+- [ ] P1：审计 `SeckillService` 本地技术决策边界。
+  - 原因：Outbox 运维可观测性已经补齐，下一类容易被误读为生产能力的是秒杀领域服务中的本地 `Semaphore` 和本地订单号生成。
+  - 范围：先审计 `SeckillService`、订单号生成、入口限流和文档口径；只有发现真实代码风险才修改。
+  - 验收：形成 SDD 审计结论，明确哪些是演示/单机能力，哪些需要生产化演进。
 
 - [ ] P1：继续同步八股文和现态清单的细粒度短板。
   - 原因：专业 MQ、Outbox、生产容量这些边界容易被讲成“已经全部完成”，需要持续把工程现态和面试说法保持一致。
@@ -222,11 +227,10 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
 | RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 本轮决策认为单机 adapter 不能证明生产能力，且当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
-| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先完成 RocketMQ adapter profile 决策，尚未进入运维台账实现 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
-| `SeckillService` 本地技术决策治理 | 暂不处理 | 代码风险 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 现阶段没有新增秒杀发布范围 | 要做秒杀生产化或订单号治理 |
+| `SeckillService` 本地技术决策治理 | 未开始 | 代码风险 / 面试口径 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 本轮只补 Outbox 运维可观测性，避免扩大范围 | 下一轮继续做秒杀生产化边界审计 |
 | 商城 `AbstractOrderService` 营销类型分支治理 | 暂不处理 | 代码风险 / 业务边界 | P1 | 新增营销类型时 if/else 会继续增长 | 当前只有拼团和秒杀，拆分收益有限 | 新增第三种营销类型 |
 | 对账后台权限、审批和 SLA | 未开始 | 业务边界 | P1 | 对账中心只能算最小闭环 | 属于新产品范围 | 明确建设运营后台 |
 | 完整售后体系 | 未开始 | 业务边界 | P1 | 不能包装成完整电商售后 | 会引入部分退款、拒绝退款、履约后退款等新模型 | 明确建设售后子系统 |
@@ -254,6 +258,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - 当前现态已包含秒杀专业 MQ 最小可切换边界审计。
 - 当前现态已包含秒杀订单创建消息 Envelope 和专业 MQ key/tag/partition key 契约实现和测试。
 - 当前现态已包含秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
+- 当前现态已包含秒杀订单 Outbox 查询台账、状态数量指标、重试耗时指标和 Prometheus 告警。
 - 当前现态已包含 RocketMQ adapter 最小 profile 的暂不实现决策。
 - 当前现态已同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
 - 当前现态已同步专业 MQ 和 Outbox 面试口径到 `interview-baguwen.md`。

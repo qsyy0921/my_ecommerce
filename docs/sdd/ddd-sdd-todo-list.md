@@ -197,10 +197,15 @@
   - 本次结论：本轮暂不实现 RocketMQ adapter；单机 adapter 只能证明 SDK 可用，不能证明生产容量、堆积恢复和 broker 故障恢复。
   - 验收：新增 `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`，后续有真实 MQ 环境或明确演示需求时再接具体 adapter。
 
-- [ ] 补秒杀 Outbox 查询、状态台账和告警。
-  - 目标：在已有自动重试和人工重放基础上，提供 INIT/FAILED/DEAD 查询视图、pending/dead 指标和告警规则。
-  - 建议范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
-  - 验收：补偿台能看到 Outbox 明细，告警能发现 Outbox 积压和 DEAD 增长。
+- [x] 补秒杀 Outbox 查询、状态台账和告警。
+  - 目标：在已有自动重试和人工重放基础上，提供 INIT/FAILED/DEAD 查询视图、状态数量指标和告警规则。
+  - 本次完成：新增 Outbox 明细查询接口、状态数量接口、API DTO、状态数量 Gauge、重试耗时 Timer 和 Prometheus 告警。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-outbox-ops-observability.md` 和 `SeckillOrderOutboxServiceUnitTest`，当前 `seckill` profile 通过 28 个测试。
+
+- [ ] 审计 `SeckillService` 本地技术决策边界。
+  - 目标：确认本地 `Semaphore`、本地订单号生成和入口技术决策是否会被误包装成生产能力。
+  - 建议范围：先审计 `SeckillService`、订单号生成、入口限流和文档口径；只有发现真实代码风险才修改。
+  - 验收：形成 SDD 审计结论，明确哪些是演示/单机能力，哪些需要生产化演进。
 
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。
@@ -380,7 +385,7 @@
 
 - [x] 收敛当前前 5 个残留风险并维护 Done/TODO/Open Items。
   - 目标：把最近几轮分散的审计结论收敛成统一风险排序，并显式维护已完成、下一步、所有未完成任务三类清单。
-  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 和专业 MQ key/tag/partition key 契约完成后，第 1 风险已进一步收敛为具体 MQ adapter 实现、Outbox 状态台账/告警和真实容量证明。
+  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约完成后，第 1 风险已进一步收敛为具体 MQ adapter 实现、秒杀本地技术决策边界和真实容量证明。
   - 验收：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，并同步 `README.md`、`tasks.md`、`interview-baguwen.md`。
 
 - [x] 补齐拼团锁单等待超时语义测试。

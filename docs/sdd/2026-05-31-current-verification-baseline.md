@@ -87,23 +87,27 @@
   - 验收：新增 `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`。
   - 提交：`77761c0`
 
+- [x] 补秒杀 Outbox 查询、状态台账和告警。
+  - 结果：Outbox 支持按状态查询明细、查询 `INIT/SENT/FAILED/DEAD` 数量，暴露状态数量 Gauge 和重试耗时 Timer，并补 Prometheus 告警。
+  - 验收：`seckill` profile 通过 28 个测试，`docs/observability-alert-rules.yml` 包含 Outbox pending、dead 增长和重试慢告警。
+  - 提交：待提交
+
 ## TODO List
 
-- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
-  - 原因：Outbox 已经具备投递和重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门积压和 DEAD 增长告警。
-  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
-  - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
+- [ ] P1：审计 `SeckillService` 本地技术决策边界。
+  - 原因：Outbox 运维可观测性已经补齐，下一类容易被误读为生产能力的是秒杀领域服务中的本地 `Semaphore` 和本地订单号生成。
+  - 范围：先审计 `SeckillService`、订单号生成、入口限流和文档口径；只有发现真实代码风险才修改。
+  - 验收：形成 SDD 审计结论，明确哪些是演示/单机能力，哪些需要生产化演进。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
 | RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 本轮决策认为单机 adapter 不能证明生产能力，且当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
-| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先完成 RocketMQ adapter profile 决策，尚未进入运维台账实现 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
-| `SeckillService` 本地技术决策治理 | 暂不处理 | 代码风险 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 现阶段没有新增秒杀发布范围 | 要做秒杀生产化或订单号治理 |
+| `SeckillService` 本地技术决策治理 | 未开始 | 代码风险 / 面试口径 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 本轮只补 Outbox 运维可观测性，避免扩大范围 | 下一轮继续做秒杀生产化边界审计 |
 | 商城 `AbstractOrderService` 营销类型分支治理 | 暂不处理 | 代码风险 / 业务边界 | P1 | 新增营销类型时 if/else 会继续增长 | 当前只有拼团和秒杀，拆分收益有限 | 新增第三种营销类型 |
 | 对账后台权限、审批和 SLA | 未开始 | 业务边界 | P1 | 对账中心只能算最小闭环 | 属于新产品范围 | 明确建设运营后台 |
 | 完整售后体系 | 未开始 | 业务边界 | P1 | 不能包装成完整电商售后 | 会引入部分退款、拒绝退款、履约后退款等新模型 | 明确建设售后子系统 |
@@ -220,7 +224,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\group_buy_market
-& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
+& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
 ```
 
 ### L6 商城支付和对账变更
@@ -266,6 +270,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 ## 本轮判断
 
-当前秒杀专业 MQ 演进口径已经更新：Envelope、Outbox 代码闭环和专业 MQ key/tag/partition key 契约已完成；RocketMQ adapter 最小 profile 本轮决策暂不实现。下一步风险收敛到 Outbox 状态台账/告警和真实容量证明。因此需要持续同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
+当前秒杀专业 MQ 演进口径已经更新：Envelope、Outbox 代码闭环、Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约已完成；RocketMQ adapter 最小 profile 当前决策暂不实现。下一步风险收敛到 `SeckillService` 本地技术决策边界和真实容量证明。因此需要持续同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
 
 当前权威清单仍以 `2026-05-31-current-top-risk-map-and-open-items.md` 为准；本文件提供可复制 Prompt 和验证命令基线。

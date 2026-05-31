@@ -2,6 +2,8 @@ package cn.bugstack.trigger.http;
 
 import cn.bugstack.api.dto.MarkMqMessageHandledRequestDTO;
 import cn.bugstack.api.dto.MqFailedMessageResponseDTO;
+import cn.bugstack.api.dto.SeckillOrderOutboxResponseDTO;
+import cn.bugstack.api.dto.SeckillOrderOutboxStatusCountResponseDTO;
 import cn.bugstack.api.response.Response;
 import cn.bugstack.trigger.support.MqOpsSupport;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -46,6 +48,18 @@ public class MqOpsController {
                                                      @RequestHeader(value = "x-admin-operator", required = false) String operator,
                                                      @RequestParam(required = false, defaultValue = "20") Integer limit) {
         return mqOpsSupport.retrySeckillOrderOutbox(token, operator, limit);
+    }
+
+    @RequestMapping(value = "seckill_order_outbox_messages", method = RequestMethod.GET)
+    public Response<List<SeckillOrderOutboxResponseDTO>> seckillOrderOutboxMessages(@RequestHeader(value = "x-admin-token", required = false) String token,
+                                                                                    @RequestParam(required = false) Integer status,
+                                                                                    @RequestParam(required = false, defaultValue = "20") Integer limit) {
+        return mqOpsSupport.seckillOrderOutboxMessages(token, status, limit);
+    }
+
+    @RequestMapping(value = "seckill_order_outbox_status_counts", method = RequestMethod.GET)
+    public Response<List<SeckillOrderOutboxStatusCountResponseDTO>> seckillOrderOutboxStatusCounts(@RequestHeader(value = "x-admin-token", required = false) String token) {
+        return mqOpsSupport.seckillOrderOutboxStatusCounts(token);
     }
 
 }

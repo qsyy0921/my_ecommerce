@@ -27,4 +27,9 @@ public interface ISeckillOrderOutboxDao {
 
     List<SeckillOrderOutbox> queryManualRetryMessageList(@Param("limit") Integer limit);
 
+    List<SeckillOrderOutbox> queryMessageList(@Param("status") Integer status,
+                                              @Param("limit") Integer limit);
+
+    int countByStatus(@Param("status") Integer status);
+
 }

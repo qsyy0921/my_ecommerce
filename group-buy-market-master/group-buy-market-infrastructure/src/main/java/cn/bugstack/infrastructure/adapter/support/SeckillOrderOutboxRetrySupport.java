@@ -3,7 +3,9 @@ package cn.bugstack.infrastructure.adapter.support;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderOutboxEntity;
 import cn.bugstack.infrastructure.dao.ISeckillOrderOutboxDao;
 import cn.bugstack.infrastructure.dao.po.SeckillOrderOutbox;
+import cn.bugstack.infrastructure.event.SeckillOrderOutboxMetrics;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,15 +27,33 @@ public class SeckillOrderOutboxRetrySupport {
     private ISeckillOrderOutboxDao seckillOrderOutboxDao;
     @Resource
     private SeckillOrderMessagePublisherSupport messagePublisherSupport;
+    @Autowired(required = false)
+    private SeckillOrderOutboxMetrics seckillOrderOutboxMetrics;
 
     public int retryDueMessages(int limit) {
-        List<SeckillOrderOutbox> records = seckillOrderOutboxDao.queryDueMessageList(limit);
-        return retryRecords(records);
+        long startNanos = System.nanoTime();
+        try {
+            List<SeckillOrderOutbox> records = seckillOrderOutboxDao.queryDueMessageList(limit);
+            int count = retryRecords(records);
+            recordRetry("auto", "success", startNanos);
+            return count;
+        } catch (RuntimeException e) {
+            recordRetry("auto", "failed", startNanos);
+            throw e;
+        }
     }
 
     public int retryManualMessages(int limit) {
-        List<SeckillOrderOutbox> records = seckillOrderOutboxDao.queryManualRetryMessageList(limit);
-        return retryRecords(records);
+        long startNanos = System.nanoTime();
+        try {
+            List<SeckillOrderOutbox> records = seckillOrderOutboxDao.queryManualRetryMessageList(limit);
+            int count = retryRecords(records);
+            recordRetry("manual", "success", startNanos);
+            return count;
+        } catch (RuntimeException e) {
+            recordRetry("manual", "failed", startNanos);
+            throw e;
+        }
     }
 
     private int retryRecords(List<SeckillOrderOutbox> records) {
@@ -73,6 +93,12 @@ public class SeckillOrderOutboxRetrySupport {
 
     public int deadStatusAfterFailure(int retryCountBeforeFailure) {
         return SeckillOrderOutboxEntity.failedStatus(retryCountBeforeFailure + 1, Math.max(1, maxRetry));
+    }
+
+    private void recordRetry(String mode, String outcome, long startNanos) {
+        if (null != seckillOrderOutboxMetrics) {
+            seckillOrderOutboxMetrics.recordRetry(mode, outcome, System.nanoTime() - startNanos);
+        }
     }
 
 }

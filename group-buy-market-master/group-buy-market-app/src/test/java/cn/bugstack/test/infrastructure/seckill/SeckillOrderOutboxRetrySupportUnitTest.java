@@ -145,6 +145,16 @@ public class SeckillOrderOutboxRetrySupportUnitTest {
         public List<SeckillOrderOutbox> queryManualRetryMessageList(Integer limit) {
             return Collections.unmodifiableList(records);
         }
+
+        @Override
+        public List<SeckillOrderOutbox> queryMessageList(Integer status, Integer limit) {
+            return Collections.unmodifiableList(records);
+        }
+
+        @Override
+        public int countByStatus(Integer status) {
+            return records.size();
+        }
     }
 
 }

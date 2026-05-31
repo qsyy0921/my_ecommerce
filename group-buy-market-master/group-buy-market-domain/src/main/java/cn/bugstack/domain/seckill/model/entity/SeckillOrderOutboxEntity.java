@@ -50,4 +50,30 @@ public class SeckillOrderOutboxEntity {
         return retryCountAfterFailure >= maxRetry ? STATUS_DEAD : STATUS_FAILED;
     }
 
+    public static boolean validStatus(Integer status) {
+        return null == status
+                || STATUS_INIT == status
+                || STATUS_SENT == status
+                || STATUS_FAILED == status
+                || STATUS_DEAD == status;
+    }
+
+    public static String statusName(Integer status) {
+        if (null == status) {
+            return "all";
+        }
+        switch (status) {
+            case STATUS_INIT:
+                return "init";
+            case STATUS_SENT:
+                return "sent";
+            case STATUS_FAILED:
+                return "failed";
+            case STATUS_DEAD:
+                return "dead";
+            default:
+                return "unknown";
+        }
+    }
+
 }

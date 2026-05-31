@@ -2,8 +2,11 @@ package cn.bugstack.trigger.support;
 
 import cn.bugstack.api.dto.MarkMqMessageHandledRequestDTO;
 import cn.bugstack.api.dto.MqFailedMessageResponseDTO;
+import cn.bugstack.api.dto.SeckillOrderOutboxResponseDTO;
+import cn.bugstack.api.dto.SeckillOrderOutboxStatusCountResponseDTO;
 import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.message.model.entity.MessageRecordEntity;
+import cn.bugstack.domain.seckill.model.entity.SeckillOrderOutboxEntity;
 import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.seckill.service.ISeckillOrderOutboxService;
 import cn.bugstack.types.enums.ResponseCode;
@@ -69,6 +72,28 @@ public class MqOpsSupport {
         log.warn("seckill order outbox manual retry operator:{} count:{}",
                 adminSupport.operator(operator), count);
         return success(count);
+    }
+
+    public Response<List<SeckillOrderOutboxResponseDTO>> seckillOrderOutboxMessages(String token, Integer status, Integer limit) {
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.denied();
+        }
+        if (!SeckillOrderOutboxEntity.validStatus(status)) {
+            return illegalParameter();
+        }
+        return success(responseAssembler.toSeckillOrderOutboxResponses(
+                seckillOrderOutboxService.queryMessages(status, null == limit ? 20 : limit)));
+    }
+
+    public Response<List<SeckillOrderOutboxStatusCountResponseDTO>> seckillOrderOutboxStatusCounts(String token) {
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.denied();
+        }
+        return success(responseAssembler.toSeckillOrderOutboxStatusCounts(
+                seckillOrderOutboxService.countMessages(SeckillOrderOutboxEntity.STATUS_INIT),
+                seckillOrderOutboxService.countMessages(SeckillOrderOutboxEntity.STATUS_SENT),
+                seckillOrderOutboxService.countMessages(SeckillOrderOutboxEntity.STATUS_FAILED),
+                seckillOrderOutboxService.countMessages(SeckillOrderOutboxEntity.STATUS_DEAD)));
     }
 
     private <T> Response<T> success(T data) {
