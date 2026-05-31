@@ -79,6 +79,7 @@
 - `2026-05-31-mall-reconcile-replay-processor-split.md`：记录商城对账服务拆出差错单自动重放和营销结算补偿处理器。
 - `2026-05-31-current-ddd-business-gap-audit.md`：记录当前剩余 DDD 架构问题、业务完备度问题和本机环境边界，不再继续机械拆分类。
 - `2026-05-31-code-hotspot-audit.md`：记录当前最容易继续膨胀的代码热点，包括秒杀/拼团入口支撑、Redis 公共适配层和商城/秒杀领域服务中的技术决策残留。
+- `2026-05-31-mall-ops-and-duplicate-audit.md`：记录商城后台运营 support 热点和两个服务中 `JobExecutionRecorder` 的重复实现问题。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

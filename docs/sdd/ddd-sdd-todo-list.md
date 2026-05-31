@@ -303,6 +303,11 @@
   - 本次结论：`GroupBuyLockOrderSupport`、`SeckillLockOrderSupport` 属于入口编排热点；`IRedisService` / `RedissonService` 属于基础设施大接口；`AbstractOrderService`、`SeckillService` 仍保留少量营销分支和本地技术决策。
   - 验收：新增 `docs/sdd/2026-05-31-code-hotspot-audit.md`，后续新增需求优先检查这些热点是否再次跨越职责边界。
 
+- [x] 审计商城后台运营热点和跨服务重复实现。
+  - 目标：识别大拆分完成后新的维护风险点，包括后台 support 聚合和两个服务中的重复组件。
+  - 本次结论：`ReconcileCaseOperationSupport` 已成为商城后台运营动作热点；`JobExecutionRecorder` 在商城和营销两个服务中出现高相似重复实现。
+  - 验收：新增 `docs/sdd/2026-05-31-mall-ops-and-duplicate-audit.md`，后续只有在后台运营能力继续扩展或 job 审计能力继续演进时，才考虑增量抽象。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
