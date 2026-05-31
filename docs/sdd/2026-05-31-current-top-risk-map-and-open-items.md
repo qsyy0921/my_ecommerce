@@ -208,7 +208,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - [x] 补齐秒杀订单 Outbox 查询台账、指标和告警。
   - 文件：`ISeckillOrderOutboxPort.java`、`ISeckillOrderOutboxService.java`、`SeckillOrderOutboxService.java`、`ISeckillOrderOutboxDao.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxMetrics.java`、`MqOpsController.java`、`MqOpsSupport.java`、`MqOpsResponseAssembler.java`、`docs/observability-alert-rules.yml`、`docs/sdd/2026-05-31-seckill-outbox-ops-observability.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 ## TODO List
 

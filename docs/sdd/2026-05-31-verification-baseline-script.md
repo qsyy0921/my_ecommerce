@@ -74,7 +74,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 - [x] 把秒杀 Outbox 运维查询服务测试纳入 `seckill` profile。
   - 文件：`scripts/verify-current-baseline.ps1`、`SeckillOrderOutboxServiceUnitTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 ## TODO List
 

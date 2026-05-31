@@ -37,17 +37,17 @@
 - [x] 补秒杀 Outbox 按状态查询和状态数量台账。
   - 文件：`ISeckillOrderOutboxPort.java`、`ISeckillOrderOutboxService.java`、`SeckillOrderOutboxService.java`、`ISeckillOrderOutboxDao.java`、`seckill_order_outbox_mapper.xml`、`MqOpsController.java`、`MqOpsSupport.java`、`MqOpsResponseAssembler.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 - [x] 补秒杀 Outbox 指标和 Prometheus 告警。
   - 文件：`SeckillOrderOutboxMetrics.java`、`SeckillOrderOutboxRetrySupport.java`、`docs/observability-alert-rules.yml`
   - 验证：`git diff --check`
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 - [x] 补秒杀 Outbox 运维查询服务单测。
   - 文件：`SeckillOrderOutboxServiceUnitTest.java`、`scripts/verify-current-baseline.ps1`
   - 验证：`seckill` profile 通过 28 个测试
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 ## TODO List
 

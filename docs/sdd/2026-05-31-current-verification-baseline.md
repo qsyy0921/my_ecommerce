@@ -90,7 +90,7 @@
 - [x] 补秒杀 Outbox 查询、状态台账和告警。
   - 结果：Outbox 支持按状态查询明细、查询 `INIT/SENT/FAILED/DEAD` 数量，暴露状态数量 Gauge 和重试耗时 Timer，并补 Prometheus 告警。
   - 验收：`seckill` profile 通过 28 个测试，`docs/observability-alert-rules.yml` 包含 Outbox pending、dead 增长和重试慢告警。
-  - 提交：待提交
+  - 提交：`6f59a58`
 
 ## TODO List
 
