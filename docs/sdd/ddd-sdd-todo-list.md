@@ -308,6 +308,11 @@
   - 本次结论：`ReconcileCaseOperationSupport` 已成为商城后台运营动作热点；`JobExecutionRecorder` 在商城和营销两个服务中出现高相似重复实现。
   - 验收：新增 `docs/sdd/2026-05-31-mall-ops-and-duplicate-audit.md`，后续只有在后台运营能力继续扩展或 job 审计能力继续演进时，才考虑增量抽象。
 
+- [x] 审计模型层和装配层剩余热点。
+  - 目标：在大仓储、大 Controller 和消息端口拆分完成后，继续确认模型协议、首页试算节点、状态迁移词典、API DTO 和 app 装配类里是否还存在值得持续观察的腐化点。
+  - 本次结论：`GroupBuyActivityDiscountVO` 仍保留 `tagScope` 字符串协议解析，是模型层最真实的残留问题；`MarketNode` 仍保留显式异步编排，需要持续观察；`OrderStateTransitionEntity`、`TradeRuleConfig`、`GoodsMarketResponseDTO` 当前属于共享词典、装配热点和展示逻辑观察点，但还不值得继续机械拆分。
+  - 验收：新增 `docs/sdd/2026-05-31-model-and-assembly-hotspot-audit.md`，并同步 SDD 索引和任务清单，后续新增需求优先复查这些类是否跨越当前边界。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

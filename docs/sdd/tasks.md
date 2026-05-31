@@ -100,6 +100,7 @@
 - [x] 形成“当前剩余 DDD 架构问题 + 业务问题 + 本机环境边界”统一审计结论，避免继续做低收益机械拆分。
 - [x] 形成“当前代码热点”专项审计结论，识别入口支撑类、Redis 公共适配层和少量领域服务中的技术决策残留，先审计、后观察，不急于继续拆分。
 - [x] 形成“商城后台运营热点 + 跨服务重复实现”专项审计结论，识别 `ReconcileCaseOperationSupport` 和 `JobExecutionRecorder` 这类后续最可能继续带来维护成本的点。
+- [x] 形成“模型层 + 装配层热点”专项审计结论，识别 `GroupBuyActivityDiscountVO` 的字符串协议、`MarketNode` 的异步编排、`OrderStateTransitionEntity` 的共享状态词典、`TradeRuleConfig` 的装配热点和 `GoodsMarketResponseDTO` 的展示逻辑边界。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。
