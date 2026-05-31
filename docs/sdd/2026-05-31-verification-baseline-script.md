@@ -51,19 +51,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
   - 验证：`git diff --check`
   - 提交：`0fe4ca8`
 
+- [x] 把秒杀 Envelope 契约测试纳入 `seckill` profile。
+  - 文件：`scripts/verify-current-baseline.ps1`、`docs/sdd/2026-05-31-current-verification-baseline.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
+  - 提交：本轮提交
+
 ## TODO List
 
-- [ ] P0：定义秒杀订单创建消息 Envelope 和契约测试。
-  - 原因：当前消息体仍直接序列化 `SeckillOrderEntity`，不利于后续 RocketMQ/Kafka adapter 稳定演进。
-  - 范围：`docs/sdd`、秒杀消息适配器、消息映射测试。
-  - 验收：形成稳定 Envelope schema，并验证 `messageId`、`routeKey`、schema 版本和 traceId 不随中间件切换变化。
+- [ ] P0：补秒杀订单 Outbox 代码闭环和投递状态机。
+  - 原因：Envelope 已经固化，但 SQL 中的 `seckill_order_outbox` 还没有对应 repository、投递任务、重试状态机和人工重放入口。
+  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
+  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单创建消息 Envelope | 未开始 | 代码风险 / 生产边界 | P0 | 后续切 RocketMQ/Kafka 时仍可能依赖 domain entity JSON，消息兼容性不稳定 | 本轮先审计切换边界，不改代码 | 开始实现专业 MQ adapter 或 outbox |
-| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、Envelope 和 outbox 代码闭环 | Envelope、outbox、consumer 契约测试完成后，或明确有生产化演练目标 |
+| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
+| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、outbox 代码闭环和 producer/consumer adapter | Outbox、producer/consumer 契约测试完成后，或明确有生产化演练目标 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
@@ -79,4 +84,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 本轮脚本化解决的是“验证命令容易漏跑”的工程效率问题，不改变 DDD 架构、不改变业务链路，也不改变面试口径。因此脚本化本身不需要同步 `interview-baguwen.md`。
 
-下一轮如果继续推进，应回到当前前 5 风险的第一项：秒杀生产化消息链路和容量证明。当前已完成最小切换边界审计，下一步应先定义秒杀订单创建消息 Envelope 和契约测试。
+下一轮如果继续推进，应回到当前前 5 风险的第一项：秒杀生产化消息链路和容量证明。当前已完成最小切换边界审计和消息 Envelope 契约测试，下一步应补秒杀订单 Outbox 代码闭环和投递状态机。

@@ -174,8 +174,18 @@
 
 - [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
   - 目标：确认当前 `ISeckillOrderMessagePort` 是否足以支撑后续 RocketMQ/Kafka adapter，并明确本轮是否需要直接接入专业 MQ。
-  - 本次结论：锁单主流程已经具备可切换基础，但当前还缺独立消息 Envelope、outbox 代码、专业 MQ producer/consumer adapter、契约测试和生产容量证明；本轮不直接接入 RocketMQ。
+  - 本次结论：锁单主流程已经具备可切换基础，本轮不直接接入 RocketMQ；后续按消息 Envelope、outbox 代码、专业 MQ producer/consumer adapter、契约测试和生产容量证明分阶段演进。
   - 验收：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，同步 `mq-evolution.md`、README、任务清单和八股文档。
+
+- [x] 定义秒杀订单创建消息 Envelope 和契约测试。
+  - 目标：避免后续 RocketMQ/Kafka adapter 继续依赖 `SeckillOrderEntity` 的内部 JSON 结构。
+  - 本次完成：新增 `SeckillOrderCreateMessageEntity`，发布端统一发送 Envelope JSON，Redis Stream worker 和 RabbitMQ listener 解析 Envelope 后复用现有订单创建链路，并兼容历史裸订单 JSON。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md` 和 `SeckillOrderCreateMessageContractTest`，`seckill` profile 覆盖 schema、messageId、routeKey、序列化 round trip 和旧消息兼容。
+
+- [ ] 补秒杀订单 Outbox 代码闭环和投递状态机。
+  - 目标：让 SQL 中已有的 `seckill_order_outbox` 真正具备 repository、投递任务、状态机、人工重放和幂等投递能力。
+  - 建议范围：outbox 领域端口、基础设施 repository、定时投递任务、`INIT/SENT/CONFIRMED/FAILED/DEAD` 状态机、重试次数、下次重试时间、traceId、人工重放入口。
+  - 验收：Outbox 状态机测试和投递重试契约测试通过，后续 RocketMQ/Kafka adapter 可复用 outbox 消息体和幂等键。
 
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。

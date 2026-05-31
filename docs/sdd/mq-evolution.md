@@ -62,7 +62,7 @@ flowchart LR
 
 ## 消息模型
 
-秒杀订单创建消息必须有稳定 schema，避免后续 MQ 替换时改业务字段。
+秒杀订单创建消息必须有稳定 schema，避免后续 MQ 替换时改业务字段。当前已落地 `SeckillOrderCreateMessageEntity`，发布端统一发送 Envelope JSON，消费端再转换回订单实体复用原有落库端口。
 
 ```json
 {
@@ -182,6 +182,7 @@ DEAD -> INIT
 - Redis Stream 模式压测验证库存不变量。
 - Docker Compose 可启动 RocketMQ 基础组件：`docs/dev-ops/docker-compose-rocketmq.yml`。
 - SQL 已准备 `seckill_order_outbox` 表结构。
+- `SeckillOrderCreateMessageContractTest` 已覆盖 Envelope schema、messageId、routeKey、JSON round trip 和历史裸订单 JSON 兼容。
 
 ## 当前最小可切换边界审计
 
@@ -192,15 +193,16 @@ DEAD -> INIT
 - `ISeckillOrderMessagePort` 隔离了锁单主流程和具体消息中间件。
 - `SeckillOrderLockPort` 不直接依赖 `EventPublisher`、`SeckillOrderCreateBuffer`、routing key 或 JSON 序列化。
 - Redis Stream、Redis Queue、本地队列和 RabbitMQ 的投递选择集中在基础设施 adapter。
+- `SeckillOrderCreateMessageEntity` 已提供独立消息 Envelope，消费端兼容历史裸订单 JSON。
+- `SeckillOrderCreateMessageContractTest` 已验证 schema、messageId、routeKey 和序列化兼容性。
 
 未具备：
 
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
-- 当前消息体仍直接序列化 `SeckillOrderEntity`，还不是独立 Envelope。
 - `seckill_order_outbox` 只有 SQL，缺少 repository、投递任务、状态机和人工重放代码。
 - 没有 RocketMQ consumer group、DLQ、lag、重试和消费幂等契约测试。
 
-因此，下一步不应直接宣称“专业 MQ 已完成”，而是先定义秒杀订单创建消息 Envelope 和契约测试，再进入 outbox 和 RocketMQ adapter 实现。
+因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope 已经完成，后续应先进入 outbox 代码闭环和投递状态机，再实现 RocketMQ/Kafka adapter。
 
 ## 面试说法
 

@@ -2,6 +2,7 @@ package cn.bugstack.trigger.listener;
 
 import cn.bugstack.domain.message.model.entity.MessageRecordEntity;
 import cn.bugstack.domain.message.service.IMessageRecordService;
+import cn.bugstack.domain.seckill.model.entity.SeckillOrderCreateMessageEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import com.alibaba.fastjson.JSON;
@@ -47,10 +48,12 @@ public class SeckillOrderCreateListener {
         long deliveryTag = amqpMessage.getMessageProperties().getDeliveryTag();
         String traceId = traceId(amqpMessage);
         MessageRecordEntity messageRecord = null;
+        SeckillOrderCreateMessageEntity messageEnvelope = null;
         try {
             putTraceId(traceId);
+            messageEnvelope = JSON.parseObject(message, SeckillOrderCreateMessageEntity.class);
             messageRecord = messageRecordService.beginConsume(
-                    amqpMessage.getMessageProperties().getMessageId(),
+                    resolveMessageId(messageEnvelope, amqpMessage),
                     amqpMessage.getMessageProperties().getReceivedExchange(),
                     amqpMessage.getMessageProperties().getConsumerQueue(),
                     message);
@@ -61,12 +64,12 @@ public class SeckillOrderCreateListener {
             }
 
             log.debug("receive seckill order create message messageId:{}", messageRecord.getMessageId());
-            SeckillOrderEntity seckillOrderEntity = JSON.parseObject(message, SeckillOrderEntity.class);
+            SeckillOrderEntity seckillOrderEntity = messageEnvelope.toOrderEntity();
             seckillService.createSeckillOrder(seckillOrderEntity);
             messageRecordService.consumeSuccess(messageRecord.getMessageId());
             channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
-            String messageId = resolveMessageId(messageRecord, amqpMessage);
+            String messageId = resolveMessageId(messageRecord, messageEnvelope, amqpMessage);
             if (StringUtils.isNotBlank(messageId)) {
                 messageRecordService.consumeFail(messageId, e.getMessage());
             }
@@ -94,8 +97,18 @@ public class SeckillOrderCreateListener {
         }
     }
 
-    private String resolveMessageId(MessageRecordEntity messageRecord, Message amqpMessage) {
-        return null != messageRecord ? messageRecord.getMessageId() : amqpMessage.getMessageProperties().getMessageId();
+    private String resolveMessageId(SeckillOrderCreateMessageEntity messageEnvelope, Message amqpMessage) {
+        if (null != messageEnvelope && StringUtils.isNotBlank(messageEnvelope.getMessageId())) {
+            return messageEnvelope.getMessageId();
+        }
+        return amqpMessage.getMessageProperties().getMessageId();
+    }
+
+    private String resolveMessageId(MessageRecordEntity messageRecord, SeckillOrderCreateMessageEntity messageEnvelope, Message amqpMessage) {
+        if (null != messageRecord) {
+            return messageRecord.getMessageId();
+        }
+        return resolveMessageId(messageEnvelope, amqpMessage);
     }
 
 }

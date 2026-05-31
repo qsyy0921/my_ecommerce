@@ -4,7 +4,7 @@
 
 前几轮 SDD 审计已经把问题记录得比较完整，但也暴露出一个新问题：审计文档多、局部优先级多，缺少一张统一的“当前最该盯什么”排序图。
 
-本轮不修改生产代码，目标是把分散在多篇审计文档里的结论收敛成：
+本文作为当前现态入口，目标是把分散在多篇审计文档里的结论收敛成：
 
 - 当前前 5 个残留风险。
 - Done List。
@@ -26,6 +26,7 @@
 - `docs/sdd/2026-05-31-verification-baseline-script.md`
 - `docs/sdd/mq-evolution.md`
 - `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`
+- `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`
 - `docs/sdd/tasks.md`
 - `docs/sdd/ddd-sdd-todo-list.md`
 - `docs/interview-baguwen.md`
@@ -37,11 +38,11 @@
 - 类型：生产边界 / 代码风险
 - 优先级：P0
 - 当前状态：最小可切换边界已审计，落地暂不处理
-- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦，但主方案仍是 Redis Stream，且缺少专业 MQ Envelope、Outbox 代码、RocketMQ/Kafka adapter、consumer 契约和真实生产容量证明。
+- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦；秒杀订单创建消息也已经补齐独立 Envelope 和契约测试。但主方案仍是 Redis Stream，且缺少 Outbox 代码闭环、RocketMQ/Kafka adapter、consumer 契约和真实生产容量证明。
 - 不完成的影响：面试或评审时如果把本机 QPS 和 Redis Stream 说成大促终局方案，会明显夸大系统成熟度。
 - 当前为什么还没做：缺少真实多机环境、独立压测机和专业 MQ 集群；本机 Docker 环境只能做趋势验证。贸然接一个未验证 RocketMQ adapter 只会把“可启动”误包装成“生产化完成”。
 - 后续触发条件：有 Linux 多实例环境，或明确要把秒杀下单队列从 Redis Stream 演进到 RocketMQ/Kafka/Pulsar。
-- 下一步建议：先定义秒杀订单创建消息 Envelope 和契约测试，再进入 Outbox 代码和 RocketMQ/Kafka adapter。
+- 下一步建议：先补秒杀订单 Outbox 代码闭环和投递状态机，再进入 RocketMQ/Kafka adapter。
 
 ### 2. Redis 通用基础设施接口仍然过宽
 
@@ -169,19 +170,24 @@
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
   - 提交：本轮提交
 
+- [x] 定义秒杀订单创建消息 Envelope 并补契约测试。
+  - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderMessagePort.java`、`SeckillOrderCreateBufferWorker.java`、`SeckillOrderCreateListener.java`、`SeckillOrderCreateMessageContractTest.java`、`docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
+  - 提交：本轮提交
+
 ## TODO List
 
-- [ ] P0：定义秒杀订单创建消息 Envelope 和契约测试。
-  - 原因：当前消息体仍直接序列化 `SeckillOrderEntity`，不利于后续 RocketMQ/Kafka adapter 稳定演进。
-  - 范围：`docs/sdd`、秒杀消息适配器、消息映射测试。
-  - 验收：形成稳定 Envelope schema，并验证 `messageId`、`routeKey`、schema 版本和 traceId 不随中间件切换变化。
+- [ ] P0：补秒杀订单 Outbox 代码闭环和投递状态机。
+  - 原因：Envelope 已经固化，但 SQL 中的 `seckill_order_outbox` 还没有对应 repository、投递任务、重试状态机和人工重放入口。
+  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
+  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单创建消息 Envelope | 未开始 | 代码风险 / 生产边界 | P0 | 后续切 RocketMQ/Kafka 时仍可能依赖 domain entity JSON，消息兼容性不稳定 | 本轮先审计切换边界，不改代码 | 开始实现专业 MQ adapter 或 outbox |
-| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、Envelope 和 outbox 代码闭环 | Envelope、outbox、consumer 契约测试完成后，或明确有生产化演练目标 |
+| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
+| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、outbox 代码闭环和 producer/consumer adapter | Outbox、producer/consumer 契约测试完成后，或明确有生产化演练目标 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
@@ -211,5 +217,6 @@
 - 本轮新增当前目标 Prompt 和验证基线。
 - 本轮新增当前验证基线脚本化入口。
 - 本轮新增秒杀专业 MQ 最小可切换边界审计。
+- 本轮新增秒杀订单创建消息 Envelope 契约实现和测试。
 - 本轮同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
 - 本轮细化专业 MQ 面试口径，同步 `interview-baguwen.md`。

@@ -1,5 +1,6 @@
 package cn.bugstack.infrastructure.event;
 
+import cn.bugstack.domain.seckill.model.entity.SeckillOrderCreateMessageEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.domain.seckill.service.ISeckillService;
 import com.alibaba.fastjson.JSON;
@@ -97,8 +98,8 @@ public class SeckillOrderCreateBufferWorker {
                 startNanos = System.nanoTime();
                 List<SeckillOrderEntity> orderEntities = new ArrayList<>(messages.size());
                 for (SeckillOrderBufferMessage message : messages) {
-                    SeckillOrderEntity orderEntity = JSON.parseObject(message.getBody(), SeckillOrderEntity.class);
-                    orderEntity.setSourceMessageId(message.getStreamKey() + ":" + String.valueOf(message.getStreamMessageId()));
+                    SeckillOrderCreateMessageEntity messageEnvelope = JSON.parseObject(message.getBody(), SeckillOrderCreateMessageEntity.class);
+                    SeckillOrderEntity orderEntity = messageEnvelope.toOrderEntity();
                     orderEntities.add(orderEntity);
                 }
                 seckillService.createSeckillOrders(orderEntities);

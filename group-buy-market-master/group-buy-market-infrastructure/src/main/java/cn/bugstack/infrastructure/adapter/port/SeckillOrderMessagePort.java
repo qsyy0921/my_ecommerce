@@ -1,6 +1,7 @@
 package cn.bugstack.infrastructure.adapter.port;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderMessagePort;
+import cn.bugstack.domain.seckill.model.entity.SeckillOrderCreateMessageEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
 import cn.bugstack.infrastructure.event.EventPublisher;
 import cn.bugstack.infrastructure.event.SeckillOrderCreateBuffer;
@@ -23,13 +24,13 @@ public class SeckillOrderMessagePort implements ISeckillOrderMessagePort {
 
     @Override
     public boolean publishOrderCreate(SeckillOrderEntity seckillOrderEntity) {
-        String message = JSON.toJSONString(seckillOrderEntity);
+        SeckillOrderCreateMessageEntity messageEnvelope = SeckillOrderCreateMessageEntity.fromOrder(seckillOrderEntity);
+        String message = JSON.toJSONString(messageEnvelope);
         if (seckillOrderCreateBuffer.useMq()) {
             eventPublisher.publishWithoutConfirm(topicSeckillOrderCreate, message);
             return true;
         }
-        String routeKey = seckillOrderEntity.getActivityId() + ":" + seckillOrderEntity.getUserId() + ":" + seckillOrderEntity.getOutTradeNo();
-        return seckillOrderCreateBuffer.offer(message, routeKey);
+        return seckillOrderCreateBuffer.offer(message, messageEnvelope.stableRouteKey());
     }
 
 }
