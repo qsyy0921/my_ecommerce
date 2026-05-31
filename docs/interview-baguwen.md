@@ -65,7 +65,7 @@ flowchart LR
 如果面试官继续追问“那现在还差什么”，建议按当前前 5 个残留风险回答：
 
 - 秒杀生产化消息链路和容量证明：当前 Redis Stream 分片、pending-list、人工补偿和批量落库已经能支撑本机演示，但它不是大促终局方案；本机压测也不能证明真实生产容量。
-- Redis 通用基础设施接口过宽：`IRedisService` / `RedissonService` 仍像一个技术总线，后续新增 Redis 能力时必须优先设计业务语义端口，避免继续往公共接口堆方法。
+- Redis 通用基础设施接口过宽：`IRedisService` / `RedissonService` 仍像一个技术总线，当前已经补了新增能力准入规则；后续新增 Redis 能力时必须优先设计业务语义端口，避免继续往公共接口堆方法。
 - 拼团锁单幂等等待：`TradeLockOrderService` 里还有固定 5 次、每次 50ms 的阻塞轮询等待，这不是功能 bug，但高并发竞争时会带来线程占用和 RT 抖动；当前已经补了等待 5 次后抛 `E0010` 的单元测试，后续再评估是否重构等待策略。
 - 对账、售后和支付仍是最小闭环：当前有差错单、重放、操作日志、支付流水和退款流水，但还没有完整权限审批、SLA、运营报表、完整售后和多支付渠道治理。
 - 守护、文档和面试口径还要继续收敛：`DomainPurityTest` 已经很大，SDD 审计文档也出现碎片化和优先级拉平，所以后续要维护统一风险地图，而不是继续无节制追加单点审计。
@@ -1008,6 +1008,7 @@ MQ：
 
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，收敛当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，并同步“当前仍存在的问题”面试口径。
 - 2026-05-31：补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010`，并新增 SDD 记录 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`。
+- 2026-05-31：制定 Redis 通用接口新增能力准入规则，明确带业务语义、组合多个 key、需要 Lua、影响库存或状态的 Redis 能力必须优先进入业务端口，并新增 SDD 记录 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-ddd-business-gap-audit.md`，统一审计当前剩余 DDD 架构问题、业务完备度问题和本机环境边界，并同步“当前仍存在的问题”面试口径，明确后续不再做低收益机械拆分类。
 - 2026-05-30：继续拆分商城对账后台入口用例编排，新增 `ReconcileCaseQueryEndpointSupport`、`ReconcileCaseOperationSupport`、`ReconcileCaseReplaySupport`、`ReconcileBillImportSupport`、`ReconcileAlertWebhookSupport` 和独立请求体类，`ReconcileCaseController` 只保留路由和请求体类型，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口用例编排，新增 `GroupBuyLockOrderSupport`、`GroupBuySettlementSupport`、`GroupBuyRefundSupport`，`MarketTradeController` 只保留路由和接口实现，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-usecase-support-split.md`。

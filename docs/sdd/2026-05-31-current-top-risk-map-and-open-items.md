@@ -43,12 +43,12 @@
 
 - 类型：代码风险 / 基础设施边界
 - 优先级：P0
-- 当前状态：暂不处理
+- 当前状态：准入规则已补，拆分暂不处理
 - 现状：`IRedisService` / `RedissonService` 仍然像一个 Redis 技术总线，既暴露多种 Redisson 能力，也混入秒杀、拼团队伍库存这类业务语义脚本。
 - 不完成的影响：后续新增 Redis 能力时，开发者容易继续往公共接口里塞方法，绕过更窄的业务端口。
-- 当前为什么还没做：现有核心业务端口已经把 Redis 细节隔离住；现在直接大拆 `IRedisService` 改动面很大，收益不如先控制新增使用范围。
+- 当前为什么还没做：新增能力准入规则已补齐；现有核心业务端口已经把 Redis 细节隔离住，现在直接大拆 `IRedisService` 改动面很大，收益不如先控制新增使用范围。
 - 后续触发条件：新增 Redis 能力、改库存/限流/锁/队列能力，或 `IRedisService` 再继续增加业务语义方法。
-- 下一步建议：新增能力必须先设计业务语义端口；必要时把 Redis gateway 按 lock、kv、queue、script 逐步拆小。
+- 下一步建议：执行准入规则；必要时把 Redis gateway 按 lock、kv、queue、script 逐步拆小。
 
 ### 3. 拼团锁单幂等等待仍是同步阻塞策略
 
@@ -128,19 +128,19 @@
 - [x] 补齐拼团锁单等待超时语义单元测试。
   - 文件：`group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/domain/trade/TradeLockOrderServiceUnitTest.java`、`docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`
   - 验证：`mvn -q -pl group-buy-market-app -am "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest" test`
+  - 提交：`7dd160a`
+
+- [x] 同步八股文档中的当前前 5 风险口径。
+  - 文件：`docs/interview-baguwen.md`
+  - 验证：`git diff --check`
+  - 提交：`cc80e99`
+
+- [x] 制定 Redis 通用接口新增能力准入规则。
+  - 文件：`docs/sdd/2026-05-31-redis-gateway-admission-rule.md`
+  - 验证：`git diff --check`
   - 提交：本轮提交
 
 ## TODO List
-
-- [ ] P0：制定 Redis 通用接口新增能力准入规则。
-  - 原因：`IRedisService` / `RedissonService` 是当前最典型的基础设施总线风险。
-  - 范围：`docs/sdd`，必要时补架构测试。
-  - 验收：新增 Redis 能力时必须先走业务语义端口，禁止直接扩展公共总线。
-
-- [ ] P1：同步八股文档中的“当前仍存在的问题”。
-  - 原因：面试口径需要吸收当前前 5 风险，避免只停留在宏观短板。
-  - 范围：`docs/interview-baguwen.md`
-  - 验收：面试文档包含前 5 风险的简短口径，并保留诚实边界。
 
 - [ ] P1：整理 SDD 文档入口分组。
   - 原因：审计文档已经出现碎片化，`README.md` 平铺索引阅读成本上升。
@@ -159,7 +159,7 @@
 | 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群和多机压测环境 | 明确引入 RocketMQ/Kafka/Pulsar 或有生产化演练目标 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
-| Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
+| Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
 | `SeckillService` 本地技术决策治理 | 暂不处理 | 代码风险 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 现阶段没有新增秒杀发布范围 | 要做秒杀生产化或订单号治理 |
 | 商城 `AbstractOrderService` 营销类型分支治理 | 暂不处理 | 代码风险 / 业务边界 | P1 | 新增营销类型时 if/else 会继续增长 | 当前只有拼团和秒杀，拆分收益有限 | 新增第三种营销类型 |
 | 对账后台权限、审批和 SLA | 未开始 | 业务边界 | P1 | 对账中心只能算最小闭环 | 属于新产品范围 | 明确建设运营后台 |

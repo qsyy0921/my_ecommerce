@@ -358,6 +358,11 @@
   - 本次结论：新增单元测试覆盖等待 5 次后抛 `E0010`，并确认该路径不会创建订单、不会占用队伍库存、不会释放未持有的请求锁。
   - 验收：新增 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`，指定测试 `TradeLockOrderServiceUnitTest` 通过。
 
+- [x] 制定 Redis 通用接口新增能力准入规则。
+  - 目标：阻止后续新增 Redis 能力继续直接堆进 `IRedisService` / `RedissonService`，要求带业务语义、组合多个 key、需要 Lua、影响库存或状态的能力先进入业务语义端口。
+  - 本次结论：现有 `reserveSeckillStock`、`reserveSeckillQualification`、`reserveTeamStock` 作为历史例外暂不拆，但不作为新增先例；本轮不继续扩大 `DomainPurityTest`，避免守护体系继续膨胀。
+  - 验收：新增 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`，当前风险地图同步 Done/TODO/Open Items。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

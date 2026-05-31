@@ -90,6 +90,7 @@
 - `2026-05-31-priority-flattening-risk-audit.md`：记录最近几轮剩余问题虽然都被审计出来，但主次关系开始被拉平的问题，提醒后续补“当前最重要问题排序视图”，而不是继续同权重追加局部审计。
 - `2026-05-31-current-top-risk-map-and-open-items.md`：记录当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，作为后续继续审核的现态入口。
 - `2026-05-31-group-buy-lock-wait-timeout-test.md`：记录拼团锁单重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010` 的单元测试补齐。
+- `2026-05-31-redis-gateway-admission-rule.md`：记录 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先进入业务语义端口，避免继续扩张 `IRedisService` / `RedissonService` 技术总线。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。
