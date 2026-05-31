@@ -42,6 +42,7 @@
 - `2026-05-31-redis-gateway-admission-rule.md`：Redis 通用接口新增能力准入规则。
 - `2026-05-31-gateway-and-domain-orchestration-audit.md`：通用 Redis 网关和领域编排残留。
 - `mq-evolution.md`：秒杀消息队列演进方案。
+- `2026-05-31-seckill-professional-mq-switch-boundary.md`：秒杀订单消息接入专业 MQ 的最小可切换边界审计。
 - `2026-05-30-rabbitmq-dlq-ops.md`：RabbitMQ DLQ 失败台账和人工处理入口。
 - `2026-05-30-mq-producer-outbox-retry.md`：MQ 生产者 confirm 失败补偿。
 
@@ -152,6 +153,7 @@
 - `2026-05-31-domain-purity-guard-layering.md`：记录 `DomainPurityTest` 与 `check-domain-purity.ps1` 的规则分层，明确后续新增守护规则的准入顺序。
 - `2026-05-31-current-verification-baseline.md`：记录后续继续开发可复制的目标 Prompt、当前验证分级、Done List、TODO List 和所有未完成任务清单。
 - `2026-05-31-verification-baseline-script.md`：记录验证基线脚本化决策，新增 `scripts/verify-current-baseline.ps1` 作为本地 profile runner。
+- `2026-05-31-seckill-professional-mq-switch-boundary.md`：记录秒杀订单消息端口接入 RocketMQ/Kafka 这类专业 MQ 前必须先补的 Envelope、Outbox、Consumer 契约和监控边界。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

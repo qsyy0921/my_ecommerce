@@ -183,6 +183,25 @@ DEAD -> INIT
 - Docker Compose 可启动 RocketMQ 基础组件：`docs/dev-ops/docker-compose-rocketmq.yml`。
 - SQL 已准备 `seckill_order_outbox` 表结构。
 
+## 当前最小可切换边界审计
+
+2026-05-31 对当前代码复核后，结论是：锁单主流程已经具备可切换基础，但专业 MQ 还没有真正落地。
+
+已具备：
+
+- `ISeckillOrderMessagePort` 隔离了锁单主流程和具体消息中间件。
+- `SeckillOrderLockPort` 不直接依赖 `EventPublisher`、`SeckillOrderCreateBuffer`、routing key 或 JSON 序列化。
+- Redis Stream、Redis Queue、本地队列和 RabbitMQ 的投递选择集中在基础设施 adapter。
+
+未具备：
+
+- 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
+- 当前消息体仍直接序列化 `SeckillOrderEntity`，还不是独立 Envelope。
+- `seckill_order_outbox` 只有 SQL，缺少 repository、投递任务、状态机和人工重放代码。
+- 没有 RocketMQ consumer group、DLQ、lag、重试和消费幂等契约测试。
+
+因此，下一步不应直接宣称“专业 MQ 已完成”，而是先定义秒杀订单创建消息 Envelope 和契约测试，再进入 outbox 和 RocketMQ adapter 实现。
+
 ## 面试说法
 
 当前项目本地仍使用 Redis Stream，是因为单机演示环境下它能覆盖可靠削峰和 pending 补偿。生产大促场景下，我会把 Redis 的职责收敛到库存资格预扣、用户防重和短期结果缓存，把订单创建消息迁移到 RocketMQ。为避免以后替换 MQ 改动锁单主流程，我已经把下单消息投递抽成 `ISeckillOrderMessagePort`，并用架构测试防止锁单适配器重新依赖具体中间件。RabbitMQ 不下线，继续负责拼团成团和退单这类业务通知；RocketMQ 专注秒杀订单创建、延迟关闭、重试和 DLQ。

@@ -722,6 +722,8 @@ DLQ 是死信队列，用于接收无法正常消费的消息。它不是补偿�
 
 Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Redis 库存扣减链路，有 pending-list，能快速接入异步落库。RabbitMQ 更适合跨服务业务通知，比如成团通知商城、退单通知商城。真正生产大促下，秒杀订单创建消息更适合迁移到 RocketMQ：Redis 只做资格预扣和防重，MySQL Outbox 做可靠投递兜底，RocketMQ 承担订单消息的分区路由、堆积恢复、重试和 DLQ。
 
+当前代码已经把锁单主流程和消息中间件隔离到 `ISeckillOrderMessagePort`，后续切 RocketMQ 不应该改锁单主流程。但这不等于专业 MQ 已经落地：现在还缺独立消息 Envelope、outbox repository/投递任务、RocketMQ producer/consumer adapter、DLQ/lag 指标和契约测试。面试时要讲“具备演进边界”，不要讲成“已经完成生产级 MQ”。
+
 ### 13. 为什么秒杀不用本机队列？
 
 本机队列吞吐高，但进程宕机会丢消息，不适合作为可靠方案。Redis Stream 有持久化和 pending-list，worker 宕机后消息仍可被接管，更适合生产化链路。本机队列可以作为极限压测模式，不作为最终可靠方案。
@@ -797,7 +799,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转，以及专业 MQ Adapter 的契约测试。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程。但当前还没有真正落地专业 MQ adapter，下一步要先补独立消息 Envelope、Outbox 代码闭环、Producer/Consumer 契约测试和真实多机压测。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做专业 MQ 消息契约和 outbox，再做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转。
 
 ## 六、当前已修复的问题
 
@@ -1008,6 +1010,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，收敛当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，并同步“当前仍存在的问题”面试口径。
+- 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，审计秒杀订单消息接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，但还缺消息 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明。
 - 2026-05-31：补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010`，并新增 SDD 记录 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`。
 - 2026-05-31：制定 Redis 通用接口新增能力准入规则，明确带业务语义、组合多个 key、需要 Lua、影响库存或状态的 Redis 能力必须优先进入业务端口，并新增 SDD 记录 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`。
 - 2026-05-31：评估 `DomainPurityTest` 规则分层，明确粗筛、稳定结构守护、职责回流守护、脆弱文本快照守护和行为契约测试的边界，并新增 SDD 记录 `docs/sdd/2026-05-31-domain-purity-guard-layering.md`。

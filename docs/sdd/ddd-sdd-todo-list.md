@@ -172,6 +172,11 @@
   - 当前策略：Redis 继续做资格预扣、防重和本机演示削峰；跨服务通知继续用 RabbitMQ；真正大促订单排队建议演进 RocketMQ 或 Kafka。
   - 验收：`docs/sdd/mq-evolution.md` 已补齐选型结论、MQ 对比、目标架构、消息模型、路由策略、Outbox 兜底、迁移步骤、回滚方案和本机可验证项。
 
+- [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
+  - 目标：确认当前 `ISeckillOrderMessagePort` 是否足以支撑后续 RocketMQ/Kafka adapter，并明确本轮是否需要直接接入专业 MQ。
+  - 本次结论：锁单主流程已经具备可切换基础，但当前还缺独立消息 Envelope、outbox 代码、专业 MQ producer/consumer adapter、契约测试和生产容量证明；本轮不直接接入 RocketMQ。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，同步 `mq-evolution.md`、README、任务清单和八股文档。
+
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。
   - 实际端口：`ISeckillOrderMessagePort` / `SeckillOrderMessagePort`。
