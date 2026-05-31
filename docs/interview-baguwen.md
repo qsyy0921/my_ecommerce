@@ -127,6 +127,7 @@ types           异常、枚举、常量、通用类型
 - 领域服务、规则链、试算节点、折扣策略都由 app 层配置类装配。
 - 新增 `scripts/check-domain-purity.ps1`，用于检查 domain 包不能重新引入 Spring 注解、`@Resource`、`@Autowired`。
 - 新增 `DomainPurityTest` 和 `OrderStateMachineTest`，用 Maven 测试守住 DDD 分层和核心状态机。
+- 当前已把 DDD 守护分层：`check-domain-purity.ps1` 做快速粗筛，`DomainPurityTest` 做稳定结构和职责回流守护，行为语义放到领域单元测试和契约测试里，避免继续无节制往 `DomainPurityTest` 堆字符串规则。
 - 新增 `TradeLockOrderServiceUnitTest`，用 fake port 纯单元测试固化拼团锁单幂等、活动校验、队伍容量、Redis 占位失败、DB 唯一索引兜底和人群标签试算边界。
 - 新增 `IDomainTaskExecutor` 端口，domain 不再直接依赖具体 `ThreadPoolExecutor`。
 - 状态迁移已抽成 `OrderStateMachine`、`OrderStateTransitionEntity` 和 `IOrderStateFlowPort`，Repository 不再直接拼接状态流水 PO。
@@ -1009,6 +1010,7 @@ MQ：
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，收敛当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，并同步“当前仍存在的问题”面试口径。
 - 2026-05-31：补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010`，并新增 SDD 记录 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`。
 - 2026-05-31：制定 Redis 通用接口新增能力准入规则，明确带业务语义、组合多个 key、需要 Lua、影响库存或状态的 Redis 能力必须优先进入业务端口，并新增 SDD 记录 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`。
+- 2026-05-31：评估 `DomainPurityTest` 规则分层，明确粗筛、稳定结构守护、职责回流守护、脆弱文本快照守护和行为契约测试的边界，并新增 SDD 记录 `docs/sdd/2026-05-31-domain-purity-guard-layering.md`。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-ddd-business-gap-audit.md`，统一审计当前剩余 DDD 架构问题、业务完备度问题和本机环境边界，并同步“当前仍存在的问题”面试口径，明确后续不再做低收益机械拆分类。
 - 2026-05-30：继续拆分商城对账后台入口用例编排，新增 `ReconcileCaseQueryEndpointSupport`、`ReconcileCaseOperationSupport`、`ReconcileCaseReplaySupport`、`ReconcileBillImportSupport`、`ReconcileAlertWebhookSupport` 和独立请求体类，`ReconcileCaseController` 只保留路由和请求体类型，并新增 SDD 记录 `docs/sdd/2026-05-30-reconcile-controller-usecase-support-split.md`。
 - 2026-05-30：继续拆分拼团交易 HTTP 入口用例编排，新增 `GroupBuyLockOrderSupport`、`GroupBuySettlementSupport`、`GroupBuyRefundSupport`，`MarketTradeController` 只保留路由和接口实现，并新增 SDD 记录 `docs/sdd/2026-05-30-group-buy-trade-controller-usecase-support-split.md`。

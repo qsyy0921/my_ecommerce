@@ -368,6 +368,11 @@
   - 本次结论：新增现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径六组入口，同时保留完整历史索引。
   - 验收：新增 `docs/sdd/2026-05-31-sdd-readme-entry-grouping.md`，当前风险地图同步 Done/TODO/Open Items。
 
+- [x] 评估 `DomainPurityTest` 规则分层。
+  - 目标：避免 `DomainPurityTest` 继续无节制膨胀成大型文本快照测试，明确哪些规则应放在脚本、结构守护、职责回流守护或行为契约测试中。
+  - 本次结论：暂不拆 `DomainPurityTest`，先明确 L0 粗筛、L1 稳定结构守护、L2 精细职责回流守护、L3 脆弱文本快照守护、L4 行为契约测试五层准入顺序。
+  - 验收：新增 `docs/sdd/2026-05-31-domain-purity-guard-layering.md`，当前风险地图同步 Done/TODO/Open Items。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

@@ -53,6 +53,7 @@
 ### 测试守护
 
 - `2026-05-31-architecture-guard-hotspot-audit.md`：架构守护体系维护风险。
+- `2026-05-31-domain-purity-guard-layering.md`：DomainPurityTest 规则分层评估。
 - `2026-05-30-ddd-architecture-test-guard.md`：DDD 架构测试和状态机测试。
 - `2026-05-30-reconcile-replay-contract-tests.md`：对账差错重放契约测试。
 - `2026-05-30-production-capacity-boundary.md`：本机压测与生产容量边界。
@@ -144,6 +145,7 @@
 - `2026-05-31-group-buy-lock-wait-timeout-test.md`：记录拼团锁单重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010` 的单元测试补齐。
 - `2026-05-31-redis-gateway-admission-rule.md`：记录 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先进入业务语义端口，避免继续扩张 `IRedisService` / `RedissonService` 技术总线。
 - `2026-05-31-sdd-readme-entry-grouping.md`：记录 `README.md` 按现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径分组治理。
+- `2026-05-31-domain-purity-guard-layering.md`：记录 `DomainPurityTest` 与 `check-domain-purity.ps1` 的规则分层，明确后续新增守护规则的准入顺序。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。
