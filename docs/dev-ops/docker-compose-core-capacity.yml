@@ -1,7 +1,7 @@
 services:
   group-buy-market-1:
     build:
-      context: ../../group-buy-market-master/group-buy-market-app
+      context: ../../qsyy-commerce-market/group-buy-market-app
     container_name: group-buy-market-1
     restart: on-failure
     ports:
@@ -21,7 +21,7 @@ services:
 
   group-buy-market-2:
     build:
-      context: ../../group-buy-market-master/group-buy-market-app
+      context: ../../qsyy-commerce-market/group-buy-market-app
     container_name: group-buy-market-2
     restart: on-failure
     ports:
@@ -41,7 +41,7 @@ services:
 
   group-buy-market-3:
     build:
-      context: ../../group-buy-market-master/group-buy-market-app
+      context: ../../qsyy-commerce-market/group-buy-market-app
     container_name: group-buy-market-3
     restart: on-failure
     ports:

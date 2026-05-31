@@ -27,7 +27,7 @@
 
 新增测试文件：
 
-- `group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/domain/trade/TradeRefundOrderServiceUnitTest.java`
+- `qsyy-commerce-market/group-buy-market-app/src/test/java/cn/bugstack/test/domain/trade/TradeRefundOrderServiceUnitTest.java`
 
 覆盖用例：
 
@@ -51,7 +51,7 @@
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
 $env:Path="$env:JAVA_HOME\bin;E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin;$env:Path"
-cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-market
 & 'E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd' -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest" test
 ```
 

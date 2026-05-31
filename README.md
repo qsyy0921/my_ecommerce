@@ -2,8 +2,8 @@
 
 本仓库是 qsyy 维护的 DDD 交易营销练习项目，包含拼团、秒杀、支付商城、对账补偿、MQ 可靠性和可观测性能力。代码仍按两个独立 Spring Boot 服务组织：
 
-- `group-buy-market-master`：拼团营销服务，负责首页试算、拼团锁单、支付结算、退单退款、成团/退单通知。
-- `s-pay-mall-ddd-market-master`：支付商城服务，负责商城下单、支付单创建、支付宝回调、订单列表、退单入口。
+- `qsyy-commerce-market`：拼团营销服务，负责首页试算、拼团锁单、支付结算、退单退款、成团/退单通知。
+- `qsyy-commerce-mall`：支付商城服务，负责商城下单、支付单创建、支付宝回调、订单列表、退单入口。
 
 两个服务仍然保持独立 Spring Boot 应用。这样做符合项目原本的微服务和 DDD 边界：支付商城关注订单和支付，拼团营销关注活动、优惠、队伍和拼团状态。
 
@@ -13,8 +13,8 @@
 qsyy-ecommerce-platform/
 ├── pom.xml                         # 根级聚合工程
 ├── docs/                           # 面试八股文和项目文档
-├── group-buy-market-master/        # 拼团营销服务
-└── s-pay-mall-ddd-market-master/   # 支付商城服务
+├── qsyy-commerce-market/           # 拼团营销服务
+└── qsyy-commerce-mall/             # 支付商城服务
 ```
 
 ## 环境要求
@@ -48,13 +48,13 @@ mvn -DskipTests package
 只构建拼团营销服务：
 
 ```bash
-mvn -f group-buy-market-master/pom.xml -DskipTests package
+mvn -f qsyy-commerce-market/pom.xml -DskipTests package
 ```
 
 只构建支付商城服务：
 
 ```bash
-mvn -f s-pay-mall-ddd-market-master/pom.xml -DskipTests package
+mvn -f qsyy-commerce-mall/pom.xml -DskipTests package
 ```
 
 ## 启动服务
@@ -62,13 +62,13 @@ mvn -f s-pay-mall-ddd-market-master/pom.xml -DskipTests package
 拼团营销服务：
 
 ```bash
-java -jar group-buy-market-master/group-buy-market-app/target/group-buy-market-app.jar
+java -jar qsyy-commerce-market/group-buy-market-app/target/group-buy-market-app.jar
 ```
 
 支付商城服务：
 
 ```bash
-java -jar s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/target/s-pay-mall-ddd-app.jar
+java -jar qsyy-commerce-mall/s-pay-mall-ddd-app/target/s-pay-mall-ddd-app.jar
 ```
 
 ## 主要链路

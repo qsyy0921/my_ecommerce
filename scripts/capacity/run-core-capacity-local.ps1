@@ -32,8 +32,8 @@ function Invoke-Pressure([string]$Scenario, [string]$HostUrl, [int]$Total, [int]
 }
 
 $root = Resolve-Path "."
-$jar = Join-Path $root "group-buy-market-master\group-buy-market-app\target\group-buy-market-app.jar"
-$logDir = Join-Path $root "group-buy-market-master\group-buy-market-app\target\capacity-local"
+$jar = Join-Path $root "qsyy-commerce-market\group-buy-market-app\target\group-buy-market-app.jar"
+$logDir = Join-Path $root "qsyy-commerce-market\group-buy-market-app\target\capacity-local"
 $resultDir = Join-Path $root ("docs\capacity-results\" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 New-Item -ItemType Directory -Force -Path $logDir, $resultDir | Out-Null
 

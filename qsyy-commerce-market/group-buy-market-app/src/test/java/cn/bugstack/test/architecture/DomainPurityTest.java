@@ -34,8 +34,8 @@ public class DomainPurityTest {
     public void domainPackagesShouldStaySpringFree() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> domainPaths = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain")
         );
 
         List<String> violations = new ArrayList<>();
@@ -49,8 +49,8 @@ public class DomainPurityTest {
     @Test
     public void genericTradeRepositoryShouldStayDeleted() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path tradeRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
-        Path tradeRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/TradeRepository.java");
+        Path tradeRepositoryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/repository/ITradeRepository.java");
+        Path tradeRepositoryAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/TradeRepository.java");
 
         Assert.assertFalse("Generic ITradeRepository should stay deleted; use dedicated trade ports instead.", Files.exists(tradeRepositoryPort));
         Assert.assertFalse("Generic TradeRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(tradeRepositoryAdapter));
@@ -59,26 +59,26 @@ public class DomainPurityTest {
     @Test
     public void genericTradePortShouldStaySplitIntoNotificationPort() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path tradePort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradePort.java");
-        Path tradePortAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradePort.java");
+        Path tradePort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradePort.java");
+        Path tradePortAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradePort.java");
 
         Assert.assertFalse("Generic ITradePort should stay deleted; use ITradeNotificationPort instead.", Files.exists(tradePort));
         Assert.assertFalse("Generic TradePort adapter should stay deleted; use TradeNotificationPort instead.", Files.exists(tradePortAdapter));
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotificationPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationLockSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationChannelDispatcher.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotificationPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationLockSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotificationChannelDispatcher.java")
         );
         for (Path requiredFile : requiredFiles) {
             Assert.assertTrue("Missing trade notification split file: " + requiredFile.getFileName(), Files.exists(requiredFile));
         }
 
         List<String> violations = new ArrayList<>();
-        Path notificationPortAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java");
-        Path taskService = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
-        Path config = workspaceRoot.resolve("group-buy-market-master/group-buy-market-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+        Path notificationPortAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotificationPort.java");
+        Path taskService = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
+        Path config = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
         assertSourceDoesNotContain(notificationPortAdapter, violations, Arrays.asList(
                 "IRedisService",
                 "RLock",
@@ -99,32 +99,32 @@ public class DomainPurityTest {
     @Test
     public void tradeNotifyTaskPortShouldStaySplitByCreateAndExecution() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path oldPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskPort.java");
-        Path oldAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskPort.java");
+        Path oldPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskPort.java");
+        Path oldAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskPort.java");
 
         Assert.assertFalse("Generic ITradeNotifyTaskPort should stay deleted; split notify-task create and execution ports.", Files.exists(oldPort));
         Assert.assertFalse("Generic TradeNotifyTaskPort adapter should stay deleted; split notify-task create and execution adapters.", Files.exists(oldAdapter));
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskFactory.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskMapper.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskFactory.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/TradeNotifyTaskMapper.java")
         );
         for (Path requiredFile : requiredFiles) {
             Assert.assertTrue("Missing trade notify task split file: " + requiredFile.getFileName(), Files.exists(requiredFile));
         }
 
         List<String> violations = new ArrayList<>();
-        Path createPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java");
-        Path executionPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java");
-        Path createAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java");
-        Path executionAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java");
-        Path taskService = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
-        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
-        Path refundSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyRefundSupport.java");
+        Path createPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskCreatePort.java");
+        Path executionPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/ITradeNotifyTaskExecutionPort.java");
+        Path createAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskCreatePort.java");
+        Path executionAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeNotifyTaskExecutionPort.java");
+        Path taskService = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/service/task/TradeTaskService.java");
+        Path settlementAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
+        Path refundSupport = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyRefundSupport.java");
 
         assertSourceDoesNotContain(createPort, violations, Arrays.asList(
                 "queryUnExecutedNotifyTaskList",
@@ -170,27 +170,27 @@ public class DomainPurityTest {
     @Test
     public void genericActivityRepositoryShouldStaySplitIntoSemanticPorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path activityRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/repository/IActivityRepository.java");
-        Path activityRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/ActivityRepository.java");
+        Path activityRepositoryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/repository/IActivityRepository.java");
+        Path activityRepositoryAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/ActivityRepository.java");
 
         Assert.assertFalse("Generic IActivityRepository should stay deleted; use activity semantic ports instead.", Files.exists(activityRepositoryPort));
         Assert.assertFalse("Generic ActivityRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(activityRepositoryAdapter));
 
         List<Path> requiredPorts = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java")
         );
         for (Path requiredPort : requiredPorts) {
             Assert.assertTrue("Missing activity semantic port: " + requiredPort.getFileName(), Files.exists(requiredPort));
         }
 
         List<Path> requiredAdapters = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/CrowdTagPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivitySwitchPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/CrowdTagPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivitySwitchPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java")
         );
         for (Path requiredAdapter : requiredAdapters) {
             Assert.assertTrue("Missing activity semantic adapter: " + requiredAdapter.getFileName(), Files.exists(requiredAdapter));
@@ -200,11 +200,11 @@ public class DomainPurityTest {
     @Test
     public void activitySemanticPortsShouldNotLeakOtherResponsibilities() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path trialQueryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java");
-        Path crowdTagPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java");
-        Path switchPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java");
-        Path displayPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java");
-        Path config = workspaceRoot.resolve("group-buy-market-master/group-buy-market-app/src/main/java/cn/bugstack/config/ActivityDomainConfig.java");
+        Path trialQueryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivityTrialQueryPort.java");
+        Path crowdTagPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/ICrowdTagPort.java");
+        Path switchPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IActivitySwitchPort.java");
+        Path displayPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/activity/adapter/port/IGroupBuyDisplayPort.java");
+        Path config = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-app/src/main/java/cn/bugstack/config/ActivityDomainConfig.java");
 
         List<String> violations = new ArrayList<>();
         assertSourceDoesNotContain(trialQueryPort, violations, Arrays.asList(
@@ -243,7 +243,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyQueryPortShouldNotExposeWriteOrCompensationOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path queryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/IGroupBuyQueryPort.java");
+        Path queryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/trade/adapter/port/IGroupBuyQueryPort.java");
         String source = new String(Files.readAllBytes(queryPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenMethods = Arrays.asList(
@@ -274,9 +274,9 @@ public class DomainPurityTest {
     public void readModelAdaptersShouldStayReadOnlyAndCompensationFree() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> readAdapters = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyQueryPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyQueryPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyDisplayPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ActivityTrialQueryPort.java")
         );
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -310,7 +310,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyOrderPortAdapterShouldStayTransactionalFacade() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path orderAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyOrderPort.java");
+        Path orderAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyOrderPort.java");
         String source = new String(Files.readAllBytes(orderAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -336,8 +336,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamLockSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderListCreateSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamLockSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderListCreateSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -351,7 +351,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuySettlementPortShouldDelegateOrderAndTeamDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
+        Path settlementAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuySettlementPort.java");
         String source = new String(Files.readAllBytes(settlementAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -378,8 +378,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderPaidSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamFormationSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyOrderPaidSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamFormationSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -393,7 +393,7 @@ public class DomainPurityTest {
     @Test
     public void tradeLockRequestPortShouldDelegateRedisKeyAndJsonDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path lockRequestAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeLockRequestPort.java");
+        Path lockRequestAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/TradeLockRequestPort.java");
         String source = new String(Files.readAllBytes(lockRequestAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -420,8 +420,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockRequestSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockResultCacheSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockRequestSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyLockResultCacheSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -435,7 +435,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyTeamStockPortShouldDelegateReservationAndRecoveryDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path teamStockAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyTeamStockPort.java");
+        Path teamStockAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyTeamStockPort.java");
         String source = new String(Files.readAllBytes(teamStockAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -458,8 +458,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockReservationSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockRecoverySupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockReservationSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyTeamStockRecoverySupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -473,7 +473,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyRefundPortAdapterShouldStayFacadeOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");
+        Path refundAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/GroupBuyRefundPort.java");
         String source = new String(Files.readAllBytes(refundAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -496,9 +496,9 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredProcessors = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyUnpaidRefundProcessor.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidUnformedRefundProcessor.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidFormedRefundProcessor.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyUnpaidRefundProcessor.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidUnformedRefundProcessor.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/GroupBuyPaidFormedRefundProcessor.java")
         );
         for (Path processor : requiredProcessors) {
             if (!Files.exists(processor)) {
@@ -512,8 +512,8 @@ public class DomainPurityTest {
     @Test
     public void genericSeckillRepositoryShouldStayDeleted() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path seckillRepositoryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
-        Path seckillRepositoryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
+        Path seckillRepositoryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/repository/ISeckillRepository.java");
+        Path seckillRepositoryAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/SeckillRepository.java");
 
         Assert.assertFalse("Generic ISeckillRepository should stay deleted; use dedicated seckill ports instead.", Files.exists(seckillRepositoryPort));
         Assert.assertFalse("Generic SeckillRepository adapter should stay deleted; use dedicated infrastructure ports instead.", Files.exists(seckillRepositoryAdapter));
@@ -522,7 +522,7 @@ public class DomainPurityTest {
     @Test
     public void seckillQueryPortShouldNotExposeStockLockOrCommandOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path queryPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillQueryPort.java");
+        Path queryPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillQueryPort.java");
         String source = new String(Files.readAllBytes(queryPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenMethods = Arrays.asList(
@@ -550,7 +550,7 @@ public class DomainPurityTest {
     @Test
     public void seckillQueryAdapterShouldDelegateCacheMappingAndShardDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path queryAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillQueryPort.java");
+        Path queryAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillQueryPort.java");
         String source = new String(Files.readAllBytes(queryAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -578,9 +578,9 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityQuerySupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillResultQuerySupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillOrderTableGateway.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillResultQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillOrderTableGateway.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -594,7 +594,7 @@ public class DomainPurityTest {
     @Test
     public void seckillMaintenancePortShouldDelegateScenarioDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path maintenancePort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillMaintenancePort.java");
+        Path maintenancePort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillMaintenancePort.java");
         String source = new String(Files.readAllBytes(maintenancePort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -624,9 +624,9 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityStockSyncSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillTimeoutUnpaidReleaseSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityPrewarmSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityStockSyncSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillTimeoutUnpaidReleaseSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillActivityPrewarmSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -640,14 +640,14 @@ public class DomainPurityTest {
     @Test
     public void seckillOrderCommandPortShouldStaySplitByLifecycle() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path commandPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCommandPort.java");
-        Path commandAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCommandPort.java");
+        Path commandPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCommandPort.java");
+        Path commandAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCommandPort.java");
         Assert.assertFalse("Generic ISeckillOrderCommandPort should stay deleted; use create, settlement and refund ports instead.", Files.exists(commandPort));
         Assert.assertFalse("Generic SeckillOrderCommandPort adapter should stay deleted; use create, settlement and refund adapters instead.", Files.exists(commandAdapter));
 
-        Path createPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCreatePort.java");
-        Path settlementPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillSettlementPort.java");
-        Path refundPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillRefundPort.java");
+        Path createPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillOrderCreatePort.java");
+        Path settlementPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillSettlementPort.java");
+        Path refundPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-domain/src/main/java/cn/bugstack/domain/seckill/adapter/port/ISeckillRefundPort.java");
 
         String createSource = new String(Files.readAllBytes(createPort), StandardCharsets.UTF_8);
         String settlementSource = new String(Files.readAllBytes(settlementPort), StandardCharsets.UTF_8);
@@ -670,7 +670,7 @@ public class DomainPurityTest {
     @Test
     public void seckillOrderCreatePortShouldDelegateSingleAndBatchDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path createAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCreatePort.java");
+        Path createAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderCreatePort.java");
         String source = new String(Files.readAllBytes(createAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -698,8 +698,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillSingleOrderCreateSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillBatchOrderCreateSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillSingleOrderCreateSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillBatchOrderCreateSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -713,7 +713,7 @@ public class DomainPurityTest {
     @Test
     public void seckillRefundPortShouldDelegateStateSpecificDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path refundAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRefundPort.java");
+        Path refundAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRefundPort.java");
         String source = new String(Files.readAllBytes(refundAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -735,8 +735,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillUnpaidCancelSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidRefundSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillUnpaidCancelSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidRefundSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -750,7 +750,7 @@ public class DomainPurityTest {
     @Test
     public void seckillSettlementPortShouldDelegatePaidStateDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path settlementAdapter = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillSettlementPort.java");
+        Path settlementAdapter = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillSettlementPort.java");
         String source = new String(Files.readAllBytes(settlementAdapter), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -767,7 +767,7 @@ public class DomainPurityTest {
             }
         }
 
-        Path paidSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidSettlementSupport.java");
+        Path paidSupport = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillPaidSettlementSupport.java");
         if (!Files.exists(paidSupport)) {
             violations.add("missing support:" + paidSupport.getFileName());
         }
@@ -779,8 +779,8 @@ public class DomainPurityTest {
     public void seckillLockAndAvailabilityAdaptersShouldNotContainOrderLifecycleCommands() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
         List<Path> adapterPaths = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java")
         );
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -828,7 +828,7 @@ public class DomainPurityTest {
     @Test
     public void seckillStockAvailabilityPortShouldDelegateSnapshotAndInitializationDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path availabilityPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java");
+        Path availabilityPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockAvailabilityPort.java");
         String source = new String(Files.readAllBytes(availabilityPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -854,8 +854,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockSnapshotSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockSnapshotSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -869,7 +869,7 @@ public class DomainPurityTest {
     @Test
     public void seckillStockReservationPortShouldDelegateRedisAndBucketDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path reservationPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockReservationPort.java");
+        Path reservationPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillStockReservationPort.java");
         String source = new String(Files.readAllBytes(reservationPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -911,11 +911,11 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockKeyBuilder.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketRouter.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationCache.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketInventorySupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillQualificationReservationSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockKeyBuilder.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketRouter.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockInitializationCache.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockBucketInventorySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillQualificationReservationSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -929,7 +929,7 @@ public class DomainPurityTest {
     @Test
     public void seckillOrderCreateBufferShouldDelegateStreamRoutingAndMapping() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path buffer = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderCreateBuffer.java");
+        Path buffer = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderCreateBuffer.java");
         String source = new String(Files.readAllBytes(buffer), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -986,15 +986,15 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderBufferMessage.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamShardRouter.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMessageMapper.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillManualCompensationStream.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillManualCompensationPort.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillLocalOrderCreateBuffer.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisQueueOrderCreateBuffer.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillOrderBufferMessage.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamShardRouter.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMessageMapper.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillStreamMetricsSampler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillManualCompensationStream.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillManualCompensationPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillLocalOrderCreateBuffer.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisQueueOrderCreateBuffer.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1008,7 +1008,7 @@ public class DomainPurityTest {
     @Test
     public void seckillRedisStreamBufferShouldDelegateLifecycleDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path buffer = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java");
+        Path buffer = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamOrderCreateBuffer.java");
         String source = new String(Files.readAllBytes(buffer), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1041,11 +1041,11 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamRegistry.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamPublisher.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamReader.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamAcknowledger.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamFailureIsolator.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamRegistry.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamPublisher.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamReader.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamAcknowledger.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/SeckillRedisStreamFailureIsolator.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1059,7 +1059,7 @@ public class DomainPurityTest {
     @Test
     public void seckillOrderLockPortShouldNotOwnMessageMiddlewareRouting() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
+        Path lockPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
         String source = new String(Files.readAllBytes(lockPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1085,7 +1085,7 @@ public class DomainPurityTest {
     @Test
     public void seckillOrderLockPortShouldDelegateStockGuardAndPublishDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path lockPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
+        Path lockPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillOrderLockPort.java");
         String source = new String(Files.readAllBytes(lockPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1115,8 +1115,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockGuardSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillReservationPublishSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillStockGuardSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillReservationPublishSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1130,7 +1130,7 @@ public class DomainPurityTest {
     @Test
     public void seckillRateLimitPortShouldDelegateRedisFixedWindowDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path rateLimitPort = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRateLimitPort.java");
+        Path rateLimitPort = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/SeckillRateLimitPort.java");
         String source = new String(Files.readAllBytes(rateLimitPort), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1151,7 +1151,7 @@ public class DomainPurityTest {
             }
         }
 
-        Path fixedWindowSupport = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillFixedWindowRateLimitSupport.java");
+        Path fixedWindowSupport = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/SeckillFixedWindowRateLimitSupport.java");
         if (!Files.exists(fixedWindowSupport)) {
             violations.add("missing support:" + fixedWindowSupport.getFileName());
         }
@@ -1162,7 +1162,7 @@ public class DomainPurityTest {
     @Test
     public void seckillOpsControllerShouldDependOnManualCompensationPortsOnly() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillOpsController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillOpsController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1194,12 +1194,12 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOpsAdminSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationOpsSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationResponseAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/ReplaySeckillManualRequestDTO.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualMessageResponseDTO.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualCompensationLogResponseDTO.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOpsAdminSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationOpsSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillManualCompensationResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-api/src/main/java/cn/bugstack/api/dto/ReplaySeckillManualRequestDTO.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualMessageResponseDTO.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-api/src/main/java/cn/bugstack/api/dto/SeckillManualCompensationLogResponseDTO.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1213,7 +1213,7 @@ public class DomainPurityTest {
     @Test
     public void mqOpsControllerShouldDelegateAdminUsecasesAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MqOpsController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MqOpsController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1239,11 +1239,11 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsAdminSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsResponseAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MarkMqMessageHandledRequestDTO.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MqFailedMessageResponseDTO.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsAdminSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/MqOpsResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MarkMqMessageHandledRequestDTO.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-api/src/main/java/cn/bugstack/api/dto/MqFailedMessageResponseDTO.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1257,7 +1257,7 @@ public class DomainPurityTest {
     @Test
     public void mallOrderRepositoryShouldNotOwnReconcileOrFlowDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path orderRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderRepository.java");
+        Path orderRepository = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderRepository.java");
         String source = new String(Files.readAllBytes(orderRepository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1296,9 +1296,9 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IOrderPaySuccessMessagePort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/OrderPaySuccessMessagePort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/PayOrderEntityMapper.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IOrderPaySuccessMessagePort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/OrderPaySuccessMessagePort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/PayOrderEntityMapper.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1312,7 +1312,7 @@ public class DomainPurityTest {
     @Test
     public void messageRecordRepositoryShouldDelegateMappingAndProducerRetryDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path repository = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/MessageRecordRepository.java");
+        Path repository = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/MessageRecordRepository.java");
         String source = new String(Files.readAllBytes(repository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1334,8 +1334,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageRecordMapper.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageProducerRetrySupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageRecordMapper.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageProducerRetrySupport.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1349,7 +1349,7 @@ public class DomainPurityTest {
     @Test
     public void eventPublisherShouldDelegateMessageIdAndFailureRecordDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path eventPublisher = workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/EventPublisher.java");
+        Path eventPublisher = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/EventPublisher.java");
         String source = new String(Files.readAllBytes(eventPublisher), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1374,8 +1374,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqMessageIdGenerator.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqProducerFailureRecorder.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqMessageIdGenerator.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqProducerFailureRecorder.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1389,7 +1389,7 @@ public class DomainPurityTest {
     @Test
     public void mallMessageRecordRepositoryShouldDelegateMappingAndProducerRetryDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path repository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/MessageRecordRepository.java");
+        Path repository = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/MessageRecordRepository.java");
         String source = new String(Files.readAllBytes(repository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1411,8 +1411,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageRecordMapper.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageProducerRetrySupport.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageRecordMapper.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MessageProducerRetrySupport.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1426,7 +1426,7 @@ public class DomainPurityTest {
     @Test
     public void mallEventPublisherShouldDelegateMessageIdAndFailureRecordDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path eventPublisher = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/EventPublisher.java");
+        Path eventPublisher = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/EventPublisher.java");
         String source = new String(Files.readAllBytes(eventPublisher), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1451,8 +1451,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqMessageIdGenerator.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqProducerFailureRecorder.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqMessageIdGenerator.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/event/support/MqProducerFailureRecorder.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1466,31 +1466,31 @@ public class DomainPurityTest {
     @Test
     public void mallProductPortShouldStaySplitFromMarketTradePorts() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path productPort = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductPort.java");
+        Path productPort = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductPort.java");
         Assert.assertFalse("Generic IProductPort should stay deleted; split product query from market trade ports.", Files.exists(productPort));
 
         List<Path> requiredPorts = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductQueryPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketOrderLockPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketSettlementPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketRefundPort.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IProductQueryPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketOrderLockPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketSettlementPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/adapter/port/IMarketRefundPort.java")
         );
         for (Path requiredPort : requiredPorts) {
             Assert.assertTrue("Missing mall product/market semantic port: " + requiredPort.getFileName(), Files.exists(requiredPort));
         }
 
         List<Path> requiredAdapters = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketOrderLockPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketSettlementPort.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketRefundPort.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketOrderLockPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketSettlementPort.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/MarketRefundPort.java")
         );
         for (Path requiredAdapter : requiredAdapters) {
             Assert.assertTrue("Missing mall product/market semantic adapter: " + requiredAdapter.getFileName(), Files.exists(requiredAdapter));
         }
 
         List<String> violations = new ArrayList<>();
-        Path productAdapter = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java");
+        Path productAdapter = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/port/ProductPort.java");
         assertSourceDoesNotContain(productAdapter, violations, Arrays.asList(
                 "lockGroupBuyMarketPayOrder",
                 "lockSeckillPayOrder",
@@ -1504,7 +1504,7 @@ public class DomainPurityTest {
                 "RefundMarketPayOrderRequestDTO"
         ));
 
-        Path domainConfig = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+        Path domainConfig = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
         assertSourceDoesNotContain(domainConfig, violations, Arrays.asList(
                 "IProductPort"
         ));
@@ -1515,7 +1515,7 @@ public class DomainPurityTest {
     @Test
     public void mallOrderReconcileRepositoryShouldDelegateCaseReplayCsvAndMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path reconcileRepository = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderReconcileRepository.java");
+        Path reconcileRepository = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/repository/OrderReconcileRepository.java");
         String source = new String(Files.readAllBytes(reconcileRepository), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1563,12 +1563,12 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseFactory.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MqFailureReplaySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ThirdPartyBillCsvParser.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/OrderReconcileEntityMapper.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseScanSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileOperationLogSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseFactory.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/MqFailureReplaySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ThirdPartyBillCsvParser.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/OrderReconcileEntityMapper.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileCaseScanSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/src/main/java/cn/bugstack/infrastructure/adapter/support/ReconcileOperationLogSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1582,10 +1582,10 @@ public class DomainPurityTest {
     @Test
     public void mallReconcileCaseShouldKeepExplicitClosedLoopOperations() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
-        Path service = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
-        Path replayProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
-        Path mapper = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/resources/mybatis/mapper/reconcile_case_mapper.xml");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        Path service = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
+        Path replayProcessor = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
+        Path mapper = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-app/src/main/resources/mybatis/mapper/reconcile_case_mapper.xml");
 
         String controllerSource = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
         String serviceSource = new String(Files.readAllBytes(service), StandardCharsets.UTF_8);
@@ -1617,10 +1617,10 @@ public class DomainPurityTest {
     @Test
     public void mallOrderReconcileServiceShouldDelegateReplayAndSettlementUsecases() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path service = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
-        Path replayProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
-        Path settlementProcessor = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/MarketSettlementReconcileProcessor.java");
-        Path domainConfig = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
+        Path service = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderReconcileService.java");
+        Path replayProcessor = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/ReconcileCaseReplayProcessor.java");
+        Path settlementProcessor = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/MarketSettlementReconcileProcessor.java");
+        Path domainConfig = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-app/src/main/java/cn/bugstack/config/DomainServiceConfig.java");
 
         List<String> violations = new ArrayList<>();
         for (Path requiredFile : Arrays.asList(replayProcessor, settlementProcessor)) {
@@ -1666,7 +1666,7 @@ public class DomainPurityTest {
     @Test
     public void mallReconcileControllerShouldDelegateAdminAuthOperatorAndAuditDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1700,12 +1700,12 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAdminSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseOperationSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseReplaySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileBillImportSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAlertWebhookSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAdminSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseOperationSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseReplaySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileBillImportSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileAlertWebhookSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1719,7 +1719,7 @@ public class DomainPurityTest {
     @Test
     public void mallReconcileControllerShouldReturnApiDtosInsteadOfDomainEntities() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/ReconcileCaseController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1739,11 +1739,11 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileCaseResponseDTO.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileOperationLogResponseDTO.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileResponseAssembler.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileQuerySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileCaseResponseDTO.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-api/src/main/java/cn/bugstack/api/dto/ReconcileOperationLogResponseDTO.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseQueryEndpointSupport.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1757,7 +1757,7 @@ public class DomainPurityTest {
     @Test
     public void mallAliPayControllerShouldDelegatePaymentChannelAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1796,13 +1796,13 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/AlipayNotifySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ActivePayNotifySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/OrderListResponseAssembler.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallPayOrderCreateSupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallGroupBuyNotifySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallOrderQuerySupport.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallRefundOrderSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/AlipayNotifySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ActivePayNotifySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/OrderListResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallPayOrderCreateSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallGroupBuyNotifySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallOrderQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/MallRefundOrderSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1816,7 +1816,7 @@ public class DomainPurityTest {
     @Test
     public void mallOrderServiceShouldDelegatePaySuccessAndRefundUsecases() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path orderService = workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderService.java");
+        Path orderService = workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/OrderService.java");
         String source = new String(Files.readAllBytes(orderService), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1842,8 +1842,8 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredFiles = Arrays.asList(
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderPaySuccessProcessor.java"),
-                workspaceRoot.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderRefundProcessor.java")
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderPaySuccessProcessor.java"),
+                workspaceRoot.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain/src/main/java/cn/bugstack/domain/order/service/processor/OrderRefundProcessor.java")
         );
         for (Path requiredFile : requiredFiles) {
             if (!Files.exists(requiredFile)) {
@@ -1857,7 +1857,7 @@ public class DomainPurityTest {
     @Test
     public void seckillMarketControllerShouldDelegateValidationClientIpAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillMarketController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/SeckillMarketController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1894,14 +1894,14 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRequestValidator.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/ClientIpResolver.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillResponseAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillMarketConfigQuerySupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillLockOrderSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOrderResultQuerySupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillSettlementSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRefundSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRequestValidator.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/ClientIpResolver.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillMarketConfigQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillLockOrderSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillOrderResultQuerySupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillSettlementSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/SeckillRefundSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1915,7 +1915,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyMarketTradeControllerShouldDelegateValidationCommandAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MarketTradeController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MarketTradeController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -1965,12 +1965,12 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeRequestValidator.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeCommandAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeResponseAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyLockOrderSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuySettlementSupport.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyRefundSupport.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeRequestValidator.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeCommandAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyTradeResponseAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyLockOrderSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuySettlementSupport.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyRefundSupport.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -1984,7 +1984,7 @@ public class DomainPurityTest {
     @Test
     public void groupBuyMarketIndexControllerShouldDelegateValidationCommandAndDtoMappingDetails() throws Exception {
         Path workspaceRoot = findWorkspaceRoot();
-        Path controller = workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MarketIndexController.java");
+        Path controller = workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/http/MarketIndexController.java");
         String source = new String(Files.readAllBytes(controller), StandardCharsets.UTF_8);
 
         List<String> forbiddenSnippets = Arrays.asList(
@@ -2008,9 +2008,9 @@ public class DomainPurityTest {
         }
 
         List<Path> requiredSupportFiles = Arrays.asList(
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigRequestValidator.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigCommandAssembler.java"),
-                workspaceRoot.resolve("group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigResponseAssembler.java")
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigRequestValidator.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigCommandAssembler.java"),
+                workspaceRoot.resolve("qsyy-commerce-market/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/support/GroupBuyMarketConfigResponseAssembler.java")
         );
         for (Path supportFile : requiredSupportFiles) {
             if (!Files.exists(supportFile)) {
@@ -2061,14 +2061,14 @@ public class DomainPurityTest {
     private static Path findWorkspaceRoot() {
         Path current = Paths.get("").toAbsolutePath();
         for (Path path = current; path != null; path = path.getParent()) {
-            if (Files.isDirectory(path.resolve("group-buy-market-master/group-buy-market-domain"))
-                    && Files.isDirectory(path.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain"))) {
+            if (Files.isDirectory(path.resolve("qsyy-commerce-market/group-buy-market-domain"))
+                    && Files.isDirectory(path.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain"))) {
                 return path;
             }
             Path parent = path.getParent();
             if (Files.isDirectory(path.resolve("group-buy-market-domain"))
                     && null != parent
-                    && Files.isDirectory(parent.resolve("s-pay-mall-ddd-market-master/s-pay-mall-ddd-domain"))) {
+                    && Files.isDirectory(parent.resolve("qsyy-commerce-mall/s-pay-mall-ddd-domain"))) {
                 return parent;
             }
         }

@@ -231,3 +231,4 @@
 - [x] `DomainPurityTest` 增加营销 RabbitMQ 发布器边界守护，避免 DAO/PO、MessageDigest 和失败台账记录细节回流到 `EventPublisher`。
 - [x] `DomainPurityTest` 增加商城 MQ 记录仓储和 RabbitMQ 发布器边界守护，保持商城/营销两个服务消息可靠性结构同构。
 - [x] 当前本机可验证的 DDD 大仓储治理项已完成，后续继续按 `docs/sdd/ddd-sdd-todo-list.md` 做增量审计，不再保留泛化未完成项。
+- [x] 顶层服务目录已从 `group-buy-market-master` / `s-pay-mall-ddd-market-master` 改为 `qsyy-commerce-market` / `qsyy-commerce-mall`，并同步根 POM、脚本、架构测试和 SDD 文档路径。

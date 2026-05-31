@@ -17,7 +17,7 @@
 
 ### 1. `DomainPurityTest` 已经从“架构护栏”演进成“大型字符串规则清单”
 
-当前 [DomainPurityTest.java](/E:/java/qsyy-ecommerce-platform/group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java) 已经超过 2000 行。它覆盖了很多真实有效的守护：
+当前 [DomainPurityTest.java](/E:/java/qsyy-ecommerce-platform/qsyy-commerce-market/group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java) 已经超过 2000 行。它覆盖了很多真实有效的守护：
 
 - domain 不依赖 Spring；
 - 通用仓储保持删除；

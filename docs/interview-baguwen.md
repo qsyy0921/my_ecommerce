@@ -4,8 +4,8 @@
 
 适用项目：
 
-- `group-buy-market-master`：拼团营销服务，负责首页试算、拼团锁单、秒杀锁单、支付结算、退单恢复、成团通知、秒杀异步落库、补偿和监控。
-- `s-pay-mall-ddd-market-master`：支付商城服务，负责商品订单、支付单、支付宝/模拟支付、支付回调、退款入口、支付/退款流水和对账中心。
+- `qsyy-commerce-market`：拼团营销服务，负责首页试算、拼团锁单、秒杀锁单、支付结算、退单恢复、成团通知、秒杀异步落库、补偿和监控。
+- `qsyy-commerce-mall`：支付商城服务，负责商品订单、支付单、支付宝/模拟支付、支付回调、退款入口、支付/退款流水和对账中心。
 
 项目标识说明：
 
@@ -262,7 +262,7 @@ types           异常、枚举、常量、通用类型
 - 对账查询响应组装：`s-pay-mall-ddd-trigger/.../support/ReconcileQuerySupport.java`、`ReconcileResponseAssembler.java`
 - 对账后台用例支撑：`s-pay-mall-ddd-trigger/.../support/ReconcileCaseQueryEndpointSupport.java`、`ReconcileCaseOperationSupport.java`、`ReconcileCaseReplaySupport.java`、`ReconcileBillImportSupport.java`、`ReconcileAlertWebhookSupport.java`
 - 对账仓储支持组件：`s-pay-mall-ddd-infrastructure/.../adapter/support`
-- 对账页面：`s-pay-mall-ddd-market-master/docs/dev-ops/nginx/html/reconcile-admin.html`
+- 对账页面：`qsyy-commerce-mall/docs/dev-ops/nginx/html/reconcile-admin.html`
 - 架构测试：`group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java`
 - 状态机测试：`group-buy-market-app/src/test/java/cn/bugstack/test/domain/shared/OrderStateMachineTest.java`
 

@@ -25,7 +25,7 @@
 3. 基础设施细节进入 adapter/support，业务语义进入端口，跨服务一致性依靠幂等、补偿、消息可靠性和对账闭环。
 4. 秒杀高并发链路可以使用 Redis 资格预扣和削峰，但必须诚实说明 Redis Stream 不是大促终局方案，真正生产化需要 RocketMQ/Kafka/Pulsar 级别消息系统和真实多机压测证明。
 5. 不要声称项目已经完美；必须维护当前边界和剩余问题。
-6. 项目可见标识统一使用 qsyy-ecommerce-platform / qsyy；Java package、外部依赖坐标、数据库名、MQ key 等兼容性标识只有在有完整迁移规格和验证计划时才改。
+6. 项目可见标识统一使用 qsyy-ecommerce-platform / qsyy；顶层服务目录使用 qsyy-commerce-market / qsyy-commerce-mall；Java package、内部 Maven module artifactId、外部依赖坐标、数据库名、MQ key 等兼容性标识只有在有完整迁移规格和验证计划时才改。
 
 每轮必须维护三类清单：
 1. Done List：本轮完成了什么、影响了哪些文件、验证命令是什么、提交号是什么。
@@ -167,7 +167,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.ps1
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest" test
 ```
 
 ### L2 营销服务编译
@@ -185,7 +185,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests compile
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests compile
 ```
 
 ### L3 商城服务编译
@@ -203,7 +203,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests compile
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests compile
 ```
 
 ### L4 拼团链路变更
@@ -221,7 +221,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest,cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest,cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest" test
 ```
 
 ### L5 秒杀链路变更
@@ -239,7 +239,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderIdPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderIdPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
 ```
 
 ### L6 商城支付和对账变更
@@ -257,7 +257,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\qsyy-ecommerce-platform
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest,cn.bugstack.test.domain.OrderServiceTest,cn.bugstack.test.infrastructure.message.MessageProducerRetrySupportUnitTest,cn.bugstack.test.infrastructure.message.MqProducerFailureRecorderUnitTest,cn.bugstack.test.infrastructure.reconcile.ReconcileOperationLogSupportUnitTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest,cn.bugstack.test.domain.OrderServiceTest,cn.bugstack.test.infrastructure.message.MessageProducerRetrySupportUnitTest,cn.bugstack.test.infrastructure.message.MqProducerFailureRecorderUnitTest,cn.bugstack.test.infrastructure.reconcile.ReconcileOperationLogSupportUnitTest" test
 ```
 
 ### L7 发布前本地全量验证
@@ -277,10 +277,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 cd E:\java\qsyy-ecommerce-platform
 git diff --check
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.ps1
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests compile
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests compile
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest,cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest,cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest" test
-& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests compile
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests compile
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-market\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest,cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest,cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest" test
+& "E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest" test
 ```
 
 ## 本轮判断

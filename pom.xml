@@ -13,8 +13,8 @@
     <description>Qsyy maintained ecommerce codebase for group-buy marketing, seckill, payment mall, reconciliation and observability.</description>
 
     <modules>
-        <module>group-buy-market-master</module>
-        <module>s-pay-mall-ddd-market-master</module>
+        <module>qsyy-commerce-market</module>
+        <module>qsyy-commerce-mall</module>
     </modules>
 
     <properties>

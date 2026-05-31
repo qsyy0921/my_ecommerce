@@ -147,7 +147,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
   - 提交：`82c4896`
 
 - [x] 补齐拼团锁单等待超时语义单元测试。
-  - 文件：`group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/domain/trade/TradeLockOrderServiceUnitTest.java`、`docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`
+  - 文件：`qsyy-commerce-market/group-buy-market-app/src/test/java/cn/bugstack/test/domain/trade/TradeLockOrderServiceUnitTest.java`、`docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`
   - 验证：`mvn -q -pl group-buy-market-app -am "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest" test`
   - 提交：`7dd160a`
 
@@ -221,6 +221,11 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
   - 验证：`git diff --check`、`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`、`market-compile`、`mall-compile`
   - 提交：本轮提交
 
+- [x] 顶层服务目录改为 qsyy 风格命名。
+  - 文件：`qsyy-commerce-market/`、`qsyy-commerce-mall/`、`pom.xml`、`scripts/`、`docs/sdd/`、`DomainPurityTest.java`
+  - 验证：`git diff --check`、`docs-only`、`market-compile`、`mall-compile`、根聚合 `mvn -q -DskipTests compile`
+  - 提交：本轮提交
+
 ## TODO List
 
 - [ ] P1：审计本地 `Semaphore` 是否需要独立为入口并发策略。
@@ -244,6 +249,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 | 本地 `Semaphore` 入口闸门治理 | 暂不处理 | 代码风险 / 面试口径 | P1 | 单机闸门容易被误解为全局限流，高并发下也可能放大 RT 抖动 | 当前没有证据显示它造成功能问题，Redis 限流和资格预扣才是主要削峰能力 | 锁单压测出现 RT 抖动，或准备做多实例入口治理 |
 | 分布式全局订单号 | 暂不处理 | 生产边界 / 数据模型 | P1 | 当前 12 位兼容订单号不能等同订单中心或全局发号服务 | 表结构是 `varchar(12)`，直接引入 Snowflake 会扩大 SQL 和兼容改动 | 明确升级订单号模型，或引入订单中心/发号服务 |
 | Java package 全量命名空间迁移 | 暂不处理 | 代码风险 / 兼容边界 | P2 | 可见标识已经收敛到 qsyy，但源码 package 仍是历史兼容命名 | 一次性迁移会影响 Spring 扫描、MyBatis mapper、测试路径和历史文档链接 | 明确要做品牌级命名空间迁移 |
+| 内部 Maven artifactId 级联重命名 | 暂不处理 | 构建边界 | P2 | 顶层目录已经改名，但内部 module、jar 名和 artifactId 仍保留历史业务命名 | 会影响依赖关系、部署脚本、jar 名、历史验证命令和本地启动脚本 | 明确要做构建坐标级品牌迁移并准备全量验证 |
 | `xfg-wrench-*` 依赖坐标替换 | 暂不处理 | 依赖边界 | P2 | 外部依赖名仍带历史标识 | 当前依赖坐标可解析，强行改名会导致 Maven 解析失败 | 自建 fork 并发布 qsyy 坐标 |
 | 数据库/MQ/Redis 运行标识迁移 | 暂不处理 | 运维边界 | P2 | 运行标识仍使用 `group_buy_market` | 这些标识影响 SQL、缓存、MQ、告警和压测脚本，迁移需要单独窗口 | 明确需要生产级重命名并准备数据迁移 |
 | 商城 `AbstractOrderService` 营销类型分支治理 | 暂不处理 | 代码风险 / 业务边界 | P1 | 新增营销类型时 if/else 会继续增长 | 当前只有拼团和秒杀，拆分收益有限 | 新增第三种营销类型 |
@@ -276,6 +282,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - 当前现态已包含秒杀订单 Outbox 查询台账、状态数量指标、重试耗时指标和 Prometheus 告警。
 - 当前现态已包含秒杀订单号生成端口治理和本地技术决策边界审计。
 - 当前现态已包含项目可见标识 qsyy 迁移记录和保留边界。
+- 当前现态已包含顶层服务目录 qsyy 风格重命名记录。
 - 当前现态已包含 RocketMQ adapter 最小 profile 的暂不实现决策。
 - 当前现态已同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
 - 当前现态已同步专业 MQ 和 Outbox 面试口径到 `interview-baguwen.md`。

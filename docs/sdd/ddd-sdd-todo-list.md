@@ -428,6 +428,11 @@
   - 本次结论：只迁移展示、文档和样例层；保留 `cn.bugstack` package、`xfg-wrench-*` 依赖坐标和 `group_buy_market` 数据库/MQ/Redis 运行标识，避免破坏编译和本地环境。
   - 验收：新增 `docs/sdd/2026-05-31-project-identity-qsyy-update.md`，当前目标 Prompt 同步新根目录 `E:\java\qsyy-ecommerce-platform`。
 
+- [x] 统一顶层服务目录命名。
+  - 目标：把 `group-buy-market-master` 和 `s-pay-mall-ddd-market-master` 两个课程风格目录改为 qsyy 风格服务目录。
+  - 本次结论：顶层目录改为 `qsyy-commerce-market` 和 `qsyy-commerce-mall`；内部 Maven module、jar 名、Java package 和运行时标识暂不级联重命名，避免扩大构建和部署风险。
+  - 验收：根 POM、脚本、架构测试和 SDD 文档路径均同步新目录名。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
@@ -475,12 +480,12 @@ $env:Path="$env:JAVA_HOME\bin;E:\java\qsyy-ecommerce-platform\.tools\apache-mave
 ```
 
 ```powershell
-cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-market
 mvn -q -DskipTests compile
 ```
 
 ```powershell
-cd E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall
 mvn -q -DskipTests compile
 ```
 
@@ -490,6 +495,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 ```
 
 ```powershell
-cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-market
 mvn -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest" test
 ```

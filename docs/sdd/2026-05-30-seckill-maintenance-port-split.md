@@ -40,7 +40,7 @@ flowchart LR
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
 $env:Path="$env:JAVA_HOME\bin;E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin;$env:Path"
 
-cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-market
 mvn -q -DskipTests compile
 mvn -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest" test
 

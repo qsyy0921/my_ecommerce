@@ -37,7 +37,7 @@
 ## 验收
 
 ```powershell
-cd E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall
 mvn -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest" test
 ```
 

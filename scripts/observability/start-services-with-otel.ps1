@@ -40,10 +40,10 @@ if (-not $KeepExisting) {
 if (-not $SkipBuild) {
     $env:JAVA_HOME = Split-Path (Split-Path $JavaExe -Parent) -Parent
     $env:Path = "$env:JAVA_HOME\bin;$(Split-Path $MavenExe -Parent);$env:Path"
-    Push-Location (Join-Path $root "group-buy-market-master")
+    Push-Location (Join-Path $root "qsyy-commerce-market")
     & $MavenExe -q -DskipTests package
     Pop-Location
-    Push-Location (Join-Path $root "s-pay-mall-ddd-market-master")
+    Push-Location (Join-Path $root "qsyy-commerce-mall")
     & $MavenExe -q -DskipTests package
     Pop-Location
 }
@@ -70,8 +70,8 @@ function Start-OtelService([string]$ServiceName, [string]$JarPath, [int]$Port, [
     Write-Host "Started $ServiceName on http://127.0.0.1:$Port pid=$($proc.Id)"
 }
 
-$marketJar = Join-Path $root "group-buy-market-master\group-buy-market-app\target\group-buy-market-app.jar"
-$mallJar = Join-Path $root "s-pay-mall-ddd-market-master\s-pay-mall-ddd-app\target\s-pay-mall-ddd-app.jar"
+$marketJar = Join-Path $root "qsyy-commerce-market\group-buy-market-app\target\group-buy-market-app.jar"
+$mallJar = Join-Path $root "qsyy-commerce-mall\s-pay-mall-ddd-app\target\s-pay-mall-ddd-app.jar"
 
 Start-OtelService "group-buy-market" $marketJar $MarketPort @("--app.seckill.order-create-buffer.mode=redis_stream")
 Start-OtelService "s-pay-mall-ddd" $mallJar $MallPort @("--app.config.group-buy-market.api-url=http://127.0.0.1:$MarketPort")

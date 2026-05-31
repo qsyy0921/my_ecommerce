@@ -58,7 +58,7 @@ flowchart LR
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
-.\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -pl s-pay-mall-ddd-market-master/s-pay-mall-ddd-app -am -DskipTests compile
+.\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -pl qsyy-commerce-mall/s-pay-mall-ddd-app -am -DskipTests compile
 ```
 
 结果：通过，使用 `openjdk version "1.8.0_492"`。

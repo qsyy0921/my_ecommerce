@@ -16,8 +16,8 @@ $patterns = @(
 )
 
 $domainPaths = @(
-  (Join-Path $ProjectRoot "group-buy-market-master\group-buy-market-domain\src\main\java\cn\bugstack\domain"),
-  (Join-Path $ProjectRoot "s-pay-mall-ddd-market-master\s-pay-mall-ddd-domain\src\main\java\cn\bugstack\domain")
+  (Join-Path $ProjectRoot "qsyy-commerce-market\group-buy-market-domain\src\main\java\cn\bugstack\domain"),
+  (Join-Path $ProjectRoot "qsyy-commerce-mall\s-pay-mall-ddd-domain\src\main\java\cn\bugstack\domain")
 )
 
 $violations = @()

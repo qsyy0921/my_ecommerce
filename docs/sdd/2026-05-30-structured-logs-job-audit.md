@@ -60,16 +60,16 @@ E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipT
 
 验证结果：
 
-- `group-buy-market-master` 编译通过。
-- `s-pay-mall-ddd-market-master` 编译通过。
+- `qsyy-commerce-market` 编译通过。
+- `qsyy-commerce-mall` 编译通过。
 
 覆盖性验证：
 
 ```powershell
-Get-ChildItem group-buy-market-master\group-buy-market-trigger\src\main\java\cn\bugstack\trigger\job -Filter *Job.java |
+Get-ChildItem qsyy-commerce-market\group-buy-market-trigger\src\main\java\cn\bugstack\trigger\job -Filter *Job.java |
   Where-Object { -not (Select-String -Path $_.FullName -Pattern 'JobExecutionRecorder' -Quiet) }
 
-Get-ChildItem s-pay-mall-ddd-market-master\s-pay-mall-ddd-trigger\src\main\java\cn\bugstack\trigger\job -Filter *Job.java |
+Get-ChildItem qsyy-commerce-mall\s-pay-mall-ddd-trigger\src\main\java\cn\bugstack\trigger\job -Filter *Job.java |
   Where-Object { -not (Select-String -Path $_.FullName -Pattern 'JobExecutionRecorder' -Quiet) }
 ```
 

@@ -36,7 +36,7 @@
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
 $env:Path="$env:JAVA_HOME\bin;E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin;$env:Path"
 
-cd E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-mall
 mvn -q -DskipTests compile
 
 cd E:\java\qsyy-ecommerce-platform

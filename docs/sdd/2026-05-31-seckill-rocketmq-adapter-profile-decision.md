@@ -56,7 +56,7 @@
 
 - [x] 明确本轮不引入 RocketMQ/Kafka/Pulsar 客户端依赖。
   - 文件：`docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`
-  - 验证：`rg "rocketmq" group-buy-market-master -n`
+  - 验证：`rg "rocketmq" qsyy-commerce-market -n`
   - 提交：`77761c0`
 
 ## TODO List

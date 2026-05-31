@@ -42,8 +42,8 @@ mvn -DskipTests package
 
 改造两个服务的 MQ 发布器：
 
-- `group-buy-market-master/group-buy-market-infrastructure/.../EventPublisher.java`
-- `s-pay-mall-ddd-market-master/s-pay-mall-ddd-infrastructure/.../EventPublisher.java`
+- `qsyy-commerce-market/group-buy-market-infrastructure/.../EventPublisher.java`
+- `qsyy-commerce-mall/s-pay-mall-ddd-infrastructure/.../EventPublisher.java`
 
 增强点：
 

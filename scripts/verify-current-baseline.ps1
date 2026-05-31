@@ -7,8 +7,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $mavenExe = Join-Path $ProjectRoot ".tools\apache-maven-3.8.8\bin\mvn.cmd"
-$marketPom = Join-Path $ProjectRoot "group-buy-market-master\pom.xml"
-$mallPom = Join-Path $ProjectRoot "s-pay-mall-ddd-market-master\pom.xml"
+$marketPom = Join-Path $ProjectRoot "qsyy-commerce-market\pom.xml"
+$mallPom = Join-Path $ProjectRoot "qsyy-commerce-mall\pom.xml"
 $domainPurityScript = Join-Path $ProjectRoot "scripts\check-domain-purity.ps1"
 
 function Invoke-NativeStep {

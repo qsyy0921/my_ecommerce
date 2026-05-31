@@ -49,7 +49,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 ```
 
 ```powershell
-cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\qsyy-commerce-market
 & 'E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd' -q -DskipTests compile
 & 'E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd' -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest" test
 ```
