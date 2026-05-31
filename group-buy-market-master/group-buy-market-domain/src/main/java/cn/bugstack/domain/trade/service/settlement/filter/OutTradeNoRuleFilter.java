@@ -12,7 +12,7 @@ import cn.bugstack.wrench.design.framework.link.model2.handler.ILogicHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 外部交易单号过滤；外部交易单号是否为退单
  * @create 2025-01-29 09:37
  */

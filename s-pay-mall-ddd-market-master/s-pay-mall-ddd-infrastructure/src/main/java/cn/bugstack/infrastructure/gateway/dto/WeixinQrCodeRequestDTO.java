@@ -3,7 +3,7 @@ package cn.bugstack.infrastructure.gateway.dto;
 import lombok.*;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 获取微信登录二维码请求对象
  * @create 2024-02-25 09:32
  */

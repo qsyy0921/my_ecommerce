@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 消息发送
  * @create 2024-03-30 12:40
  */

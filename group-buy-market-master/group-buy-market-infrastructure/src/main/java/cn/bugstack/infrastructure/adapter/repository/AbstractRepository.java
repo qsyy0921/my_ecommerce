@@ -9,7 +9,7 @@ import javax.annotation.Resource;
 import java.util.function.Supplier;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 仓储抽象类
  */
 public abstract class AbstractRepository {

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * 任务类型枚举
  *
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/18 21:35
  */
 @Getter

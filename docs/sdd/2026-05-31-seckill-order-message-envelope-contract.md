@@ -35,7 +35,7 @@
 ## 验证
 
 ```powershell
-cd E:\java\group_buy_market
+cd E:\java\qsyy-ecommerce-platform
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain
 ```

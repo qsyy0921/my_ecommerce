@@ -2,7 +2,7 @@
 FROM openjdk:8-jre-slim
 
 # 作者
-MAINTAINER xiaofuge
+MAINTAINER qsyy
 
 # 配置
 ENV PARAMS=""

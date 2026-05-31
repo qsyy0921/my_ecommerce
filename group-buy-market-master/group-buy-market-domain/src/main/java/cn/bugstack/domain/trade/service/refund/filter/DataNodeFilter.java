@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 数据节点
  *
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/30 09:58
  */
 @Slf4j

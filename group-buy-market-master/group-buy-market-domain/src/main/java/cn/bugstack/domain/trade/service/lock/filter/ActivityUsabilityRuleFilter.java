@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Date;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 活动的可用性，规则过滤【状态、有效期】
  * @create 2025-01-25 09:18
  */

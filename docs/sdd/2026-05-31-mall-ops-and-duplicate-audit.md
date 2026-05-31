@@ -15,7 +15,7 @@
 
 `ReconcileCaseController` 现在已经基本符合触发层预期：只做路由和委托。
 
-但 [ReconcileCaseOperationSupport.java](/E:/java/group_buy_market/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseOperationSupport.java) 仍然集中承担：
+但 [ReconcileCaseOperationSupport.java](/E:/java/qsyy-ecommerce-platform/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/support/ReconcileCaseOperationSupport.java) 仍然集中承担：
 
 - 管理员鉴权。
 - 操作人解析。
@@ -36,9 +36,9 @@
 
 ### 2. `AliPayController` 已明显收敛，`LoginController` 还保持传统轻量入口风格
 
-[AliPayController.java](/E:/java/group_buy_market/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java) 当前已经只做入口委托，问题不大。
+[AliPayController.java](/E:/java/qsyy-ecommerce-platform/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/AliPayController.java) 当前已经只做入口委托，问题不大。
 
-[LoginController.java](/E:/java/group_buy_market/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/LoginController.java) 仍然保留：
+[LoginController.java](/E:/java/qsyy-ecommerce-platform/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/http/LoginController.java) 仍然保留：
 
 - 多个接口内联 `try/catch`。
 - 响应对象 builder 重复。
@@ -53,8 +53,8 @@
 
 当前两个服务各自都有：
 
-- [group-buy JobExecutionRecorder.java](/E:/java/group_buy_market/group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/job/JobExecutionRecorder.java)
-- [mall JobExecutionRecorder.java](/E:/java/group_buy_market/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/job/JobExecutionRecorder.java)
+- [group-buy JobExecutionRecorder.java](/E:/java/qsyy-ecommerce-platform/group-buy-market-master/group-buy-market-trigger/src/main/java/cn/bugstack/trigger/job/JobExecutionRecorder.java)
+- [mall JobExecutionRecorder.java](/E:/java/qsyy-ecommerce-platform/s-pay-mall-ddd-market-master/s-pay-mall-ddd-trigger/src/main/java/cn/bugstack/trigger/job/JobExecutionRecorder.java)
 
 两份实现几乎一致，差异主要只有类注释文本。
 

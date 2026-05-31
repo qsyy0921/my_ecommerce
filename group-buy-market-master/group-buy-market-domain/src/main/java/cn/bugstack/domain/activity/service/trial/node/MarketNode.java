@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 营销优惠节点
  * @create 2024-12-14 14:30
  */

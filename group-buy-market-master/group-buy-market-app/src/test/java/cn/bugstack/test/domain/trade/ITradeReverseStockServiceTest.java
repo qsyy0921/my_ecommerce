@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * 锁单、恢复、锁单
  *
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/29 10:34
  */
 @Slf4j
@@ -38,7 +38,7 @@ public class ITradeReverseStockServiceTest {
     @Test
     public void test_refundOrder() throws Exception {
         TradeRefundCommandEntity tradeRefundCommandEntity = TradeRefundCommandEntity.builder()
-                .userId("xfg803")
+                .userId("qsyy803")
                 .outTradeNo("356654963071")
                 .source("s01")
                 .channel("c01")
@@ -58,7 +58,7 @@ public class ITradeReverseStockServiceTest {
         String teamId = null;
         for (int i = 1; i < 4; i++) {
             LockMarketPayOrderRequestDTO lockMarketPayOrderRequestDTO = new LockMarketPayOrderRequestDTO();
-            lockMarketPayOrderRequestDTO.setUserId("xfg110" + i);
+            lockMarketPayOrderRequestDTO.setUserId("qsyy110" + i);
             lockMarketPayOrderRequestDTO.setTeamId(teamId);
             lockMarketPayOrderRequestDTO.setActivityId(100123L);
             lockMarketPayOrderRequestDTO.setGoodsId("9890001");
@@ -78,7 +78,7 @@ public class ITradeReverseStockServiceTest {
     @Test
     public void test_lockMarketPayOrder_reverse() throws InterruptedException {
         LockMarketPayOrderRequestDTO lockMarketPayOrderRequestDTO = new LockMarketPayOrderRequestDTO();
-        lockMarketPayOrderRequestDTO.setUserId("xfg804");
+        lockMarketPayOrderRequestDTO.setUserId("qsyy804");
         lockMarketPayOrderRequestDTO.setTeamId("23165018");
         lockMarketPayOrderRequestDTO.setActivityId(100123L);
         lockMarketPayOrderRequestDTO.setGoodsId("9890001");

@@ -26,7 +26,7 @@ public class AliPayTest {
     // 「沙箱环境」支付宝公钥
     public static String alipay_public_key = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmgtSO8GV5YSl01AWgGWe2xKJ9oDfjzf5vNtJS6SSc5klmGMToVdsi3gmLipN04yzmnEEchmFxsuxKLLhdQuC4d9V74I6CVIZPPHtaSuz/T3EZTHtQIGwF705Yrq1bd63l70iTfkrS0Ry9f72SDZEBBLllXfFo+otChwRRN+UXDd8X/bplV3/cbRncV5yWRnHHCgzQiwpH3ilS+sOmMfdfac0bi/xB7HIU6nUX04VCjAR7itSr0OmU8HC6p20Ubvjs45R6VuR7FMI+OahCd3LDe/ayelScfQ4zavruk4HGx3TDH4hLDA3N+xid5Cu5erLDPHtFXfnQHI4n/opQaXo5wIDAQAB";
     // 「沙箱环境」服务器异步通知回调地址
-    public static String notify_url = "https://xfg.natapp.cn/api/v1/alipay/alipay_notify_url";
+    public static String notify_url = "https://qsyy-local.example.com/api/v1/alipay/alipay_notify_url";
     // 「沙箱环境」页面跳转同步通知页面路径 需http://格式的完整路径，不能加?id=123这类自定义参数，必须外网可以正常访问
     public static String return_url = "https://gaga.plus";
     // 「沙箱环境」
@@ -56,7 +56,7 @@ public class AliPayTest {
         request.setReturnUrl(return_url);
 
         JSONObject bizContent = new JSONObject();
-        bizContent.put("out_trade_no", "xfg000091001902");  // 我们自己生成的订单编号
+        bizContent.put("out_trade_no", "qsyy000091001902");  // 我们自己生成的订单编号
         bizContent.put("total_amount", "0.01"); // 订单的总金额
         bizContent.put("subject", "测试商品");   // 支付的名称
         bizContent.put("product_code", "FAST_INSTANT_TRADE_PAY");  // 固定配置

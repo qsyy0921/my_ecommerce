@@ -3,7 +3,7 @@ package cn.bugstack.domain.goods.service;
 import cn.bugstack.domain.goods.adapter.repository.IGoodsRepository;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 结算服务
  * @create 2025-02-15 09:11
  */

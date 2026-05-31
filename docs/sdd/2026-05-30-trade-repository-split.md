@@ -86,8 +86,8 @@ flowchart LR
 ## 当前验证
 
 - `scripts/check-domain-purity.ps1`：通过。
-- `E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests compile`：通过。
-- `E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests package`：通过。
+- `E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests compile`：通过。
+- `E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests package`：通过。
 - 8091、8092、8093 三个实例重新启动成功。
 - Nginx 8080 `/actuator/health` 返回 `UP`。
 - 拼团烟测：通过 8080 完成 3 人开团、参团、结算，`group_buy_stock_flow` 写入 3 条，`notify_task` 写入 1 条 `trade_settlement`，`order_state_flow` 写入状态迁移记录。

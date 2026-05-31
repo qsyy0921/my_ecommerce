@@ -21,7 +21,7 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 营销首页服务
  * @create 2025-02-02 16:03
  */

@@ -1,6 +1,6 @@
-# 拼团交易平台统一代码库
+# qsyy-ecommerce-platform
 
-本目录已经整理为一个统一 Maven 聚合工程，包含两个独立服务：
+本仓库是 qsyy 维护的 DDD 交易营销练习项目，包含拼团、秒杀、支付商城、对账补偿、MQ 可靠性和可观测性能力。代码仍按两个独立 Spring Boot 服务组织：
 
 - `group-buy-market-master`：拼团营销服务，负责首页试算、拼团锁单、支付结算、退单退款、成团/退单通知。
 - `s-pay-mall-ddd-market-master`：支付商城服务，负责商城下单、支付单创建、支付宝回调、订单列表、退单入口。
@@ -10,7 +10,7 @@
 ## 目录结构
 
 ```text
-group_buy_market/
+qsyy-ecommerce-platform/
 ├── pom.xml                         # 根级聚合工程
 ├── docs/                           # 面试八股文和项目文档
 ├── group-buy-market-master/        # 拼团营销服务

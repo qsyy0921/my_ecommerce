@@ -12,7 +12,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 拼团回调服务
  * @create 2025-01-31 09:12
  */

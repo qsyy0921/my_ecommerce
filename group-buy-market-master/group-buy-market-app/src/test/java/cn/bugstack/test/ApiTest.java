@@ -66,7 +66,7 @@ public class ApiTest {
     @Test
     public void test_Supplier() {
         // 创建一个 Supplier 实例，返回一个字符串
-        Supplier<String> stringSupplier = () -> "Hello, XFG!";
+        Supplier<String> stringSupplier = () -> "Hello, QSYY!";
 
         // 使用 get() 方法获取 Supplier 提供的值
         String result = stringSupplier.get();

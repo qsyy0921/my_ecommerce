@@ -4,7 +4,7 @@
 PROJECT_NAME=$(basename $(git rev-parse --show-toplevel))
 
 # 构建完整的远程仓库 URL
-REMOTE_URL="https://github.com/xfg-studio-project/${PROJECT_NAME}.git"
+REMOTE_URL="https://github.com/qsyy0921/${PROJECT_NAME}.git"
 
 # 检查远程仓库是否已存在，如果没有则添加
 if ! git remote | grep -q '^target$'; then

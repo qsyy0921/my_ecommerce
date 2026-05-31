@@ -11,7 +11,7 @@ import cn.bugstack.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 用户参与限制，规则过滤
  * @create 2025-01-25 09:19
  */

@@ -42,14 +42,13 @@
 ## 验证命令
 
 ```powershell
-cd E:\java\group_buy_market
+cd E:\java\qsyy-ecommerce-platform
 git diff --check
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.ps1
 ```
 
 ```powershell
-cd E:\java\group_buy_market\group-buy-market-master
-& 'E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd' -q -DskipTests compile
-& 'E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd' -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest" test
+cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
+& 'E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd' -q -DskipTests compile
+& 'E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd' -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest" test
 ```
-

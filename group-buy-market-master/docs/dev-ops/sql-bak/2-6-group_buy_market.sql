@@ -70,7 +70,7 @@ LOCK TABLES `crowd_tags_detail` WRITE;
 
 INSERT INTO `crowd_tags_detail` (`id`, `tag_id`, `user_id`, `create_time`, `update_time`)
 VALUES
-	(4,'RQ_KJHKL98UU78H66554GFDV','xiaofuge','2024-12-28 14:42:30','2024-12-28 14:42:30'),
+	(4,'RQ_KJHKL98UU78H66554GFDV','qsyy','2024-12-28 14:42:30','2024-12-28 14:42:30'),
 	(5,'RQ_KJHKL98UU78H66554GFDV','liergou','2024-12-28 14:42:30','2024-12-28 14:42:30');
 
 /*!40000 ALTER TABLE `crowd_tags_detail` ENABLE KEYS */;

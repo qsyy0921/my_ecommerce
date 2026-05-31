@@ -17,7 +17,7 @@
 
 ### 1. `DomainPurityTest` 已经从“架构护栏”演进成“大型字符串规则清单”
 
-当前 [DomainPurityTest.java](/E:/java/group_buy_market/group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java) 已经超过 2000 行。它覆盖了很多真实有效的守护：
+当前 [DomainPurityTest.java](/E:/java/qsyy-ecommerce-platform/group-buy-market-master/group-buy-market-app/src/test/java/cn/bugstack/test/architecture/DomainPurityTest.java) 已经超过 2000 行。它覆盖了很多真实有效的守护：
 
 - domain 不依赖 Spring；
 - 通用仓储保持删除；
@@ -41,7 +41,7 @@
 
 ### 2. `check-domain-purity.ps1` 和 `DomainPurityTest` 有职责落差，不是重复，而是守护层级不一致
 
-当前脚本 [check-domain-purity.ps1](/E:/java/group_buy_market/scripts/check-domain-purity.ps1) 很轻，只检查：
+当前脚本 [check-domain-purity.ps1](/E:/java/qsyy-ecommerce-platform/scripts/check-domain-purity.ps1) 很轻，只检查：
 
 - Spring 相关依赖
 - `@Resource`

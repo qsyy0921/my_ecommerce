@@ -2,7 +2,7 @@
 FROM eclipse-temurin:8-jre-jammy
 
 # 作者
-LABEL maintainer="xiaofuge"
+LABEL maintainer="qsyy"
 
 # 配置
 ENV PARAMS=""

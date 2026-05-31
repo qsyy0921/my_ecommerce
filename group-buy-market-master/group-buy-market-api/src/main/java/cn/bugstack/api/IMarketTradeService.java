@@ -9,7 +9,7 @@ import cn.bugstack.api.dto.SettlementMarketPayOrderResponseDTO;
 import cn.bugstack.api.response.Response;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 营销交易服务接口
  * @create 2025-01-11 13:49
  */

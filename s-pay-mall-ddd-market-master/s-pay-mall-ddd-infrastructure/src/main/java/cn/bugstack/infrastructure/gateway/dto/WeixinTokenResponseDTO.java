@@ -3,7 +3,7 @@ package cn.bugstack.infrastructure.gateway.dto;
 import lombok.Data;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 获取 Access token DTO 对象
  * @create 2024-02-25 09:21
  */

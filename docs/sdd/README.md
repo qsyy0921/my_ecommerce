@@ -24,6 +24,7 @@
 
 - `2026-05-31-current-top-risk-map-and-open-items.md`：当前前 5 个残留风险、Done List、TODO List、所有未完成任务清单。
 - `2026-05-31-current-verification-baseline.md`：当前目标 Prompt、验证分级、Done/TODO/所有未完成任务清单。
+- `2026-05-31-project-identity-qsyy-update.md`：项目可见标识迁移到 qsyy 的 SDD 记录、保留边界和后续任务。
 - `2026-05-31-verification-baseline-script.md`：验证基线脚本化审计和 `verify-current-baseline.ps1` 使用说明。
 - `tasks.md`：当前 SDD 任务状态。
 - `ddd-sdd-todo-list.md`：DDD + SDD 后续治理约束。

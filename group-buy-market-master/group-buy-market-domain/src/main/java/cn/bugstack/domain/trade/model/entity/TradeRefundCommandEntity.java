@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 /**
  * 退单实体对象
  *
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/8 08:03
  */
 @Data

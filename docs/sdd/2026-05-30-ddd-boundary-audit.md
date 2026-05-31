@@ -64,8 +64,8 @@ flowchart LR
 ## 审核结论
 
 - 领域层纯净性：通过 `scripts/check-domain-purity.ps1`，domain 未依赖 Spring、MyBatis、DAO 或 PO。
-- 编译验证：通过 `E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests compile`。
-- 打包验证：通过 `E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests package`。
+- 编译验证：通过 `E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests compile`。
+- 打包验证：通过 `E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -DskipTests package`。
 - 运行验证：8091、8092、8093 三个实例均监听成功，Nginx 8080 入口 `/actuator/health` 返回 `UP`。
 - 秒杀烟测：通过 Nginx 入口完成一次 `lock_seckill_order` 和 `query_seckill_order_result`，订单结果为 `SUCCESS`，`order_state_flow` 和 `seckill_stock_flow` 均各落 1 条。
 - 边界扫描：Repository 中不再存在私有 `recordStateFlow(...)`，状态流水 DAO/PO 只保留在基础设施端口适配器内。

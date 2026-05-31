@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Redis 服务 - Redisson
  *
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  */
 @Service("redissonService")
 public class RedissonService implements IRedisService {

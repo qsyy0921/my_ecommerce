@@ -118,6 +118,7 @@
 - [x] 制定 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先设计业务语义端口，不继续把 `IRedisService` / `RedissonService` 扩成业务总线。
 - [x] 整理 SDD README 文档入口分组，按现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径建立阅读导航。
 - [x] 评估 `DomainPurityTest` 规则分层，明确粗筛、稳定结构守护、精细职责回流守护、脆弱文本快照守护和行为契约测试的边界。
+- [x] 项目可见标识统一到 qsyy / qsyy-ecommerce-platform，并记录 package、依赖坐标、数据库/MQ/Redis 运行标识暂不迁移的兼容边界。
 - [x] 建立当前目标 Prompt 和验证基线，要求后续继续开发必须维护 Done List、TODO List 和所有未完成任务清单，并按变更类型选择验证命令。
 - [x] 建立 `scripts/verify-current-baseline.ps1` 本地验证入口，支持 `docs-only`、`market-domain`、`market-compile`、`mall-compile`、`group-buy`、`seckill`、`mall-reconcile`、`full-local` profile。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。

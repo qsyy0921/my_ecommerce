@@ -423,6 +423,11 @@
   - 本次结论：新增轻量 PowerShell profile runner，不引入 CI 系统，不改业务代码；脚本只封装现有验证命令。
   - 验收：新增 `scripts/verify-current-baseline.ps1` 和 `docs/sdd/2026-05-31-verification-baseline-script.md`，`docs-only` profile 通过。
 
+- [x] 统一项目可见标识。
+  - 目标：把 README、POM 开发者信息、Dockerfile maintainer、前端展示和样例用户收敛到 qsyy / qsyy-ecommerce-platform，降低项目被误认为原始课程代码的风险。
+  - 本次结论：只迁移展示、文档和样例层；保留 `cn.bugstack` package、`xfg-wrench-*` 依赖坐标和 `group_buy_market` 数据库/MQ/Redis 运行标识，避免破坏编译和本地环境。
+  - 验收：新增 `docs/sdd/2026-05-31-project-identity-qsyy-update.md`，当前目标 Prompt 同步新根目录 `E:\java\qsyy-ecommerce-platform`。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
@@ -466,25 +471,25 @@
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
-$env:Path="$env:JAVA_HOME\bin;E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin;$env:Path"
+$env:Path="$env:JAVA_HOME\bin;E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin;$env:Path"
 ```
 
 ```powershell
-cd E:\java\group_buy_market\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
 mvn -q -DskipTests compile
 ```
 
 ```powershell
-cd E:\java\group_buy_market\s-pay-mall-ddd-market-master
+cd E:\java\qsyy-ecommerce-platform\s-pay-mall-ddd-market-master
 mvn -q -DskipTests compile
 ```
 
 ```powershell
-cd E:\java\group_buy_market
+cd E:\java\qsyy-ecommerce-platform
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.ps1
 ```
 
 ```powershell
-cd E:\java\group_buy_market\group-buy-market-master
+cd E:\java\qsyy-ecommerce-platform\group-buy-market-master
 mvn -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.architecture.DomainPurityTest,cn.bugstack.test.domain.shared.OrderStateMachineTest" test
 ```

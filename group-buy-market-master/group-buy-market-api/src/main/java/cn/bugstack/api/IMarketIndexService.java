@@ -5,7 +5,7 @@ import cn.bugstack.api.dto.GoodsMarketResponseDTO;
 import cn.bugstack.api.response.Response;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 营销首页服务接口
  * @create 2025-02-02 16:02
  */

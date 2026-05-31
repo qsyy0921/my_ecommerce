@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Date;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 可结算规则过滤；交易时间
  * @create 2025-01-29 09:38
  */

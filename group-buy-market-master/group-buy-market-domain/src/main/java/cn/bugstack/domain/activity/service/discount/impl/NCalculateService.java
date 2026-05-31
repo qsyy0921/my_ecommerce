@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 满减优惠计算
  * @create 2024-12-22 12:12
  */

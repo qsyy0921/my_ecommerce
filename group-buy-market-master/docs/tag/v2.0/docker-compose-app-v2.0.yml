@@ -48,7 +48,7 @@ services:
       - my-network
   # 拼团，负载01
   # 原镜像，需要自己构建；fuzhengwei/group-buy-market-app:2.0
-  # 代理镜像（小傅哥打包好的，可以直接使用）； registry.cn-hangzhou.aliyuncs.com/xfg-studio/group-buy-market-app:2.0
+  # 代理镜像（历史代理镜像，可以直接使用）； registry.cn-hangzhou.aliyuncs.com/xfg-studio/group-buy-market-app:2.0
   group-buy-market-01:
     image: fuzhengwei/group-buy-market-app:2.0
     container_name: group-buy-market-app-01

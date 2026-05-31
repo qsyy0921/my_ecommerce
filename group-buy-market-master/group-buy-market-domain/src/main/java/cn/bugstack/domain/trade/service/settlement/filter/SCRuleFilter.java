@@ -10,7 +10,7 @@ import cn.bugstack.wrench.design.framework.link.model2.handler.ILogicHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description SC 渠道来源过滤 - 当某个签约渠道下架后，则不会记账
  * @create 2025-01-29 09:16
  */

@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cn.bugstack</groupId>
-    <artifactId>group-buy-market-suite</artifactId>
+    <groupId>io.github.qsyy0921</groupId>
+    <artifactId>qsyy-ecommerce-suite</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>group-buy-market-suite</name>
-    <description>Unified codebase for group-buy marketing service and payment mall service.</description>
+    <name>qsyy-ecommerce-suite</name>
+    <description>Qsyy maintained ecommerce codebase for group-buy marketing, seckill, payment mall, reconciliation and observability.</description>
 
     <modules>
         <module>group-buy-market-master</module>

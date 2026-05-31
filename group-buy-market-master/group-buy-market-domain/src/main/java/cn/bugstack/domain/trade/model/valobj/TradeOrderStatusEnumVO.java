@@ -3,7 +3,7 @@ package cn.bugstack.domain.trade.model.valobj;
 import lombok.*;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 交易订单状态枚举
  * @create 2025-01-11 10:21
  */

@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * 交易任务（MT/HTTP）服务
  * 
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/12 21:15
  */
 @Slf4j

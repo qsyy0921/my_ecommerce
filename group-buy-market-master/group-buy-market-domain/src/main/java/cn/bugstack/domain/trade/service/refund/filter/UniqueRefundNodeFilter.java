@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 重复退单检查
  *
- * @author xiaofuge bugstack.cn @小傅哥
+ * @author qsyy
  * 2025/7/30 10:29
  */
 @Slf4j

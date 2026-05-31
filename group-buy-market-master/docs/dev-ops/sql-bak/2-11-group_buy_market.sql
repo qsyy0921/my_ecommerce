@@ -70,11 +70,11 @@ LOCK TABLES `crowd_tags_detail` WRITE;
 
 INSERT INTO `crowd_tags_detail` (`id`, `tag_id`, `user_id`, `create_time`, `update_time`)
 VALUES
-	(4,'RQ_KJHKL98UU78H66554GFDV','xiaofuge','2024-12-28 14:42:30','2024-12-28 14:42:30'),
+	(4,'RQ_KJHKL98UU78H66554GFDV','qsyy','2024-12-28 14:42:30','2024-12-28 14:42:30'),
 	(5,'RQ_KJHKL98UU78H66554GFDV','liergou','2024-12-28 14:42:30','2024-12-28 14:42:30'),
-	(9,'RQ_KJHKL98UU78H66554GFDV','xfg01','2025-01-25 15:44:55','2025-01-25 15:44:55'),
-	(10,'RQ_KJHKL98UU78H66554GFDV','xfg02','2025-01-25 15:44:55','2025-01-25 15:44:55'),
-	(11,'RQ_KJHKL98UU78H66554GFDV','xfg03','2025-01-25 15:44:55','2025-01-25 15:44:55');
+	(9,'RQ_KJHKL98UU78H66554GFDV','qsyy01','2025-01-25 15:44:55','2025-01-25 15:44:55'),
+	(10,'RQ_KJHKL98UU78H66554GFDV','qsyy02','2025-01-25 15:44:55','2025-01-25 15:44:55'),
+	(11,'RQ_KJHKL98UU78H66554GFDV','qsyy03','2025-01-25 15:44:55','2025-01-25 15:44:55');
 
 /*!40000 ALTER TABLE `crowd_tags_detail` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -258,7 +258,7 @@ LOCK TABLES `group_buy_order_list` WRITE;
 INSERT INTO `group_buy_order_list` (`id`, `user_id`, `team_id`, `order_id`, `activity_id`, `start_time`, `end_time`, `goods_id`, `source`, `channel`, `original_price`, `deduction_price`, `status`, `out_trade_no`, `biz_id`, `create_time`, `update_time`)
 VALUES
 	(23,'liergou','51764601','585183514461',100123,'2024-12-07 10:19:40','2025-12-07 10:19:40','9890001','s01','c01',100.00,10.00,0,'843867108777','100123_liergou_1','2025-01-25 15:35:12','2025-01-25 15:35:12'),
-	(24,'xiaofuge','44846821','059969746419',100123,'2024-12-07 10:19:40','2025-12-07 10:19:40','9890001','s01','c01',100.00,10.00,0,'411481433880','100123_xiaofuge_1','2025-01-25 15:43:07','2025-01-25 15:43:07');
+	(24,'qsyy','44846821','059969746419',100123,'2024-12-07 10:19:40','2025-12-07 10:19:40','9890001','s01','c01',100.00,10.00,0,'411481433880','100123_qsyy_1','2025-01-25 15:43:07','2025-01-25 15:43:07');
 
 /*!40000 ALTER TABLE `group_buy_order_list` ENABLE KEYS */;
 UNLOCK TABLES;

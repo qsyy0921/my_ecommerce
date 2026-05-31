@@ -1,7 +1,7 @@
 package cn.bugstack.test.types.rule02.logic;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description
  * @create 2025-01-18 13:46
  */

@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 拼团交易结算服务
  * @create 2025-01-26 15:22
  */

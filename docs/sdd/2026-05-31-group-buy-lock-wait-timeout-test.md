@@ -33,7 +33,7 @@
 本轮执行：
 
 ```powershell
-E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -pl group-buy-market-app -am "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest" test
+E:\java\qsyy-ecommerce-platform\.tools\apache-maven-3.8.8\bin\mvn.cmd -q -pl group-buy-market-app -am "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest" test
 ```
 
 结果：通过。

@@ -68,7 +68,7 @@ public class AliPayController implements IPayService {
     }
 
     /**
-     * http://xfg-studio.natapp1.cc/api/v1/alipay/alipay_notify_url
+     * http://qsyy-local.example.com/api/v1/alipay/alipay_notify_url
      */
     @RequestMapping(value = "alipay_notify_url", method = RequestMethod.POST)
     public String payNotify(HttpServletRequest request) {
@@ -94,7 +94,7 @@ public class AliPayController implements IPayService {
      * http://localhost:8080/api/v1/alipay/refund_order
      * <p>
      * {
-     * "userId": "xfg02",
+     * "userId": "qsyy02",
      * "orderId": "928263928388"
      * }
      */

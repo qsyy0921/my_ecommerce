@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.Resource;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 结算仓储服务
  * @create 2025-02-15 09:13
  */

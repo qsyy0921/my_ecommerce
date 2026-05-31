@@ -2,7 +2,7 @@
 
 ## 背景
 
-继续审核时，除了代码和 SDD 文档本身，我又检查了 [interview-baguwen.md](/E:/java/group_buy_market/docs/interview-baguwen.md) 与最近几轮 `docs/sdd` 审计文档之间的口径是否一致。
+继续审核时，除了代码和 SDD 文档本身，我又检查了 [interview-baguwen.md](/E:/java/qsyy-ecommerce-platform/docs/interview-baguwen.md) 与最近几轮 `docs/sdd` 审计文档之间的口径是否一致。
 
 当前结论是：
 

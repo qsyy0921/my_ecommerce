@@ -20,7 +20,7 @@ public class LoginController implements IAuthService {
     private ILoginService loginService;
 
     /**
-     * http://xfg-studio.natapp1.cc/api/v1/login/weixin_qrcode_ticket
+     * http://qsyy-local.example.com/api/v1/login/weixin_qrcode_ticket
      * @return
      */
     @RequestMapping(value = "weixin_qrcode_ticket", method = RequestMethod.GET)
@@ -44,7 +44,7 @@ public class LoginController implements IAuthService {
     }
 
     /**
-     * http://xfg-studio.natapp1.cc/api/v1/login/weixin_qrcode_ticket_scene?sceneStr=
+     * http://qsyy-local.example.com/api/v1/login/weixin_qrcode_ticket_scene?sceneStr=
      * @return
      */
     @RequestMapping(value = "weixin_qrcode_ticket_scene", method = RequestMethod.GET)
@@ -68,7 +68,7 @@ public class LoginController implements IAuthService {
     }
 
     /**
-     * http://xfg-studio.natapp1.cc/api/v1/login/check_login
+     * http://qsyy-local.example.com/api/v1/login/check_login
      */
     @RequestMapping(value = "check_login", method = RequestMethod.GET)
     @Override

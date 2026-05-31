@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 
 /**
- * 微信服务对接，对接地址：<a href="http://xfg-studio.natapp1.cc/api/v1/weixin/portal/receive">/api/v1/weixin/portal/receive</a>
+ * 微信服务对接，对接地址：<a href="http://qsyy-local.example.com/api/v1/weixin/portal/receive">/api/v1/weixin/portal/receive</a>
  * <p>
- * http://xfg-studio.natapp1.cc/api/v1/weixin/portal/receive/
+ * http://qsyy-local.example.com/api/v1/weixin/portal/receive/
  */
 @Slf4j
 @RestController()

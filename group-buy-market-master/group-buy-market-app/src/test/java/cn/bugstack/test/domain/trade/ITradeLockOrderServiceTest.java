@@ -19,7 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.annotation.Resource;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 交易订单服务测试
  * @create 2025-01-11 11:52
  */
@@ -38,7 +38,7 @@ public class ITradeLockOrderServiceTest {
     public void test_lockMarketPayOrder() throws Exception {
         // 入参信息
         Long activityId = 100123L;
-        String userId = "xiaofuge";
+        String userId = "qsyy";
         String goodsId = "9890001";
         String source = "s01";
         String channel = "c01";

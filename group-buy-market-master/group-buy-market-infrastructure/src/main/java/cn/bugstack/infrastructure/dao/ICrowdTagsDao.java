@@ -5,7 +5,7 @@ import cn.bugstack.infrastructure.dao.po.CrowdTagsJob;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
+ * @author qsyy
  * @description 人群标签
  * @create 2024-12-28 11:49
  */
