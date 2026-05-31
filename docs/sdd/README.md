@@ -84,6 +84,7 @@
 - `2026-05-31-gateway-and-domain-orchestration-audit.md`：记录 Redis 通用基础设施接口过宽、秒杀服务技术决策残留、商城抽象订单服务营销分支和后台运营动作聚合点的剩余风险。
 - `2026-05-31-lock-idempotency-and-assembly-boundary-audit.md`：记录拼团锁单领域服务中的阻塞轮询等待、等待超时测试缺口，以及 app 装配层和轻量登录入口的边界判断。
 - `2026-05-31-architecture-guard-hotspot-audit.md`：记录 `DomainPurityTest` 和 domain purity 脚本本身的维护热点，包括字符串规则膨胀和守护层级边界问题。
+- `2026-05-31-documentation-evidence-drift-audit.md`：记录 SDD 文档体系中的历史验证快照过多、当前证据基线分散和测试数量陈旧化问题。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

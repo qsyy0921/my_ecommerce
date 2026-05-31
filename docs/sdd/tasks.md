@@ -104,6 +104,7 @@
 - [x] 形成“通用网关 + 领域编排残留”专项审计结论，识别 `IRedisService` / `RedissonService` 的超宽技术接口风险、`SeckillService` 的本地技术决策残留、`AbstractOrderService` 的营销分支感知和 `ReconcileCaseOperationSupport` 的后台动作聚合风险。
 - [x] 形成“拼团锁单等待策略 + 装配层边界”专项审计结论，识别 `TradeLockOrderService` 的阻塞轮询等待、等待超时测试缺口，并明确 `DomainServiceConfig` 当前仍是合理装配层、`LoginController` 只是低优先级传统入口。
 - [x] 形成“架构守护体系热点”专项审计结论，识别 `DomainPurityTest` 已演进成大型字符串规则清单、`check-domain-purity.ps1` 与 JUnit 守护层级存在职责落差，以及后续新增守护规则的维护风险。
+- [x] 形成“文档证据漂移”专项审计结论，识别按日期的 SDD 文档中存在大量历史验证快照、测试数量陈旧化和当前权威基线分散的问题。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。

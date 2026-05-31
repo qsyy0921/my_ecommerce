@@ -328,6 +328,11 @@
   - 本次结论：`DomainPurityTest` 已经演进成 2000 多行的大型字符串规则清单，是当前守护体系最明确的维护热点；`check-domain-purity.ps1` 和 JUnit 架构测试之间存在“粗筛 vs 精细守护”的职责落差，但边界没有被明确表达。
   - 验收：新增 `docs/sdd/2026-05-31-architecture-guard-hotspot-audit.md`，后续新增守护规则时优先判断是否能用更稳定的契约或文件边界表达，而不是继续无节制追加字符串规则。
 
+- [x] 审计 SDD 文档证据漂移风险。
+  - 目标：确认多轮审计后，文档里的验证结论是否开始从“当前证据”退化成“历史快照集合”，影响后续可维护性和可解释性。
+  - 本次结论：大量按日期命名的 SDD 文档记录了不同时间点的 `DomainPurityTest` 数量和“通过”表述，它们在各自提交时可能成立，但现在更像历史验证快照；当前权威验证基线更适合收敛到 `tasks.md` / `ddd-sdd-todo-list.md` 或后续单独基线文档。
+  - 验收：新增 `docs/sdd/2026-05-31-documentation-evidence-drift-audit.md`，后续新增审计文档时优先减少重复的泛化验证表述，并逐步区分“当前状态”和“历史记录”。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
