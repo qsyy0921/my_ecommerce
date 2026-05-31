@@ -95,7 +95,7 @@
 - [x] 抽离秒杀订单号生成端口。
   - 结果：`SeckillService` 不再直接依赖随机数工具，改为通过 `ISeckillOrderIdPort` 获取订单号；基础设施实现保持 12 位数字兼容当前表结构。
   - 验收：`SeckillOrderIdPortUnitTest` 覆盖 12 位格式和单 JVM 批量唯一性；`seckill` profile 已包含该测试。
-  - 提交：待本轮提交
+  - 提交：`a7f37d0`
 
 ## TODO List
 

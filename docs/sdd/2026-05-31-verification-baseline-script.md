@@ -79,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 - [x] 把秒杀订单号生成测试纳入 `seckill` profile。
   - 文件：`scripts/verify-current-baseline.ps1`、`SeckillOrderIdPortUnitTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待本轮提交
+  - 提交：`a7f37d0`
 
 ## TODO List
 

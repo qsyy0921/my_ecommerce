@@ -214,7 +214,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - [x] 抽离秒杀订单号生成端口并记录本地技术决策边界。
   - 文件：`ISeckillOrderIdPort.java`、`SeckillOrderIdPort.java`、`SeckillService.java`、`DomainServiceConfig.java`、`SeckillOrderIdPortUnitTest.java`、`docs/sdd/2026-05-31-seckill-service-local-decision-boundary.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待本轮提交
+  - 提交：`a7f37d0`
 
 ## TODO List
 
