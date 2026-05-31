@@ -298,6 +298,11 @@
   - 本次结论：当前主要剩余风险在入口支撑类偏厚、Redis 公共基础设施接口偏大、秒杀消息系统仍以 Redis Stream 为主、对账/售后仍是最小闭环，以及本机压测不能代表生产容量。
   - 验收：新增 `docs/sdd/2026-05-31-current-ddd-business-gap-audit.md`，并同步八股文档和任务清单，后续优先采用增量审计而非继续机械拆分。
 
+- [x] 审计当前代码热点，不做低收益重构。
+  - 目标：在“剩余问题”之外，进一步识别最容易重新膨胀的大类，明确哪些属于观察点而不是立即拆分点。
+  - 本次结论：`GroupBuyLockOrderSupport`、`SeckillLockOrderSupport` 属于入口编排热点；`IRedisService` / `RedissonService` 属于基础设施大接口；`AbstractOrderService`、`SeckillService` 仍保留少量营销分支和本地技术决策。
+  - 验收：新增 `docs/sdd/2026-05-31-code-hotspot-audit.md`，后续新增需求优先检查这些热点是否再次跨越职责边界。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
