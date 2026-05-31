@@ -52,12 +52,12 @@
 - [x] 评估是否在本机实现 RocketMQ adapter 最小 profile。
   - 文件：`docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：待提交
+  - 提交：`77761c0`
 
 - [x] 明确本轮不引入 RocketMQ/Kafka/Pulsar 客户端依赖。
   - 文件：`docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`
   - 验证：`rg "rocketmq" group-buy-market-master -n`
-  - 提交：待提交
+  - 提交：`77761c0`
 
 ## TODO List
 

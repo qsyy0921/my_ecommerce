@@ -85,7 +85,7 @@
 - [x] 评估是否实现 RocketMQ adapter 最小 profile。
   - 结果：本轮决策暂不实现；单机 adapter 只能证明 SDK 可用，不能证明生产容量、堆积恢复和 broker 故障恢复。
   - 验收：新增 `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`。
-  - 提交：待提交
+  - 提交：`77761c0`
 
 ## TODO List
 

@@ -203,7 +203,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - [x] 评估是否实现 RocketMQ adapter 最小 profile，并决策本轮暂不接入。
   - 文件：`docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：待提交
+  - 提交：`77761c0`
 
 ## TODO List
 
