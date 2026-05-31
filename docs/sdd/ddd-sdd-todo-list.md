@@ -313,6 +313,11 @@
   - 本次结论：`GroupBuyActivityDiscountVO` 仍保留 `tagScope` 字符串协议解析，是模型层最真实的残留问题；`MarketNode` 仍保留显式异步编排，需要持续观察；`OrderStateTransitionEntity`、`TradeRuleConfig`、`GoodsMarketResponseDTO` 当前属于共享词典、装配热点和展示逻辑观察点，但还不值得继续机械拆分。
   - 验收：新增 `docs/sdd/2026-05-31-model-and-assembly-hotspot-audit.md`，并同步 SDD 索引和任务清单，后续新增需求优先复查这些类是否跨越当前边界。
 
+- [x] 审计通用基础设施网关和领域编排残留。
+  - 目标：继续确认当前剩余问题是否主要集中在超宽技术接口和少量领域服务的技术决策残留，而不是重新回到大仓储问题。
+  - 本次结论：`IRedisService` / `RedissonService` 仍是最典型的通用基础设施总线风险；`SeckillService` 仍保留本地 `Semaphore`、本地订单号生成和锁单前置编排；`AbstractOrderService` 仍感知营销类型分支；`ReconcileCaseOperationSupport` 继续承担后台运营动作聚合。
+  - 验收：新增 `docs/sdd/2026-05-31-gateway-and-domain-orchestration-audit.md`，后续新增需求先检查是否又要往通用 Redis 接口或少量领域服务里继续塞技术决策和业务分支。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
