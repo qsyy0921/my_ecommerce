@@ -64,16 +64,15 @@
 
 ## TODO List
 
-- [ ] P1：评估验证基线脚本化。
-  - 原因：当前命令已经收敛成文档，但还不是一键脚本；后续如果验证命令继续增多，人工选择容易漏跑。
-  - 范围：`scripts`、`docs/sdd`。
-  - 验收：明确是否需要新增 `scripts/verify-current-baseline.ps1`，以及脚本应支持的 profile，例如 `docs-only`、`market-domain`、`seckill`、`mall-reconcile`、`full-local`。
+- [ ] P0：审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
+  - 原因：当前前 5 风险中，秒杀生产化消息链路仍排第一；Redis Stream 适合本机演示，但不能包装成大促终局方案。
+  - 范围：`docs/sdd`、秒杀消息端口和现有 MQ evolution 文档。
+  - 验收：明确是否需要本机接入 RocketMQ/Kafka adapter，还是继续只保留方案边界；不得把本机环境包装成生产容量证明。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 验证基线脚本化 | 未开始 | 文档治理 / 工程效率 | P1 | 命令虽然已收敛，但人工执行仍可能漏选 profile | 当前先建立权威文档入口，避免一次性引入脚本维护成本 | 验证命令继续增多，或连续两轮出现漏跑/跑错命令 |
 | 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群和多机压测环境 | 明确引入 RocketMQ/Kafka/Pulsar 或有生产化演练目标 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
@@ -90,6 +89,15 @@
 
 适用范围：只修改 `docs`、`README`、清单、面试材料，不改 Java 代码。
 
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only
+```
+
+等价命令：
+
 ```powershell
 cd E:\java\group_buy_market
 git diff --check
@@ -99,6 +107,15 @@ rg -n "Done List|TODO List|所有未完成任务清单|current-verification-base
 ### L1 领域边界或架构守护变更
 
 适用范围：修改 domain、领域端口、架构测试、SDD 架构约束。
+
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain
+```
+
+等价命令：
 
 ```powershell
 cd E:\java\group_buy_market
@@ -110,6 +127,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 适用范围：修改营销服务任意 Java 生产代码、配置或 mapper。
 
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-compile
+```
+
+等价命令：
+
 ```powershell
 cd E:\java\group_buy_market
 & "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests compile
@@ -118,6 +144,15 @@ cd E:\java\group_buy_market
 ### L3 商城服务编译
 
 适用范围：修改商城服务任意 Java 生产代码、配置或 mapper。
+
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName mall-compile
+```
+
+等价命令：
 
 ```powershell
 cd E:\java\group_buy_market
@@ -128,6 +163,15 @@ cd E:\java\group_buy_market
 
 适用范围：拼团试算、锁单、结算、退单、队伍库存、锁单幂等。
 
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName group-buy
+```
+
+等价命令：
+
 ```powershell
 cd E:\java\group_buy_market
 & "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.trade.TradeLockOrderServiceUnitTest,cn.bugstack.test.domain.trade.TradeRefundOrderServiceUnitTest" test
@@ -136,6 +180,15 @@ cd E:\java\group_buy_market
 ### L5 秒杀链路变更
 
 适用范围：秒杀限流、库存预扣、锁单、异步落库、结算、退款、Stream 缓冲。
+
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill
+```
+
+等价命令：
 
 ```powershell
 cd E:\java\group_buy_market
@@ -146,6 +199,15 @@ cd E:\java\group_buy_market
 
 适用范围：支付回调、支付流水、退款流水、商城订单状态、对账差错、MQ 重放。
 
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName mall-reconcile
+```
+
+等价命令：
+
 ```powershell
 cd E:\java\group_buy_market
 & "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\s-pay-mall-ddd-market-master\pom.xml" -q -pl s-pay-mall-ddd-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.OrderReconcileServiceReplayContractTest,cn.bugstack.test.domain.OrderServiceTest,cn.bugstack.test.infrastructure.message.MessageProducerRetrySupportUnitTest,cn.bugstack.test.infrastructure.message.MqProducerFailureRecorderUnitTest,cn.bugstack.test.infrastructure.reconcile.ReconcileOperationLogSupportUnitTest" test
@@ -154,6 +216,15 @@ cd E:\java\group_buy_market
 ### L7 发布前本地全量验证
 
 适用范围：跨服务代码变更、公共端口变更、状态机变更、消息可靠性变更。
+
+推荐使用脚本：
+
+```powershell
+cd E:\java\group_buy_market
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName full-local
+```
+
+等价命令：
 
 ```powershell
 cd E:\java\group_buy_market

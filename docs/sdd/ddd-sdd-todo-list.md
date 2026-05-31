@@ -378,6 +378,11 @@
   - 本次结论：后续每轮必须维护 Done List、TODO List 和所有未完成任务清单；文档变更、领域边界变更、拼团链路变更、秒杀链路变更、商城支付/对账变更分别选择不同验证级别。
   - 验收：新增 `docs/sdd/2026-05-31-current-verification-baseline.md`，并同步 `README.md`、`tasks.md` 和当前风险地图。
 
+- [x] 脚本化当前验证基线。
+  - 目标：降低后续人工选择验证命令时漏跑或跑错模块的概率。
+  - 本次结论：新增轻量 PowerShell profile runner，不引入 CI 系统，不改业务代码；脚本只封装现有验证命令。
+  - 验收：新增 `scripts/verify-current-baseline.ps1` 和 `docs/sdd/2026-05-31-verification-baseline-script.md`，`docs-only` profile 通过。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
@@ -417,7 +422,7 @@
 
 ## 每次任务验收命令
 
-当前权威验证基线见 `docs/sdd/2026-05-31-current-verification-baseline.md`。下面命令保留为历史通用入口，后续应优先按验证基线中的 L0-L7 分级选择命令。
+当前权威验证基线见 `docs/sdd/2026-05-31-current-verification-baseline.md`。本地优先使用 `scripts/verify-current-baseline.ps1` 按 profile 执行。下面命令保留为历史通用入口，后续应优先按验证基线中的 L0-L7 分级选择命令。
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'

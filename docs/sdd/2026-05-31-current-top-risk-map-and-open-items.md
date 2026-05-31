@@ -153,14 +153,19 @@
 - [x] 建立当前目标 Prompt 和验证基线。
   - 文件：`docs/sdd/2026-05-31-current-verification-baseline.md`
   - 验证：`git diff --check`
+  - 提交：`ff3203d`
+
+- [x] 脚本化当前验证基线。
+  - 文件：`scripts/verify-current-baseline.ps1`、`docs/sdd/2026-05-31-verification-baseline-script.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
   - 提交：本轮提交
 
 ## TODO List
 
-- [ ] P1：评估验证基线脚本化。
-  - 原因：当前验证命令已经收敛成文档，但还不是一键脚本；后续如果命令继续增多，人工选择 profile 容易漏跑。
-  - 范围：`scripts`、`docs/sdd`。
-  - 验收：明确是否需要新增 `scripts/verify-current-baseline.ps1`，以及脚本应支持的 `docs-only`、`market-domain`、`seckill`、`mall-reconcile`、`full-local` 等 profile。
+- [ ] P0：审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
+  - 原因：当前前 5 风险中，秒杀生产化消息链路仍排第一；Redis Stream 适合本机演示，但不能包装成大促终局方案。
+  - 范围：`docs/sdd`、秒杀消息端口和现有 MQ evolution 文档。
+  - 验收：明确是否需要本机接入 RocketMQ/Kafka adapter，还是继续只保留方案边界；不得把本机环境包装成生产容量证明。
 
 ## 所有未完成任务清单
 
@@ -176,7 +181,6 @@
 | 完整售后体系 | 未开始 | 业务边界 | P1 | 不能包装成完整电商售后 | 会引入部分退款、拒绝退款、履约后退款等新模型 | 明确建设售后子系统 |
 | 完整支付中台能力 | 未开始 | 业务边界 | P2 | `mock/alipay` 适合演示，不等于支付中台 | 当前项目目标是交易营销，不是支付平台 | 接入更多支付渠道或账单文件 |
 | `DomainPurityTest` 结构拆分 | 暂不处理 | 测试缺口 / 文档治理 | P2 | 架构守护可能继续变成大型文本快照测试 | 规则分层已评估，当前测试仍能有效挡回归，直接拆分收益不高 | 新增大量同类守护规则，或该测试继续显著膨胀 |
-| 验证基线脚本化 | 未开始 | 文档治理 / 工程效率 | P1 | 命令虽然已收敛，但人工执行仍可能漏选 profile | 当前先建立权威文档入口，避免一次性引入脚本维护成本 | 验证命令继续增多，或连续两轮出现漏跑/跑错命令 |
 | 八股文档细粒度短板同步 | 暂不处理 | 面试口径 | P1 | 面试材料可能落后于 SDD 现态 | 当前前 5 风险口径已同步，暂无新的面试口径变化 | 每次新增风险排序或主链路结论 |
 
 ## 本轮判断
@@ -195,5 +199,6 @@
 - 本轮新增当前前 5 风险排序。
 - 本轮新增 Done List、TODO List 和所有未完成任务清单。
 - 本轮新增当前目标 Prompt 和验证基线。
+- 本轮新增当前验证基线脚本化入口。
 - 本轮同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
 - 本轮不改变业务架构和面试口径，`interview-baguwen.md` 暂不需要同步。
