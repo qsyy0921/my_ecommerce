@@ -338,6 +338,11 @@
   - 本次结论：`interview-baguwen.md` 宏观边界判断仍然正确，但还没有完整吸收最近几轮更细的剩余问题，比如拼团阻塞轮询等待、架构守护体系热点、文档证据漂移、模型字符串协议和超宽 Redis 接口风险。
   - 验收：新增 `docs/sdd/2026-05-31-interview-sync-drift-audit.md`，后续更新八股文档时要求亮点和短板一起同步，而不是只更新亮点。
 
+- [x] 审计 SDD 审计文档碎片化风险。
+  - 目标：确认最近几轮按主题追加的审计文档是否开始出现过度拆片，导致同类剩余问题分散、关键词重复、入口阅读成本上升。
+  - 本次结论：单篇审计文档仍然成立，但组合起来已经出现明显主题交叉和阅读顺序不清的问题；当前缺的不是再多一篇单点审计，而是后续逐步建立分组和总览。
+  - 验收：新增 `docs/sdd/2026-05-31-audit-fragmentation-risk.md`，后续继续新增审计文档时优先判断应归并到同类文档还是新建文件，并逐步在 `README.md` 中按主题收敛入口。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
