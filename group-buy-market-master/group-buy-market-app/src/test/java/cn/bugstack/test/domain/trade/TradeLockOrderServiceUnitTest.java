@@ -61,6 +61,25 @@ public class TradeLockOrderServiceUnitTest {
     }
 
     @Test
+    public void duplicateLockRequestWithoutCachedOrPersistedResultShouldTimeoutAsDuplicateSubmit() {
+        Fixture fixture = new Fixture();
+        fixture.lockRequestPort.acquireLock = false;
+
+        assertAppException(ResponseCode.E0010, new ThrowingRunnable() {
+            @Override
+            public void run() throws Exception {
+                fixture.service.lockMarketPayOrder(user(), payActivity(TEAM_ID), payDiscount(OUT_TRADE_NO));
+            }
+        });
+
+        Assert.assertEquals(5, fixture.lockRequestPort.queryLockResultCalls);
+        Assert.assertEquals(5, fixture.queryPort.queryMarketPayOrderCalls);
+        Assert.assertEquals(0, fixture.orderPort.lockCalls);
+        Assert.assertEquals(0, fixture.stockPort.occupyCalls);
+        Assert.assertEquals(0, fixture.lockRequestPort.releaseCalls);
+    }
+
+    @Test
     public void unavailableActivityShouldRejectBeforeOrderPersist() {
         Fixture fixture = new Fixture();
         fixture.queryPort.activity = activity(ActivityStatusEnumVO.OVERDUE);
@@ -338,12 +357,14 @@ public class TradeLockOrderServiceUnitTest {
 
     private static class FakeGroupBuyQueryPort implements IGroupBuyQueryPort {
         private MarketPayOrderEntity existingOrder;
+        private int queryMarketPayOrderCalls;
         private GroupBuyActivityEntity activity = TradeLockOrderServiceUnitTest.activity(ActivityStatusEnumVO.EFFECTIVE);
         private Integer orderCount = 0;
         private GroupBuyTeamEntity team = TradeLockOrderServiceUnitTest.team(1, 3, GroupBuyOrderEnumVO.PROGRESS);
 
         @Override
         public MarketPayOrderEntity queryMarketPayOrderEntityByOutTradeNo(String userId, String outTradeNo) {
+            queryMarketPayOrderCalls++;
             return existingOrder;
         }
 
@@ -431,11 +452,13 @@ public class TradeLockOrderServiceUnitTest {
     private static class FakeTradeLockRequestPort implements ITradeLockRequestPort {
         private boolean acquireLock = true;
         private MarketPayOrderEntity cachedResult;
+        private int queryLockResultCalls;
         private int releaseCalls;
         private int cacheCalls;
 
         @Override
         public MarketPayOrderEntity queryLockResult(String userId, String outTradeNo) {
+            queryLockResultCalls++;
             return cachedResult;
         }
 

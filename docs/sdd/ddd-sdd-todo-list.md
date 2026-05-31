@@ -353,6 +353,11 @@
   - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。
   - 验收：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，并同步 `README.md`、`tasks.md`、`interview-baguwen.md`。
 
+- [x] 补齐拼团锁单等待超时语义测试。
+  - 目标：先固化 `TradeLockOrderService` 在重复请求未拿到锁且缓存/DB 都查不到结果时的超时语义，再决定是否重构等待策略。
+  - 本次结论：新增单元测试覆盖等待 5 次后抛 `E0010`，并确认该路径不会创建订单、不会占用队伍库存、不会释放未持有的请求锁。
+  - 验收：新增 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`，指定测试 `TradeLockOrderServiceUnitTest` 通过。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

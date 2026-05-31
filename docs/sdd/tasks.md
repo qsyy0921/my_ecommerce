@@ -109,6 +109,7 @@
 - [x] 形成“审计文档碎片化风险”专项审计结论，识别最近几轮 SDD 审计文档虽然单篇成立，但组合起来已经出现主题交叉、关键词重复和入口阅读成本上升的问题。
 - [x] 形成“剩余问题优先级拉平风险”专项审计结论，识别当前虽然已经有大量局部优先级判断，但全局上还缺统一的“当前最重要问题排序视图”。
 - [x] 形成“当前前 5 个残留风险 + Done/TODO/Open Items”现态清单，明确后续继续审核要优先维护统一风险排序，而不是继续发散新增局部审计。
+- [x] 补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果、等待 5 次后抛 `E0010`。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。
