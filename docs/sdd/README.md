@@ -87,6 +87,7 @@
 - `2026-05-31-documentation-evidence-drift-audit.md`：记录 SDD 文档体系中的历史验证快照过多、当前证据基线分散和测试数量陈旧化问题。
 - `2026-05-31-interview-sync-drift-audit.md`：记录八股文档与最新 SDD 审计之间的同步漂移问题，避免面试口径落后于当前工程判断。
 - `2026-05-31-audit-fragmentation-risk.md`：记录最近几轮 SDD 审计文档开始出现碎片化、主题交叉和入口阅读成本上升的问题，提醒后续优先治理文档信息架构而不是继续平铺追加单点审计。
+- `2026-05-31-priority-flattening-risk-audit.md`：记录最近几轮剩余问题虽然都被审计出来，但主次关系开始被拉平的问题，提醒后续补“当前最重要问题排序视图”，而不是继续同权重追加局部审计。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。
