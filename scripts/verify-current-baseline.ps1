@@ -108,7 +108,7 @@ function Invoke-Seckill {
     "-am",
     "-DskipTests=false",
     "-DfailIfNoTests=false",
-    "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest",
+    "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderIdPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest",
     "test"
   )
 }

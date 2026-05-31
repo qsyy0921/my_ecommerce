@@ -202,10 +202,15 @@
   - 本次完成：新增 Outbox 明细查询接口、状态数量接口、API DTO、状态数量 Gauge、重试耗时 Timer 和 Prometheus 告警。
   - 验收：新增 `docs/sdd/2026-05-31-seckill-outbox-ops-observability.md` 和 `SeckillOrderOutboxServiceUnitTest`，当前 `seckill` profile 通过 28 个测试。
 
-- [ ] 审计 `SeckillService` 本地技术决策边界。
+- [x] 审计并治理 `SeckillService` 本地订单号生成边界。
   - 目标：确认本地 `Semaphore`、本地订单号生成和入口技术决策是否会被误包装成生产能力。
-  - 建议范围：先审计 `SeckillService`、订单号生成、入口限流和文档口径；只有发现真实代码风险才修改。
-  - 验收：形成 SDD 审计结论，明确哪些是演示/单机能力，哪些需要生产化演进。
+  - 本次完成：订单号生成从 `SeckillService` 抽到 `ISeckillOrderIdPort`，基础设施实现继续保持 12 位数字兼容当前表结构，并补单 JVM 唯一性测试。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-service-local-decision-boundary.md` 和 `SeckillOrderIdPortUnitTest`；本地 `Semaphore` 明确保留为单机闸门，不包装成全局限流。
+
+- [ ] 审计本地 `Semaphore` 是否需要独立为入口并发策略。
+  - 目标：确认单机活动级并发闸门是否继续留在领域服务，或迁移到入口策略/应用层。
+  - 建议范围：`SeckillService`、秒杀 HTTP 入口、Redis 限流端口和文档口径。
+  - 验收：有压测或代码证据时才改代码；没有证据则只记录边界。
 
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。
@@ -350,7 +355,7 @@
 
 - [x] 审计通用基础设施网关和领域编排残留。
   - 目标：继续确认当前剩余问题是否主要集中在超宽技术接口和少量领域服务的技术决策残留，而不是重新回到大仓储问题。
-  - 本次结论：`IRedisService` / `RedissonService` 仍是最典型的通用基础设施总线风险；`SeckillService` 仍保留本地 `Semaphore`、本地订单号生成和锁单前置编排；`AbstractOrderService` 仍感知营销类型分支；`ReconcileCaseOperationSupport` 继续承担后台运营动作聚合。
+  - 本次结论：`IRedisService` / `RedissonService` 仍是最典型的通用基础设施总线风险；`SeckillService` 当时仍保留本地 `Semaphore`、本地订单号生成和锁单前置编排；订单号生成已在后续治理中抽到 `ISeckillOrderIdPort`；`AbstractOrderService` 仍感知营销类型分支；`ReconcileCaseOperationSupport` 继续承担后台运营动作聚合。
   - 验收：新增 `docs/sdd/2026-05-31-gateway-and-domain-orchestration-audit.md`，后续新增需求先检查是否又要往通用 Redis 接口或少量领域服务里继续塞技术决策和业务分支。
 
 - [x] 审计拼团锁单等待策略和装配层边界。
@@ -385,7 +390,7 @@
 
 - [x] 收敛当前前 5 个残留风险并维护 Done/TODO/Open Items。
   - 目标：把最近几轮分散的审计结论收敛成统一风险排序，并显式维护已完成、下一步、所有未完成任务三类清单。
-  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约完成后，第 1 风险已进一步收敛为具体 MQ adapter 实现、秒杀本地技术决策边界和真实容量证明。
+  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 查询台账/告警、专业 MQ key/tag/partition key 契约和订单号生成端口完成后，第 1 风险已进一步收敛为具体 MQ adapter 实现、本地 `Semaphore` 边界、分布式全局订单号模型和真实容量证明。
   - 验收：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，并同步 `README.md`、`tasks.md`、`interview-baguwen.md`。
 
 - [x] 补齐拼团锁单等待超时语义测试。

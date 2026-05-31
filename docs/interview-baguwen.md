@@ -64,7 +64,7 @@ flowchart LR
 
 如果面试官继续追问“那现在还差什么”，建议按当前前 5 个残留风险回答：
 
-- 秒杀生产化消息链路和容量证明：当前 Redis Stream 分片、pending-list、人工补偿、Envelope、Outbox 查询台账/告警、专业 MQ key/tag/partition key 契约和批量落库已经能支撑本机演示，但它不是大促终局方案；本机已决策暂不接入具体 RocketMQ/Kafka/Pulsar adapter，真实生产容量仍需要独立环境证明。
+- 秒杀生产化消息链路和容量证明：当前 Redis Stream 分片、pending-list、人工补偿、Envelope、Outbox 查询台账/告警、专业 MQ key/tag/partition key 契约、订单号生成端口和批量落库已经能支撑本机演示，但它不是大促终局方案；本机已决策暂不接入具体 RocketMQ/Kafka/Pulsar adapter，本地 `Semaphore` 也不是全局限流，真实生产容量仍需要独立环境证明。
 - Redis 通用基础设施接口过宽：`IRedisService` / `RedissonService` 仍像一个技术总线，当前已经补了新增能力准入规则；后续新增 Redis 能力时必须优先设计业务语义端口，避免继续往公共接口堆方法。
 - 拼团锁单幂等等待：`TradeLockOrderService` 里还有固定 5 次、每次 50ms 的阻塞轮询等待，这不是功能 bug，但高并发竞争时会带来线程占用和 RT 抖动；当前已经补了等待 5 次后抛 `E0010` 的单元测试，后续再评估是否重构等待策略。
 - 对账、售后和支付仍是最小闭环：当前有差错单、重放、操作日志、支付流水和退款流水，但还没有完整权限审批、SLA、运营报表、完整售后和多支付渠道治理。
@@ -72,7 +72,7 @@ flowchart LR
 
 面试可以直接这样说：
 
-> 这个项目最危险的 DDD 问题我已经治理掉了，比如 domain 去 Spring、大 Repository 删除、状态机和补偿链路独立、架构守护可执行。现在剩下的前 5 个问题更具体：秒杀 Redis Stream 不是大促终局 MQ，本机压测不能证明生产容量；Redis 公共接口仍偏宽；拼团锁单还有同步阻塞等待；对账、售后、支付还是最小闭环；架构测试和文档口径需要继续收敛。我会诚实说明这些边界，而不是继续为了拆类而拆类。
+> 这个项目最危险的 DDD 问题我已经治理掉了，比如 domain 去 Spring、大 Repository 删除、状态机和补偿链路独立、架构守护可执行，秒杀订单号生成也已经从领域服务抽成端口。现在剩下的前 5 个问题更具体：秒杀 Redis Stream 不是大促终局 MQ，本机压测不能证明生产容量，本地 `Semaphore` 不是全局限流；Redis 公共接口仍偏宽；拼团锁单还有同步阻塞等待；对账、售后、支付还是最小闭环；架构测试和文档口径需要继续收敛。我会诚实说明这些边界，而不是继续为了拆类而拆类。
 
 ### 4. 限界上下文
 
@@ -722,7 +722,7 @@ DLQ 是死信队列，用于接收无法正常消费的消息。它不是补偿�
 
 Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Redis 库存扣减链路，有 pending-list，能快速接入异步落库。RabbitMQ 更适合跨服务业务通知，比如成团通知商城、退单通知商城。真正生产大促下，秒杀订单创建消息更适合迁移到 RocketMQ：Redis 只做资格预扣和防重，MySQL Outbox 做可靠投递兜底，RocketMQ 承担订单消息的分区路由、堆积恢复、重试和 DLQ。
 
-当前代码已经把锁单主流程和消息中间件隔离到 `ISeckillOrderMessagePort`，把秒杀订单创建消息升级成独立 Envelope，并补了 `seckill_order_outbox` 代码闭环、查询台账、指标和告警。后续切 RocketMQ 不应该改锁单主流程或依赖领域实体 JSON。但这不等于专业 MQ 已经落地：现在还缺 RocketMQ producer/consumer adapter、broker lag、consumer group 堆积恢复和真实多机压测。面试时要讲“具备演进边界、消息契约和 Outbox 兜底”，不要讲成“已经完成生产级 MQ”。
+当前代码已经把锁单主流程和消息中间件隔离到 `ISeckillOrderMessagePort`，把秒杀订单创建消息升级成独立 Envelope，并补了 `seckill_order_outbox` 代码闭环、查询台账、指标和告警；订单号生成也从 `SeckillService` 抽成了 `ISeckillOrderIdPort`。后续切 RocketMQ 不应该改锁单主流程或依赖领域实体 JSON。但这不等于专业 MQ 已经落地，也不等于完成分布式全局 ID：现在还缺 RocketMQ producer/consumer adapter、broker lag、consumer group 堆积恢复、真实多机压测，以及更完整的订单中心或 Snowflake/Leaf 发号方案。面试时要讲“具备演进边界、消息契约和 Outbox 兜底”，不要讲成“已经完成生产级 MQ”。
 
 ### 13. 为什么秒杀不用本机队列？
 
@@ -799,7 +799,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单创建消息有稳定 Envelope 和专业 MQ key/tag/partition key 契约，`seckill_order_outbox` 已经有代码端口、自动重试、人工重放入口、状态查询、数量指标和告警，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程和消息体契约。但当前还没有真正落地专业 MQ adapter，本机单 broker 也不能证明生产能力；真实容量结论要等独立环境压测。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单创建消息有稳定 Envelope 和专业 MQ key/tag/partition key 契约，`seckill_order_outbox` 已经有代码端口、自动重试、人工重放入口、状态查询、数量指标和告警，订单号生成从领域服务抽成 `ISeckillOrderIdPort`，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程和消息体契约。但当前还没有真正落地专业 MQ adapter，本机单 broker 也不能证明生产能力；12 位订单号兼容实现也不能等同分布式发号中心；真实容量结论要等独立环境压测。
 
 ## 六、当前已修复的问题
 
@@ -827,6 +827,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 秒杀下单消息端口：`ISeckillOrderMessagePort` 承接 RabbitMQ、Redis Stream、Redis Queue、本地队列投递选择。
 - 秒杀订单创建消息 Envelope：`SeckillOrderCreateMessageEntity` 固化 schema、eventType、messageId、routeKey、traceId，并兼容历史裸订单 JSON。
 - 秒杀订单 Outbox：`seckill_order_outbox` 支持 `INIT/SENT/FAILED/DEAD`，入口先落库、即时投递失败由定时任务或 `retry_seckill_order_outbox` 人工入口补偿；运维侧可按状态查询明细和数量，Prometheus 暴露 pending/dead/重试耗时告警。
+- 秒杀订单号生成端口：`ISeckillOrderIdPort` 把订单号生成从 `SeckillService` 移到基础设施适配层，当前实现保持 12 位数字兼容旧表结构。
 - 秒杀维护端口：`ISeckillMaintenancePort` 承接库存同步、活动预热和超时未支付释放。
 - 秒杀库存流水端口：`ISeckillStockFlowPort` 承接 `seckill_stock_flow` 构建和批量落库。
 - 通用秒杀仓储删除：`ISeckillRepository` / `SeckillRepository` 不再作为兼容门面存在。
@@ -916,7 +917,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 领域层已经去 Spring 注解，并有 `scripts/check-domain-purity.ps1` 做守护。
 - 现在已新增 `DomainPurityTest`、`OrderStateMachineTest`、`TradeLockOrderServiceUnitTest`、`SeckillOrderLockPortUnitTest`、`TradeRefundOrderServiceUnitTest` 和 `OrderReconcileServiceReplayContractTest`，能在 Maven 测试阶段发现 domain 反向依赖 Spring、状态机被绕过、通用交易仓储回流，或拼团锁单、秒杀库存、退款策略、对账重放规则被破坏。
 - 具体线程池已通过 `IDomainTaskExecutor` 从 domain 层抽离，脚本和测试都会拦截 `ThreadPoolExecutor` 回流。
-- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；对账后台入口也拆成查询、处理、重放、账单导入和告警 webhook 用例支撑组件；订单支付成功消息发布已拆到 `IOrderPaySuccessMessagePort`，`OrderRepository` 不再直接依赖 MQ 事件和 JSON 序列化；营销侧已把通知任务创建和执行拆到 `ITradeNotifyTaskCreatePort` / `ITradeNotifyTaskExecutionPort`，把通知发送移到 `ITradeNotificationPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`、`ITradePort` / `TradePort`、`ITradeNotifyTaskPort` / `TradeNotifyTaskPort`；拼团交易 HTTP 入口也拆成锁单、结算、退单 3 个用例支撑组件，拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算和退款拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射、指标采样和人工补偿 Stream 端口适配，HTTP 入口也拆成 5 个用例支撑组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；秒杀订单创建消息契约已补 Envelope，后续还需要补专业 MQ 的 Outbox 和 producer/consumer adapter。
+- 商城侧已把对账职责从 `OrderService` 拆到 `OrderReconcileService`，并拆出 `IOrderReconcileRepository`；对账仓储内部也把差错单工厂、MQ 重放、CSV 解析和实体映射拆成支持组件；对账后台入口也拆成查询、处理、重放、账单导入和告警 webhook 用例支撑组件；订单支付成功消息发布已拆到 `IOrderPaySuccessMessagePort`，`OrderRepository` 不再直接依赖 MQ 事件和 JSON 序列化；营销侧已把通知任务创建和执行拆到 `ITradeNotifyTaskCreatePort` / `ITradeNotifyTaskExecutionPort`，把通知发送移到 `ITradeNotificationPort`，把队伍库存占位移到 `IGroupBuyTeamStockPort`，把锁单请求锁和结果缓存移到 `ITradeLockRequestPort`，把拼团锁单落库移到 `IGroupBuyOrderPort`，把拼团结算和退单写操作移到 `IGroupBuySettlementPort` / `IGroupBuyRefundPort`，把拼团读模型、超时扫描和渠道策略移到 `IGroupBuyQueryPort` / `IGroupBuyTimeoutOrderPort` / `ITradePolicyPort`，并删除通用 `ITradeRepository` / `TradeRepository`、`ITradePort` / `TradePort`、`ITradeNotifyTaskPort` / `TradeNotifyTaskPort`；拼团交易 HTTP 入口也拆成锁单、结算、退单 3 个用例支撑组件，拼团锁单和退单策略已补纯单元测试；秒杀侧已把查询、库存可用性、锁单预扣、下单消息投递、维护任务、库存预扣、库存流水、结果缓存、订单分片路由、订单创建、支付结算、退款和订单号生成拆到独立端口/组件，Redis Stream 缓冲队列内部也拆出分片路由、消息映射、指标采样和人工补偿 Stream 端口适配，HTTP 入口也拆成 5 个用例支撑组件，并删除通用 `ISeckillRepository` / `SeckillRepository`、`ISeckillOrderCommandPort` / `SeckillOrderCommandPort`；秒杀库存规则已补纯单元测试；商城对账重放已补契约测试；秒杀订单创建消息契约已补 Envelope，Outbox 已补代码闭环、查询台账、指标和告警，后续主要缺口是专业 MQ producer/consumer adapter 和真实容量证明。
 - 当前代码已经比课程原版更清晰，但仍要警惕基础设施逻辑继续膨胀。
 
 ## 八、面试官追问清单
@@ -1012,6 +1013,7 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-outbox-ops-observability.md`，补齐秒杀 Outbox 运维查询、状态数量指标、重试耗时指标和 Prometheus 告警，后续主要缺口继续收敛为专业 MQ adapter 和真实容量验证。
+- 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-service-local-decision-boundary.md`，把秒杀订单号生成从 `SeckillService` 抽到 `ISeckillOrderIdPort`，并明确 12 位兼容实现不等于分布式全局发号。
 - 2026-05-31：补齐专业 MQ adapter 的 key/tag/partition key 契约设计和测试，新增 `docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`，并刷新当前前 5 风险和面试口径。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`，决策当前单机环境暂不实现 RocketMQ adapter 最小 profile。
 - 2026-05-31：Outbox 完成后刷新当前前 5 风险和面试口径，把秒杀消息链路风险从“补 Outbox”收敛到专业 MQ 契约、Outbox 可观测性和真实容量证明。

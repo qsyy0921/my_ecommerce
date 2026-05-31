@@ -5,6 +5,7 @@ import cn.bugstack.domain.message.service.IMessageRecordService;
 import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCreatePort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderIdPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderOutboxPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
@@ -60,12 +61,13 @@ public class DomainServiceConfig {
     public ISeckillService seckillService(ISeckillQueryPort seckillQueryPort,
                                           ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
                                           ISeckillOrderLockPort seckillOrderLockPort,
+                                          ISeckillOrderIdPort seckillOrderIdPort,
                                           ISeckillMaintenancePort seckillMaintenancePort,
                                           ISeckillOrderCreatePort seckillOrderCreatePort,
                                           ISeckillSettlementPort seckillSettlementPort,
                                           ISeckillRefundPort seckillRefundPort,
                                           @Value("${app.seckill.lock.max-concurrent-per-activity:200}") Integer maxConcurrentPerActivity) {
-        return new SeckillService(seckillQueryPort, seckillStockAvailabilityPort, seckillOrderLockPort, seckillMaintenancePort, seckillOrderCreatePort, seckillSettlementPort, seckillRefundPort, maxConcurrentPerActivity);
+        return new SeckillService(seckillQueryPort, seckillStockAvailabilityPort, seckillOrderLockPort, seckillOrderIdPort, seckillMaintenancePort, seckillOrderCreatePort, seckillSettlementPort, seckillRefundPort, maxConcurrentPerActivity);
     }
 
     @Bean

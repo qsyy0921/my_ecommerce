@@ -114,11 +114,12 @@ docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md
 docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md
 docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md
 docs/sdd/2026-05-31-seckill-outbox-ops-observability.md
+docs/sdd/2026-05-31-seckill-service-local-decision-boundary.md
 ```
 
 后续每轮改动必须同步维护 Done List、TODO List 和所有未完成任务清单，并按 `scripts/verify-current-baseline.ps1` 选择对应验证 profile。
 
-当前前 5 风险清单已在 Outbox 和专业 MQ 契约完成后刷新：本机暂不接入具体 RocketMQ/Kafka/Pulsar adapter；秒杀 Outbox 已补查询台账、指标和告警，真实容量证明仍需要独立环境。
+当前前 5 风险清单已在 Outbox、专业 MQ 契约和秒杀订单号生成端口治理后刷新：本机暂不接入具体 RocketMQ/Kafka/Pulsar adapter；秒杀 Outbox 已补查询台账、指标和告警；`SeckillService` 不再直接生成随机订单号；真实容量证明仍需要独立环境。
 
 配套交付物：
 

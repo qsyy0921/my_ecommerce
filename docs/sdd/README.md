@@ -28,7 +28,7 @@
 - `tasks.md`：当前 SDD 任务状态。
 - `ddd-sdd-todo-list.md`：DDD + SDD 后续治理约束。
 
-当前前 5 风险入口已经在秒杀订单 Outbox 查询台账和告警完成后刷新；继续审核时先看该入口，再决定是否需要进入专业 MQ adapter、秒杀本地技术决策审计或真实容量验证。
+当前前 5 风险入口已经在秒杀订单 Outbox 查询台账、告警和秒杀订单号生成端口治理后刷新；继续审核时先看该入口，再决定是否需要进入专业 MQ adapter、本地 `Semaphore` 边界审计或真实容量验证。
 
 ### 交易主链路
 
@@ -48,6 +48,7 @@
 - `2026-05-31-seckill-order-message-envelope-contract.md`：秒杀订单创建消息 Envelope 契约和兼容性测试。
 - `2026-05-31-seckill-order-outbox-code-closure.md`：秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
 - `2026-05-31-seckill-outbox-ops-observability.md`：秒杀订单 Outbox 运维查询、状态数量指标和 Prometheus 告警。
+- `2026-05-31-seckill-service-local-decision-boundary.md`：秒杀服务本地订单号生成和单机并发闸门边界审计。
 - `2026-05-31-seckill-professional-mq-adapter-contract.md`：专业 MQ adapter 的 message key、event tag、partition key 和 consumer 幂等契约。
 - `2026-05-31-seckill-rocketmq-adapter-profile-decision.md`：RocketMQ adapter 最小 profile 的本机暂不实现决策。
 - `2026-05-30-rabbitmq-dlq-ops.md`：RabbitMQ DLQ 失败台账和人工处理入口。

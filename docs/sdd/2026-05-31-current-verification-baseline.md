@@ -92,12 +92,17 @@
   - 验收：`seckill` profile 通过 28 个测试，`docs/observability-alert-rules.yml` 包含 Outbox pending、dead 增长和重试慢告警。
   - 提交：`6f59a58`
 
+- [x] 抽离秒杀订单号生成端口。
+  - 结果：`SeckillService` 不再直接依赖随机数工具，改为通过 `ISeckillOrderIdPort` 获取订单号；基础设施实现保持 12 位数字兼容当前表结构。
+  - 验收：`SeckillOrderIdPortUnitTest` 覆盖 12 位格式和单 JVM 批量唯一性；`seckill` profile 已包含该测试。
+  - 提交：待本轮提交
+
 ## TODO List
 
-- [ ] P1：审计 `SeckillService` 本地技术决策边界。
-  - 原因：Outbox 运维可观测性已经补齐，下一类容易被误读为生产能力的是秒杀领域服务中的本地 `Semaphore` 和本地订单号生成。
-  - 范围：先审计 `SeckillService`、订单号生成、入口限流和文档口径；只有发现真实代码风险才修改。
-  - 验收：形成 SDD 审计结论，明确哪些是演示/单机能力，哪些需要生产化演进。
+- [ ] P1：审计本地 `Semaphore` 是否需要独立为入口并发策略。
+  - 原因：订单号生成已从领域服务移出，剩余最容易被误读为生产能力的是单机活动级并发闸门。
+  - 范围：`SeckillService`、秒杀 HTTP 入口、Redis 限流端口和文档口径；只有压测或代码证据证明它造成问题才修改代码。
+  - 验收：明确保留、迁移或删除判断；面试口径明确它不是全局限流。
 
 ## 所有未完成任务清单
 
@@ -107,7 +112,8 @@
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
-| `SeckillService` 本地技术决策治理 | 未开始 | 代码风险 / 面试口径 | P1 | 单机 `Semaphore` 和本地订单号生成容易被误解为生产能力 | 本轮只补 Outbox 运维可观测性，避免扩大范围 | 下一轮继续做秒杀生产化边界审计 |
+| 本地 `Semaphore` 入口闸门治理 | 暂不处理 | 代码风险 / 面试口径 | P1 | 单机闸门容易被误解为全局限流，高并发下也可能放大 RT 抖动 | 当前没有证据显示它造成功能问题，Redis 限流和资格预扣才是主要削峰能力 | 锁单压测出现 RT 抖动，或准备做多实例入口治理 |
+| 分布式全局订单号 | 暂不处理 | 生产边界 / 数据模型 | P1 | 当前 12 位兼容订单号不能等同订单中心或全局发号服务 | 表结构是 `varchar(12)`，直接引入 Snowflake 会扩大 SQL 和兼容改动 | 明确升级订单号模型，或引入订单中心/发号服务 |
 | 商城 `AbstractOrderService` 营销类型分支治理 | 暂不处理 | 代码风险 / 业务边界 | P1 | 新增营销类型时 if/else 会继续增长 | 当前只有拼团和秒杀，拆分收益有限 | 新增第三种营销类型 |
 | 对账后台权限、审批和 SLA | 未开始 | 业务边界 | P1 | 对账中心只能算最小闭环 | 属于新产品范围 | 明确建设运营后台 |
 | 完整售后体系 | 未开始 | 业务边界 | P1 | 不能包装成完整电商售后 | 会引入部分退款、拒绝退款、履约后退款等新模型 | 明确建设售后子系统 |
@@ -224,7 +230,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\group_buy_market
-& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
+& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.domain.seckill.SeckillOrderOutboxServiceUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderIdPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
 ```
 
 ### L6 商城支付和对账变更
@@ -270,6 +276,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 ## 本轮判断
 
-当前秒杀专业 MQ 演进口径已经更新：Envelope、Outbox 代码闭环、Outbox 查询台账/告警和专业 MQ key/tag/partition key 契约已完成；RocketMQ adapter 最小 profile 当前决策暂不实现。下一步风险收敛到 `SeckillService` 本地技术决策边界和真实容量证明。因此需要持续同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
+当前秒杀专业 MQ 演进口径已经更新：Envelope、Outbox 代码闭环、Outbox 查询台账/告警、专业 MQ key/tag/partition key 契约和订单号生成端口已完成；RocketMQ adapter 最小 profile 当前决策暂不实现。下一步风险收敛到本地 `Semaphore` 边界、分布式全局订单号模型和真实容量证明。因此需要持续同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
 
 当前权威清单仍以 `2026-05-31-current-top-risk-map-and-open-items.md` 为准；本文件提供可复制 Prompt 和验证命令基线。

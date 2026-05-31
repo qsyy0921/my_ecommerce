@@ -2,6 +2,7 @@ package cn.bugstack.domain.seckill.service;
 
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCreatePort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderIdPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillRefundPort;
@@ -13,7 +14,6 @@ import cn.bugstack.domain.seckill.model.valobj.SeckillOrderStatusEnumVO;
 import cn.bugstack.types.enums.ResponseCode;
 import cn.bugstack.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -29,6 +29,7 @@ public class SeckillService implements ISeckillService {
     private final ISeckillQueryPort seckillQueryPort;
     private final ISeckillStockAvailabilityPort seckillStockAvailabilityPort;
     private final ISeckillOrderLockPort seckillOrderLockPort;
+    private final ISeckillOrderIdPort seckillOrderIdPort;
     private final ISeckillMaintenancePort seckillMaintenancePort;
     private final ISeckillOrderCreatePort seckillOrderCreatePort;
     private final ISeckillSettlementPort seckillSettlementPort;
@@ -38,6 +39,7 @@ public class SeckillService implements ISeckillService {
     public SeckillService(ISeckillQueryPort seckillQueryPort,
                           ISeckillStockAvailabilityPort seckillStockAvailabilityPort,
                           ISeckillOrderLockPort seckillOrderLockPort,
+                          ISeckillOrderIdPort seckillOrderIdPort,
                           ISeckillMaintenancePort seckillMaintenancePort,
                           ISeckillOrderCreatePort seckillOrderCreatePort,
                           ISeckillSettlementPort seckillSettlementPort,
@@ -46,6 +48,7 @@ public class SeckillService implements ISeckillService {
         this.seckillQueryPort = seckillQueryPort;
         this.seckillStockAvailabilityPort = seckillStockAvailabilityPort;
         this.seckillOrderLockPort = seckillOrderLockPort;
+        this.seckillOrderIdPort = seckillOrderIdPort;
         this.seckillMaintenancePort = seckillMaintenancePort;
         this.seckillOrderCreatePort = seckillOrderCreatePort;
         this.seckillSettlementPort = seckillSettlementPort;
@@ -116,7 +119,7 @@ public class SeckillService implements ISeckillService {
                     .goodsName(seckillActivityEntity.getGoodsName())
                     .source(seckillActivityEntity.getSource())
                     .channel(seckillActivityEntity.getChannel())
-                    .orderId(RandomStringUtils.randomNumeric(12))
+                    .orderId(seckillOrderIdPort.nextOrderId())
                     .outTradeNo(outTradeNo)
                     .originalPrice(seckillActivityEntity.getOriginalPrice())
                     .seckillPrice(seckillActivityEntity.getSeckillPrice())
