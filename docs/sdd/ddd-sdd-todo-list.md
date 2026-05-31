@@ -363,6 +363,11 @@
   - 本次结论：现有 `reserveSeckillStock`、`reserveSeckillQualification`、`reserveTeamStock` 作为历史例外暂不拆，但不作为新增先例；本轮不继续扩大 `DomainPurityTest`，避免守护体系继续膨胀。
   - 验收：新增 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`，当前风险地图同步 Done/TODO/Open Items。
 
+- [x] 整理 SDD README 文档入口分组。
+  - 目标：降低 `docs/sdd/README.md` 平铺索引的阅读成本，让后续审核优先从主题入口进入，而不是在完整历史索引里逐篇查找。
+  - 本次结论：新增现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径六组入口，同时保留完整历史索引。
+  - 验收：新增 `docs/sdd/2026-05-31-sdd-readme-entry-grouping.md`，当前风险地图同步 Done/TODO/Open Items。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。

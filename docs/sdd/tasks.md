@@ -111,6 +111,7 @@
 - [x] 形成“当前前 5 个残留风险 + Done/TODO/Open Items”现态清单，明确后续继续审核要优先维护统一风险排序，而不是继续发散新增局部审计。
 - [x] 补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果、等待 5 次后抛 `E0010`。
 - [x] 制定 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先设计业务语义端口，不继续把 `IRedisService` / `RedissonService` 扩成业务总线。
+- [x] 整理 SDD README 文档入口分组，按现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径建立阅读导航。
 - [x] 商城订单支付成功消息发布已从 `OrderRepository` 拆到 `IOrderPaySuccessMessagePort`，Repository 回归订单持久化职责。
 - [x] 商城 `OrderRepository` 内部拆出 `PayOrderEntityMapper`，订单仓储和对账 mapper 复用统一订单 PO/Entity 映射。
 - [x] 商城 `OrderService` 支付成功和退款用例处理器拆分完成，`DomainPurityTest` 增加回流守护。

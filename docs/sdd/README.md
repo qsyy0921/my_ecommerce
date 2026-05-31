@@ -15,6 +15,58 @@
 - `big-factory-alignment.md`：面向大厂工程实践的差距分析和路线图。
 - `mq-evolution.md`：秒杀消息队列从 Redis Stream 演进 RocketMQ 的职责边界、消息模型、迁移步骤和回滚方案。
 - `order-state-machine.md`：拼团、秒杀和售后状态机说明。
+
+## 主题入口
+
+继续审核时优先从这些主题入口进入，而不是从完整历史索引逐篇扫。
+
+### 现态与任务
+
+- `2026-05-31-current-top-risk-map-and-open-items.md`：当前前 5 个残留风险、Done List、TODO List、所有未完成任务清单。
+- `tasks.md`：当前 SDD 任务状态。
+- `ddd-sdd-todo-list.md`：DDD + SDD 后续治理约束。
+
+### 交易主链路
+
+- `2026-05-31-group-buy-lock-wait-timeout-test.md`：拼团锁单等待超时语义测试。
+- `2026-05-30-group-buy-lock-unit-tests.md`：拼团锁单单元测试。
+- `2026-05-30-refund-strategy-unit-tests.md`：拼团退单策略测试。
+- `2026-05-30-seckill-stock-unit-tests.md`：秒杀库存单元测试。
+- `2026-05-30-seckill-refund-stock-closure.md`：秒杀结算和退款库存闭环。
+- `order-state-machine.md`：拼团、秒杀和售后状态机。
+
+### 基础设施边界
+
+- `2026-05-31-redis-gateway-admission-rule.md`：Redis 通用接口新增能力准入规则。
+- `2026-05-31-gateway-and-domain-orchestration-audit.md`：通用 Redis 网关和领域编排残留。
+- `mq-evolution.md`：秒杀消息队列演进方案。
+- `2026-05-30-rabbitmq-dlq-ops.md`：RabbitMQ DLQ 失败台账和人工处理入口。
+- `2026-05-30-mq-producer-outbox-retry.md`：MQ 生产者 confirm 失败补偿。
+
+### 业务完备度
+
+- `2026-05-31-current-ddd-business-gap-audit.md`：当前剩余 DDD 架构问题、业务完备度和本机边界。
+- `2026-05-30-reconcile-case-closed-loop.md`：对账差错单闭环。
+- `2026-05-30-after-sale-state-machine.md`：售后状态机扩展。
+- `2026-05-30-mall-payment-refund-flow-port-split.md`：支付流水和退款流水端口化。
+
+### 测试守护
+
+- `2026-05-31-architecture-guard-hotspot-audit.md`：架构守护体系维护风险。
+- `2026-05-30-ddd-architecture-test-guard.md`：DDD 架构测试和状态机测试。
+- `2026-05-30-reconcile-replay-contract-tests.md`：对账差错重放契约测试。
+- `2026-05-30-production-capacity-boundary.md`：本机压测与生产容量边界。
+
+### 文档与面试口径
+
+- `2026-05-31-documentation-evidence-drift-audit.md`：SDD 文档证据漂移。
+- `2026-05-31-interview-sync-drift-audit.md`：八股文档同步漂移。
+- `2026-05-31-audit-fragmentation-risk.md`：审计文档碎片化风险。
+- `2026-05-31-priority-flattening-risk-audit.md`：剩余问题优先级拉平风险。
+- `2026-05-31-sdd-readme-entry-grouping.md`：SDD README 入口分组治理。
+
+## 完整历史索引
+
 - `2026-05-30-ddd-boundary-audit.md`：记录本次 AI 辅助开发的 DDD 边界治理、SDD 输入文档、审核结论和验证命令。
 - `2026-05-30-ddd-architecture-test-guard.md`：记录 DDD 架构测试、domain 纯净化测试和核心状态机单测。
 - `2026-05-30-domain-task-executor-port.md`：记录把 `ThreadPoolExecutor` 从 domain 层抽到 `IDomainTaskExecutor` 端口的治理。
@@ -91,6 +143,7 @@
 - `2026-05-31-current-top-risk-map-and-open-items.md`：记录当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，作为后续继续审核的现态入口。
 - `2026-05-31-group-buy-lock-wait-timeout-test.md`：记录拼团锁单重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010` 的单元测试补齐。
 - `2026-05-31-redis-gateway-admission-rule.md`：记录 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先进入业务语义端口，避免继续扩张 `IRedisService` / `RedissonService` 技术总线。
+- `2026-05-31-sdd-readme-entry-grouping.md`：记录 `README.md` 按现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径分组治理。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。
