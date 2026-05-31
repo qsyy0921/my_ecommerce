@@ -182,10 +182,20 @@
   - 本次完成：新增 `SeckillOrderCreateMessageEntity`，发布端统一发送 Envelope JSON，Redis Stream worker 和 RabbitMQ listener 解析 Envelope 后复用现有订单创建链路，并兼容历史裸订单 JSON。
   - 验收：新增 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md` 和 `SeckillOrderCreateMessageContractTest`，`seckill` profile 覆盖 schema、messageId、routeKey、序列化 round trip 和旧消息兼容。
 
-- [ ] 补秒杀订单 Outbox 代码闭环和投递状态机。
+- [x] 补秒杀订单 Outbox 代码闭环和投递状态机。
   - 目标：让 SQL 中已有的 `seckill_order_outbox` 真正具备 repository、投递任务、状态机、人工重放和幂等投递能力。
-  - 建议范围：outbox 领域端口、基础设施 repository、定时投递任务、`INIT/SENT/CONFIRMED/FAILED/DEAD` 状态机、重试次数、下次重试时间、traceId、人工重放入口。
-  - 验收：Outbox 状态机测试和投递重试契约测试通过，后续 RocketMQ/Kafka adapter 可复用 outbox 消息体和幂等键。
+  - 本次完成：新增 `ISeckillOrderOutboxPort`、`SeckillOrderOutboxEntity`、`SeckillOrderOutboxPort`、`SeckillOrderOutboxPublishSupport`、`SeckillOrderOutboxRetrySupport`、`SeckillOrderOutboxRetryJob` 和 `retry_seckill_order_outbox` 运维入口。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md` 和 `SeckillOrderOutboxRetrySupportUnitTest`，`seckill` profile 通过 24 个测试。
+
+- [ ] 补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+  - 目标：在真正引入 RocketMQ/Kafka/Pulsar adapter 前，先把 topic/tag/key/routeKey、consumer 幂等重放、DLQ/lag 指标和回滚路径写成稳定契约。
+  - 建议范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
+  - 验收：形成专业 MQ adapter 前置契约文档，避免把本机可启动 adapter 包装成生产容量证明。
+
+- [ ] 补秒杀 Outbox 查询、状态台账和告警。
+  - 目标：在已有自动重试和人工重放基础上，提供 INIT/FAILED/DEAD 查询视图、pending/dead 指标和告警规则。
+  - 建议范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
+  - 验收：补偿台能看到 Outbox 明细，告警能发现 Outbox 积压和 DEAD 增长。
 
 - [x] 为秒杀异步下单增加 MQ 抽象端口。
   - 目标：业务代码不直接绑定 Redis Stream，后续可替换 RocketMQ/Kafka。

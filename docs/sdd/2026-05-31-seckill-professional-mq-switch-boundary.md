@@ -21,6 +21,7 @@
 - `SeckillOrderCreateBufferWorker` 负责 Redis Stream/Queue/local queue 消费并批量调用 `ISeckillService#createSeckillOrders(...)`。
 - `DomainPurityTest` 已防止 `SeckillOrderLockPort` 重新直接依赖 `EventPublisher`、`SeckillOrderCreateBuffer`、routing key 和 JSON 序列化。
 - `SeckillOrderCreateMessageEntity` 已作为独立消息 Envelope，消费端兼容历史裸订单 JSON。
+- `seckill_order_outbox` 已补代码端口、DAO、自动重试任务和人工重放入口。
 
 结论：锁单主流程已经和具体消息中间件解耦。后续新增 RocketMQ adapter 不应该改锁单主流程。
 
@@ -30,7 +31,6 @@
 
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖，也没有对应 Producer/Consumer adapter。
 - RabbitMQ 分支使用 `publishWithoutConfirm(...)`，适合当前快速异步投递，但不是秒杀订单创建生产终局；切 RocketMQ 时需要 producer confirm、send result、异常分类和 outbox 重试。
-- `docs/sql/2026-05-29-state-flow-stock-audit-rocketmq.sql` 里已准备 `seckill_order_outbox`，但当前代码还没有 outbox repository、投递任务、重试状态机和人工重放入口。
 - 当前消费端有 RabbitMQ listener 和 Redis Stream worker，但没有 RocketMQ consumer group、批量消费、重试/DLQ、消费幂等契约测试。
 - 当前本机 Docker 只有 RocketMQ compose 文件，不能证明生产容量、堆积恢复、broker 故障恢复或多副本能力。
 
@@ -57,7 +57,7 @@
    - 锁单链路继续只关心“订单创建消息是否发布成功”。
    - MQ 选择放在基础设施 adapter 或 Spring profile 中，不回流到 domain。
 
-3. Outbox 必须落到代码，而不只是 SQL。
+3. Outbox 必须落到代码，而不只是 SQL，本轮已满足。
    - 新增 outbox repository/port。
    - 支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态。
    - 支持 `retry_count`、`next_retry_time`、`trace_id` 和人工重放。
@@ -107,19 +107,24 @@ flowchart TD
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
   - 提交：本轮提交
 
+- [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
+  - 文件：`SeckillOrderOutboxPort.java`、`SeckillOrderOutboxPublishSupport.java`、`SeckillOrderOutboxRetrySupport.java`、`SeckillOrderOutboxRetryJob.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxRetrySupportUnitTest.java`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
+  - 提交：本轮提交
+
 ## TODO List
 
-- [ ] P0：补秒杀订单 Outbox 代码闭环和投递状态机。
-  - 原因：Envelope 已经固化，但 SQL 中的 `seckill_order_outbox` 还没有对应 repository、投递任务、重试状态机和人工重放入口。
-  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
-  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
+- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
+  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
-| 秒杀专业 MQ adapter | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 outbox 代码闭环 | Outbox、producer/consumer 契约测试完成后 |
+| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
@@ -135,4 +140,4 @@ flowchart TD
 
 可以这样说：
 
-> 当前项目已经把秒杀下单消息抽成 `ISeckillOrderMessagePort`，并把订单创建消息升级成稳定 Envelope，所以锁单主流程不依赖 Redis Stream 或 RabbitMQ 的消息体结构。生产大促下我不会说 Redis Stream 是最终方案，下一步会先补 Outbox 投递状态机、Producer/Consumer 契约和监控，再把订单创建消息迁到 RocketMQ。现在项目具备“主流程和消息契约可切换”的基础，但还没有真正落地专业 MQ adapter 和生产容量证明。
+> 当前项目已经把秒杀下单消息抽成 `ISeckillOrderMessagePort`，把订单创建消息升级成稳定 Envelope，并补齐 `seckill_order_outbox` 投递状态机，所以锁单主流程不依赖 Redis Stream 或 RabbitMQ 的消息体结构。生产大促下我不会说 Redis Stream 是最终方案，下一步会先补 Producer/Consumer 契约、专业 MQ adapter 和监控，再把订单创建消息迁到 RocketMQ。现在项目具备“主流程、消息契约和可靠投递兜底可切换”的基础，但还没有真正落地专业 MQ adapter 和生产容量证明。

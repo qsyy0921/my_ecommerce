@@ -109,6 +109,7 @@ docs/sdd/tasks.md
 docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md
 docs/sdd/2026-05-31-current-verification-baseline.md
 docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md
+docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md
 ```
 
 后续每轮改动必须同步维护 Done List、TODO List 和所有未完成任务清单，并按 `scripts/verify-current-baseline.ps1` 选择对应验证 profile。

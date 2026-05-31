@@ -3,8 +3,7 @@ package cn.bugstack.infrastructure.adapter.port;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderMessagePort;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderCreateMessageEntity;
 import cn.bugstack.domain.seckill.model.entity.SeckillOrderEntity;
-import cn.bugstack.infrastructure.event.EventPublisher;
-import cn.bugstack.infrastructure.event.SeckillOrderCreateBuffer;
+import cn.bugstack.infrastructure.adapter.support.SeckillOrderOutboxPublishSupport;
 import com.alibaba.fastjson.JSON;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,19 +17,13 @@ public class SeckillOrderMessagePort implements ISeckillOrderMessagePort {
     private String topicSeckillOrderCreate;
 
     @Resource
-    private EventPublisher eventPublisher;
-    @Resource
-    private SeckillOrderCreateBuffer seckillOrderCreateBuffer;
+    private SeckillOrderOutboxPublishSupport outboxPublishSupport;
 
     @Override
     public boolean publishOrderCreate(SeckillOrderEntity seckillOrderEntity) {
         SeckillOrderCreateMessageEntity messageEnvelope = SeckillOrderCreateMessageEntity.fromOrder(seckillOrderEntity);
         String message = JSON.toJSONString(messageEnvelope);
-        if (seckillOrderCreateBuffer.useMq()) {
-            eventPublisher.publishWithoutConfirm(topicSeckillOrderCreate, message);
-            return true;
-        }
-        return seckillOrderCreateBuffer.offer(message, messageEnvelope.stableRouteKey());
+        return outboxPublishSupport.publish(messageEnvelope, topicSeckillOrderCreate, message);
     }
 
 }

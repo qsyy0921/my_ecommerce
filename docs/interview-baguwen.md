@@ -722,7 +722,7 @@ DLQ 是死信队列，用于接收无法正常消费的消息。它不是补偿�
 
 Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Redis 库存扣减链路，有 pending-list，能快速接入异步落库。RabbitMQ 更适合跨服务业务通知，比如成团通知商城、退单通知商城。真正生产大促下，秒杀订单创建消息更适合迁移到 RocketMQ：Redis 只做资格预扣和防重，MySQL Outbox 做可靠投递兜底，RocketMQ 承担订单消息的分区路由、堆积恢复、重试和 DLQ。
 
-当前代码已经把锁单主流程和消息中间件隔离到 `ISeckillOrderMessagePort`，并把秒杀订单创建消息升级成独立 Envelope，后续切 RocketMQ 不应该改锁单主流程或依赖领域实体 JSON。但这不等于专业 MQ 已经落地：现在还缺 outbox repository/投递任务、RocketMQ producer/consumer adapter、DLQ/lag 指标和消费契约测试。面试时要讲“具备演进边界和消息契约”，不要讲成“已经完成生产级 MQ”。
+当前代码已经把锁单主流程和消息中间件隔离到 `ISeckillOrderMessagePort`，把秒杀订单创建消息升级成独立 Envelope，并补了 `seckill_order_outbox` 代码闭环。后续切 RocketMQ 不应该改锁单主流程或依赖领域实体 JSON。但这不等于专业 MQ 已经落地：现在还缺 RocketMQ producer/consumer adapter、DLQ/lag 指标、consumer group 堆积恢复和真实多机压测。面试时要讲“具备演进边界、消息契约和 Outbox 兜底”，不要讲成“已经完成生产级 MQ”。
 
 ### 13. 为什么秒杀不用本机队列？
 
@@ -799,7 +799,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 
 面试表达：
 
-> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单创建消息也已经有稳定 Envelope，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程和消息体契约。但当前还没有真正落地专业 MQ adapter，下一步要补 Outbox 代码闭环、Producer/Consumer 契约测试和真实多机压测。本机解决不了的是生产容量结论。后续如果继续演进，我会优先做 outbox 投递状态机和专业 MQ adapter，再做独立 Linux 环境多实例压测、Trace 采样和日志指标跳转。
+> 这个项目当前最大的问题不是主链路跑不通，而是生产化验证还不够完整。本机能解决的幂等、补偿、DLQ、对账、秒杀退款库存闭环、结构化日志、Jaeger Trace、压测脚本、资源水位联动报告、DDD 架构测试、拼团锁单领域单测、秒杀库存单测、退款策略单测、对账重放契约测试、领域异步执行端口和大 Repository 拆分我已经补了；活动、拼团、秒杀这些通用仓储也已经按语义端口拆开，秒杀下单消息抽成 `ISeckillOrderMessagePort`，订单创建消息有稳定 Envelope，`seckill_order_outbox` 也已经有代码端口、自动重试和人工重放入口，订单生命周期命令拆成创建、结算、退款三个端口，后续替换 RocketMQ/Kafka 不需要改锁单主流程和消息体契约。但当前还没有真正落地专业 MQ adapter，下一步要补 Producer/Consumer 契约测试、RocketMQ/Kafka adapter 和真实多机压测。本机解决不了的是生产容量结论。
 
 ## 六、当前已修复的问题
 
@@ -826,6 +826,7 @@ Redis Stream 适合当前本地演示和课程项目规模，因为它贴近 Red
 - 秒杀锁单端口：`ISeckillOrderLockPort` 承接 Redis 资格预扣、异步入队和失败回滚。
 - 秒杀下单消息端口：`ISeckillOrderMessagePort` 承接 RabbitMQ、Redis Stream、Redis Queue、本地队列投递选择。
 - 秒杀订单创建消息 Envelope：`SeckillOrderCreateMessageEntity` 固化 schema、eventType、messageId、routeKey、traceId，并兼容历史裸订单 JSON。
+- 秒杀订单 Outbox：`seckill_order_outbox` 支持 `INIT/SENT/FAILED/DEAD`，入口先落库、即时投递失败由定时任务或 `retry_seckill_order_outbox` 人工入口补偿。
 - 秒杀维护端口：`ISeckillMaintenancePort` 承接库存同步、活动预热和超时未支付释放。
 - 秒杀库存流水端口：`ISeckillStockFlowPort` 承接 `seckill_stock_flow` 构建和批量落库。
 - 通用秒杀仓储删除：`ISeckillRepository` / `SeckillRepository` 不再作为兼容门面存在。
@@ -1011,8 +1012,9 @@ MQ：
 ## 十一、维护记录
 
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，收敛当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，并同步“当前仍存在的问题”面试口径。
-- 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，审计秒杀订单消息接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，后续仍需消息 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明分阶段落地。
+- 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，审计秒杀订单消息接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，后续按消息 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明分阶段落地。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`，实现秒杀订单创建消息 Envelope 和契约测试，后续专业 MQ 演进的主要缺口收敛为 Outbox 代码闭环、producer/consumer adapter 和真实容量验证。
+- 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`，实现秒杀订单 Outbox 代码闭环、自动重试任务和人工重放入口，后续专业 MQ 演进的主要缺口继续收敛为 producer/consumer adapter、堆积恢复和真实容量验证。
 - 2026-05-31：补齐拼团锁单等待超时语义单元测试，覆盖重复请求未拿到锁、缓存和 DB 都无结果时等待 5 次后抛 `E0010`，并新增 SDD 记录 `docs/sdd/2026-05-31-group-buy-lock-wait-timeout-test.md`。
 - 2026-05-31：制定 Redis 通用接口新增能力准入规则，明确带业务语义、组合多个 key、需要 Lua、影响库存或状态的 Redis 能力必须优先进入业务端口，并新增 SDD 记录 `docs/sdd/2026-05-31-redis-gateway-admission-rule.md`。
 - 2026-05-31：评估 `DomainPurityTest` 规则分层，明确粗筛、稳定结构守护、职责回流守护、脆弱文本快照守护和行为契约测试的边界，并新增 SDD 记录 `docs/sdd/2026-05-31-domain-purity-guard-layering.md`。

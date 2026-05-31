@@ -55,7 +55,7 @@ create table if not exists `seckill_order_outbox` (
   `route_key` varchar(192) not null comment 'route key for mq partition/queue',
   `topic` varchar(128) not null comment 'mq topic',
   `message_body` text not null comment 'message body',
-  `status` tinyint not null default 0 comment '0-init,1-sent,2-fail',
+  `status` tinyint not null default 0 comment '0-init,1-sent,2-failed,3-dead',
   `retry_count` int not null default 0 comment 'retry count',
   `next_retry_time` datetime default null comment 'next retry time',
   `error_message` varchar(512) default null comment 'error message',

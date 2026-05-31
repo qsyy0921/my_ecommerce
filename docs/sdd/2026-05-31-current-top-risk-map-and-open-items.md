@@ -27,6 +27,7 @@
 - `docs/sdd/mq-evolution.md`
 - `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`
 - `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`
+- `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
 - `docs/sdd/tasks.md`
 - `docs/sdd/ddd-sdd-todo-list.md`
 - `docs/interview-baguwen.md`
@@ -37,12 +38,12 @@
 
 - 类型：生产边界 / 代码风险
 - 优先级：P0
-- 当前状态：最小可切换边界已审计，落地暂不处理
-- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦；秒杀订单创建消息也已经补齐独立 Envelope 和契约测试。但主方案仍是 Redis Stream，且缺少 Outbox 代码闭环、RocketMQ/Kafka adapter、consumer 契约和真实生产容量证明。
+- 当前状态：Envelope 和 Outbox 代码闭环已补，专业 MQ adapter 和真实容量证明仍未完成
+- 现状：秒杀链路已经有 Redis Lua、Redis Stream 分片、pending-list、人工补偿 Stream、批量落库和库存流水；锁单主流程已经通过 `ISeckillOrderMessagePort` 和具体 MQ 解耦；秒杀订单创建消息已经补齐独立 Envelope 和契约测试；`seckill_order_outbox` 已有代码端口、DAO、自动重试任务和人工重放入口。但主方案仍是 Redis Stream，缺少 RocketMQ/Kafka adapter、consumer 契约、broker 堆积恢复验证和真实生产容量证明。
 - 不完成的影响：面试或评审时如果把本机 QPS 和 Redis Stream 说成大促终局方案，会明显夸大系统成熟度。
 - 当前为什么还没做：缺少真实多机环境、独立压测机和专业 MQ 集群；本机 Docker 环境只能做趋势验证。贸然接一个未验证 RocketMQ adapter 只会把“可启动”误包装成“生产化完成”。
 - 后续触发条件：有 Linux 多实例环境，或明确要把秒杀下单队列从 Redis Stream 演进到 RocketMQ/Kafka/Pulsar。
-- 下一步建议：先补秒杀订单 Outbox 代码闭环和投递状态机，再进入 RocketMQ/Kafka adapter。
+- 下一步建议：先补专业 MQ adapter 的 producer/consumer 契约设计和测试，再决定是否在本机接入 RocketMQ adapter。
 
 ### 2. Redis 通用基础设施接口仍然过宽
 
@@ -175,19 +176,24 @@
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
   - 提交：本轮提交
 
+- [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
+  - 文件：`ISeckillOrderOutboxPort.java`、`SeckillOrderOutboxEntity.java`、`SeckillOrderOutboxPort.java`、`SeckillOrderOutboxPublishSupport.java`、`SeckillOrderOutboxRetrySupport.java`、`SeckillOrderOutboxRetryJob.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxRetrySupportUnitTest.java`、`docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
+  - 提交：本轮提交
+
 ## TODO List
 
-- [ ] P0：补秒杀订单 Outbox 代码闭环和投递状态机。
-  - 原因：Envelope 已经固化，但 SQL 中的 `seckill_order_outbox` 还没有对应 repository、投递任务、重试状态机和人工重放入口。
-  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
-  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
+- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
+  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
-| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、outbox 代码闭环和 producer/consumer adapter | Outbox、producer/consumer 契约测试完成后，或明确有生产化演练目标 |
+| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
@@ -218,5 +224,6 @@
 - 本轮新增当前验证基线脚本化入口。
 - 本轮新增秒杀专业 MQ 最小可切换边界审计。
 - 本轮新增秒杀订单创建消息 Envelope 契约实现和测试。
+- 本轮新增秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
 - 本轮同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
 - 本轮细化专业 MQ 面试口径，同步 `interview-baguwen.md`。

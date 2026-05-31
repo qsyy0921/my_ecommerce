@@ -146,6 +146,12 @@ app:
       metrics-sample-interval-millis: 5000
       worker-count: 8
       batch-size: 100
+    order-outbox:
+      enabled: true
+      fixed-delay-millis: 30000
+      batch-size: 50
+      max-retry: 10
+      retry-delay-seconds: 30
     fault-injection:
       enabled: false
       redis-jitter-rate: 0

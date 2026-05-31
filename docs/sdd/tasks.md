@@ -33,6 +33,7 @@
 - [x] 秒杀限流端口内部拆出 Redis 固定窗口限流支撑组件，端口保留三维限流策略和配置读取。
 - [x] 秒杀排队削峰：热点活动可切换到 MQ/Redis Stream 排队下单。
 - [x] 秒杀订单创建消息升级为稳定 Envelope，包含 schemaVersion、eventType、messageId、routeKey、traceId，并兼容历史裸订单 JSON。
+- [x] 秒杀订单创建消息接入可靠 Outbox，支持先落库、即时投递、失败自动重试和人工重放。
 - [x] 秒杀支付结算和退款库存闭环：`CREATE -> COMPLETE -> REFUND`、未支付取消和库存流水审计。
 
 ## T4 拼团大厂化
@@ -173,6 +174,7 @@
 - [x] 专业 MQ 演进方案已补齐到 `docs/sdd/mq-evolution.md`，明确 Redis Stream、RabbitMQ、RocketMQ/Kafka/Pulsar 职责边界、消息模型、迁移步骤和回滚方案。
 - [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，后续按 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明分阶段推进。
 - [x] 定义秒杀订单创建消息 Envelope 并补契约测试，验证 schema、messageId、routeKey、JSON round trip 和历史裸订单 JSON 兼容。
+- [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机，支持 INIT/SENT/FAILED/DEAD、定时重试和人工重放。
 - [x] 拼团退款策略纯单元测试已补齐，覆盖未支付未成团、已支付未成团、已支付已成团、重复退款、非法状态退款和锁单库存恢复边界。
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
 - [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。

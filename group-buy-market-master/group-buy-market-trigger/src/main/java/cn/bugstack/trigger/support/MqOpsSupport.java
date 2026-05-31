@@ -5,6 +5,7 @@ import cn.bugstack.api.dto.MqFailedMessageResponseDTO;
 import cn.bugstack.api.response.Response;
 import cn.bugstack.domain.message.model.entity.MessageRecordEntity;
 import cn.bugstack.domain.message.service.IMessageRecordService;
+import cn.bugstack.domain.seckill.service.ISeckillOrderOutboxService;
 import cn.bugstack.types.enums.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +23,8 @@ public class MqOpsSupport {
 
     @Resource
     private IMessageRecordService messageRecordService;
+    @Resource
+    private ISeckillOrderOutboxService seckillOrderOutboxService;
     @Resource
     private MqOpsAdminSupport adminSupport;
     @Resource
@@ -54,6 +57,16 @@ public class MqOpsSupport {
         }
         int count = messageRecordService.retryProducerFailedMessages(null == limit ? 20 : limit);
         log.warn("mq producer failed messages manual retry operator:{} count:{}",
+                adminSupport.operator(operator), count);
+        return success(count);
+    }
+
+    public Response<Integer> retrySeckillOrderOutbox(String token, String operator, Integer limit) {
+        if (!adminSupport.authorized(token)) {
+            return adminSupport.denied();
+        }
+        int count = seckillOrderOutboxService.retryManualMessages(null == limit ? 20 : limit);
+        log.warn("seckill order outbox manual retry operator:{} count:{}",
                 adminSupport.operator(operator), count);
         return success(count);
     }

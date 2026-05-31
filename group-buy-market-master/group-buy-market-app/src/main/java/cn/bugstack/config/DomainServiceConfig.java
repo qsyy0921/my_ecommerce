@@ -6,11 +6,14 @@ import cn.bugstack.domain.message.service.MessageRecordService;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillMaintenancePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderCreatePort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderLockPort;
+import cn.bugstack.domain.seckill.adapter.port.ISeckillOrderOutboxPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillQueryPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillRefundPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillSettlementPort;
 import cn.bugstack.domain.seckill.adapter.port.ISeckillStockAvailabilityPort;
+import cn.bugstack.domain.seckill.service.ISeckillOrderOutboxService;
 import cn.bugstack.domain.seckill.service.ISeckillService;
+import cn.bugstack.domain.seckill.service.SeckillOrderOutboxService;
 import cn.bugstack.domain.seckill.service.SeckillService;
 import cn.bugstack.domain.shared.adapter.port.IDomainTaskExecutor;
 import cn.bugstack.domain.tag.adapter.repository.ITagRepository;
@@ -68,6 +71,11 @@ public class DomainServiceConfig {
     @Bean
     public IMessageRecordService messageRecordService(IMessageRecordRepository messageRecordRepository) {
         return new MessageRecordService(messageRecordRepository);
+    }
+
+    @Bean
+    public ISeckillOrderOutboxService seckillOrderOutboxService(ISeckillOrderOutboxPort seckillOrderOutboxPort) {
+        return new SeckillOrderOutboxService(seckillOrderOutboxPort);
     }
 
     @Bean

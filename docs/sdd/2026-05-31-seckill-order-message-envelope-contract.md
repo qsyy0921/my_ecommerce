@@ -62,19 +62,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
   - 文件：`SeckillOrderCreateMessageContractTest.java`
   - 验收：覆盖 schema、routeKey、JSON round trip、旧消息兼容。
 
+- [x] 后续已补齐 Outbox 代码闭环。
+  - 文件：`docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
+  - 验收：`seckill` profile 通过 24 个测试。
+
 ## TODO List
 
-- [ ] P0：补秒杀订单 Outbox 代码闭环。
-  - 原因：SQL 已有 `seckill_order_outbox` 表，但代码里还没有 repository、投递任务、状态机、人工重放和专业 MQ adapter。
-  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
-  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
+- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
+  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
-| 秒杀专业 MQ adapter | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 outbox 代码闭环 | Outbox、producer/consumer 契约测试完成后 |
+| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | Outbox 投递闭环已优先完成，查询台账属于下一层运维体验 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 
 ## 面试口径

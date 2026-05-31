@@ -41,4 +41,11 @@ public class MqOpsController {
         return mqOpsSupport.retryProducerFailed(token, operator, limit);
     }
 
+    @RequestMapping(value = "retry_seckill_order_outbox", method = RequestMethod.POST)
+    public Response<Integer> retrySeckillOrderOutbox(@RequestHeader(value = "x-admin-token", required = false) String token,
+                                                     @RequestHeader(value = "x-admin-operator", required = false) String operator,
+                                                     @RequestParam(required = false, defaultValue = "20") Integer limit) {
+        return mqOpsSupport.retrySeckillOrderOutbox(token, operator, limit);
+    }
+
 }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bugstack.infrastructure.dao.ISeckillOrderOutboxDao">
+
+    <resultMap id="dataMap" type="cn.bugstack.infrastructure.dao.po.SeckillOrderOutbox">
+        <id column="id" property="id"/>
+        <result column="message_id" property="messageId"/>
+        <result column="route_key" property="routeKey"/>
+        <result column="topic" property="topic"/>
+        <result column="message_body" property="messageBody"/>
+        <result column="status" property="status"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="next_retry_time" property="nextRetryTime"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="trace_id" property="traceId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insertIgnore" parameterType="cn.bugstack.infrastructure.dao.po.SeckillOrderOutbox">
+        insert ignore into seckill_order_outbox(
+            message_id, route_key, topic, message_body, status, retry_count,
+            next_retry_time, error_message, trace_id, create_time, update_time
+        ) values(
+            #{messageId}, #{routeKey}, #{topic}, #{messageBody}, #{status}, #{retryCount},
+            #{nextRetryTime}, #{errorMessage}, #{traceId}, now(), now()
+        )
+    </insert>
+
+    <select id="queryByMessageId" parameterType="java.lang.String" resultMap="dataMap">
+        select id, message_id, route_key, topic, message_body, status, retry_count,
+               next_retry_time, error_message, trace_id, create_time, update_time
+        from seckill_order_outbox
+        where message_id = #{messageId}
+    </select>
+
+    <update id="markSent" parameterType="java.lang.String">
+        update seckill_order_outbox
+        set status = 1,
+            error_message = null,
+            next_retry_time = null,
+            update_time = now()
+        where message_id = #{messageId}
+    </update>
+
+    <update id="markFailed">
+        update seckill_order_outbox
+        set status = case when retry_count + 1 &gt;= #{maxRetry} then 3 else 2 end,
+            retry_count = retry_count + 1,
+            next_retry_time = case when retry_count + 1 &gt;= #{maxRetry}
+                then null
+                else date_add(now(), interval #{retryDelaySeconds} second)
+            end,
+            error_message = #{errorMessage},
+            update_time = now()
+        where message_id = #{messageId}
+          and status != 1
+    </update>
+
+    <select id="queryDueMessageList" resultMap="dataMap">
+        select id, message_id, route_key, topic, message_body, status, retry_count,
+               next_retry_time, error_message, trace_id, create_time, update_time
+        from seckill_order_outbox
+        where status in (0, 2)
+          and (next_retry_time is null or next_retry_time &lt;= now())
+        order by id asc
+        limit #{limit}
+    </select>
+
+    <select id="queryManualRetryMessageList" resultMap="dataMap">
+        select id, message_id, route_key, topic, message_body, status, retry_count,
+               next_retry_time, error_message, trace_id, create_time, update_time
+        from seckill_order_outbox
+        where status in (0, 2, 3)
+        order by update_time asc, id asc
+        limit #{limit}
+    </select>
+
+</mapper>

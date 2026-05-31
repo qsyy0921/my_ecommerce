@@ -56,8 +56,8 @@ flowchart LR
     MQ --> Consumer["消费组批量消费"]
     Consumer --> DB["MySQL 分片订单 + 消费幂等 + 库存流水"]
     Consumer --> Result["秒杀结果缓存"]
-    Adapter --> Outbox["MySQL seckill_order_outbox 兜底"]
-    Outbox --> Retry["投递重试 / 人工重放"]
+Adapter --> Outbox["MySQL seckill_order_outbox 兜底"]
+Outbox --> Retry["投递重试 / 人工重放"]
 ```
 
 ## 消息模型
@@ -137,12 +137,13 @@ DEAD -> INIT
 - Redis Stream 继续承担本机削峰、pending 接管和人工补偿。
 - 架构测试守住锁单适配器不回退到直接绑定中间件。
 
-第二阶段：引入 Outbox 投递兜底。
+第二阶段：引入 Outbox 投递兜底。当前已完成。
 
 - 抢到 Redis 资格后生成订单创建消息。
 - 先写 `seckill_order_outbox`，再由后台投递器投递 MQ。
 - 投递失败按 `retry_count + next_retry_time` 重试。
 - 入口线程仍不等待 broker confirm。
+- 人工接口 `retry_seckill_order_outbox` 可重放 `INIT/FAILED/DEAD` 记录。
 
 第三阶段：新增 RocketMQ Adapter。
 
@@ -195,14 +196,15 @@ DEAD -> INIT
 - Redis Stream、Redis Queue、本地队列和 RabbitMQ 的投递选择集中在基础设施 adapter。
 - `SeckillOrderCreateMessageEntity` 已提供独立消息 Envelope，消费端兼容历史裸订单 JSON。
 - `SeckillOrderCreateMessageContractTest` 已验证 schema、messageId、routeKey 和序列化兼容性。
+- `seckill_order_outbox` 已落地代码端口、DAO、自动重试任务和人工重放入口。
+- `SeckillOrderOutboxRetrySupportUnitTest` 已验证投递成功、转 dead 和人工重放 dead 记录。
 
 未具备：
 
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
-- `seckill_order_outbox` 只有 SQL，缺少 repository、投递任务、状态机和人工重放代码。
 - 没有 RocketMQ consumer group、DLQ、lag、重试和消费幂等契约测试。
 
-因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope 已经完成，后续应先进入 outbox 代码闭环和投递状态机，再实现 RocketMQ/Kafka adapter。
+因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope 和 Outbox 已经完成，后续应先补 producer/consumer adapter 契约和消费幂等测试，再决定是否接入 RocketMQ/Kafka adapter。
 
 ## 面试说法
 

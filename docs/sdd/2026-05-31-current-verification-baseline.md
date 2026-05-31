@@ -70,19 +70,23 @@
   - 结果：秒杀订单创建消息从裸 `SeckillOrderEntity` JSON 升级为稳定 `SeckillOrderCreateMessageEntity` Envelope，并兼容历史裸订单 JSON。
   - 验收：`SeckillOrderCreateMessageContractTest` 覆盖 schema、messageId、routeKey、JSON round trip 和旧消息兼容。
 
+- [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
+  - 结果：发布端先写 `seckill_order_outbox`，Outbox 写成功后即时投递失败由定时任务和人工接口补偿；Outbox 写失败才让锁单链路回滚资格。
+  - 验收：`SeckillOrderOutboxRetrySupportUnitTest` 覆盖 sent、dead 和人工重放，`seckill` profile 通过 24 个测试。
+
 ## TODO List
 
-- [ ] P0：补秒杀订单 Outbox 代码闭环和投递状态机。
-  - 原因：Envelope 已经固化，但 SQL 中的 `seckill_order_outbox` 还没有对应 repository、投递任务、重试状态机和人工重放入口。
-  - 范围：outbox 领域端口、基础设施 repository、投递重试任务、状态机测试、运维入口。
-  - 验收：支持 `INIT/SENT/CONFIRMED/FAILED/DEAD` 或等价状态，具备 retry_count、next_retry_time、trace_id、人工重放和幂等投递。
+- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
+  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀订单 Outbox 代码闭环 | 未开始 | 生产边界 / 代码风险 | P0 | MQ 投递失败仍缺少以 DB 为准的可靠投递状态机和人工重放入口 | 本轮只固化消息契约，避免同时引入状态机和 adapter 扩大改动面 | 开始落地 RocketMQ/Kafka adapter 前 |
-| 秒杀专业 MQ 演进落地 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测、outbox 代码闭环和 producer/consumer adapter | Outbox、producer/consumer 契约测试完成后，或明确有生产化演练目标 |
+| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |
@@ -203,7 +207,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 ```powershell
 cd E:\java\group_buy_market
-& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
+& "E:\java\group_buy_market\.tools\apache-maven-3.8.8\bin\mvn.cmd" -f "E:\java\group_buy_market\group-buy-market-master\pom.xml" -q -pl group-buy-market-app -am -DskipTests=false -DfailIfNoTests=false "-Dtest=cn.bugstack.test.infrastructure.seckill.SeckillOrderCreateMessageContractTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderOutboxRetrySupportUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillOrderLockPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillStockAvailabilityPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillRateLimitPortUnitTest,cn.bugstack.test.infrastructure.seckill.SeckillSettlementPortUnitTest" test
 ```
 
 ### L6 商城支付和对账变更
@@ -249,6 +253,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 ## 本轮判断
 
-本轮改变了秒杀专业 MQ 演进口径：Envelope 已完成，下一步风险收敛到 Outbox 代码闭环和专业 MQ adapter。因此需要同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
+本轮改变了秒杀专业 MQ 演进口径：Envelope 和 Outbox 代码闭环已完成，下一步风险收敛到专业 MQ adapter、consumer 契约和真实容量证明。因此需要同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
 
 当前权威清单仍以 `2026-05-31-current-top-risk-map-and-open-items.md` 为准；本文件提供可复制 Prompt 和验证命令基线。
