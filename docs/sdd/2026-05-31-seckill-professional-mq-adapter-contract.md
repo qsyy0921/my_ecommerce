@@ -79,10 +79,10 @@ producer adapter 不允许：
 
 ## TODO List
 
-- [ ] P0：评估是否在本机实现 RocketMQ adapter 的最小 profile。
+- [x] P0：评估是否在本机实现 RocketMQ adapter 的最小 profile。
   - 原因：契约已固化，但真正的专业 MQ producer/consumer adapter 仍未实现。
-  - 范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ；不承诺生产容量。
-  - 验收：本机能按 profile 切换 adapter，契约测试覆盖 producer message key/tag/partition key 和 consumer 幂等。
+  - 结论：后续文档已决策本机暂不实现，见 `2026-05-31-seckill-rocketmq-adapter-profile-decision.md`。
+  - 验收：明确 adapter 触发条件，避免把单机 profile 包装成生产容量证明。
 
 - [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
   - 原因：Outbox 有重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细。
@@ -93,7 +93,7 @@ producer adapter 不允许：
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| RocketMQ/Kafka/Pulsar adapter 实现 | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 本轮只固化契约，不引入未验证客户端依赖 | 明确要做本机 profile 或有专业 MQ 环境 |
+| RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 后续文档已决策单机 adapter 不能证明生产能力，当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
 | 专业 MQ 真实容量证明 | 已阻塞 | 生产边界 | P0 | 无法证明生产 QPS、堆积恢复和 broker 故障恢复 | 当前只有单机环境 | 有独立 Linux 压测机、多服务实例和独立 MQ 集群 |
 | Outbox 查询台账和告警 | 未开始 | 运维边界 | P1 | 失败消息可重试但不够容易观察 | 本轮先做消息契约，不扩大运维界面 | 开始完善补偿后台或监控告警 |
 | 八股文档细粒度短板同步 | 进行中 | 面试口径 | P1 | 容易把“契约已固化”误讲成“专业 MQ 已完成” | 需要每轮同步 | 每次新增 MQ adapter 或变更消息链路 |

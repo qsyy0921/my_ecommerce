@@ -192,10 +192,10 @@
   - 本次完成：`SeckillOrderCreateMessageEntity` 新增 `stableMessageKey()`、`stablePartitionKey()`、`stableEventTag()`，并补 `SeckillOrderCreateMessageContractTest` 覆盖专业 MQ key/tag/partition key。
   - 验收：形成 `docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`，避免把本机可启动 adapter 包装成生产容量证明。
 
-- [ ] 评估并决定是否实现 RocketMQ adapter 最小 profile。
+- [x] 评估并决定是否实现 RocketMQ adapter 最小 profile。
   - 目标：在契约已固化后，判断是否值得在本机引入 RocketMQ producer/consumer adapter；如果实现，必须作为可切换 profile，不作为生产容量证明。
-  - 建议范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ。
-  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter。
+  - 本次结论：本轮暂不实现 RocketMQ adapter；单机 adapter 只能证明 SDK 可用，不能证明生产容量、堆积恢复和 broker 故障恢复。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-rocketmq-adapter-profile-decision.md`，后续有真实 MQ 环境或明确演示需求时再接具体 adapter。
 
 - [ ] 补秒杀 Outbox 查询、状态台账和告警。
   - 目标：在已有自动重试和人工重放基础上，提供 INIT/FAILED/DEAD 查询视图、pending/dead 指标和告警规则。

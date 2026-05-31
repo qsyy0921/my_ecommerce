@@ -120,17 +120,22 @@ flowchart TD
 
 ## TODO List
 
-- [ ] P0：评估并决定是否实现 RocketMQ adapter 最小 profile。
+- [x] P0：评估并决定是否实现 RocketMQ adapter 最小 profile。
   - 原因：Envelope、Outbox 和专业 MQ key/tag/partition key 契约已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
-  - 范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ；暂不直接声称生产容量完成。
-  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter，契约测试覆盖 producer message key/tag/partition key 和 consumer 幂等。
+  - 结论：本轮决策暂不实现，见 `2026-05-31-seckill-rocketmq-adapter-profile-decision.md`。
+  - 验收：明确 adapter 触发条件，避免把单机 profile 包装成生产容量证明。
+
+- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+  - 原因：当前 Outbox 有重试和人工重放，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细。
+  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
+  - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| RocketMQ/Kafka/Pulsar adapter 实现 | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 契约已固化，但未引入具体 MQ 客户端和消费者 | 明确要做本机 profile 或具备专业 MQ 环境 |
-| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
+| RocketMQ/Kafka/Pulsar adapter 实现 | 暂不处理 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 本轮决策认为单机 adapter 不能证明生产能力，且当前端口/契约已足够支撑后续切换 | 有独立 MQ 环境，或明确接受本机 profile 只做演示 |
+| 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先完成 RocketMQ adapter profile 决策，尚未进入运维台账实现 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
 | Redis 通用接口拆分 | 暂不处理 | 代码风险 / 基础设施边界 | P0 | 公共 Redis 总线继续扩大 | 新增能力准入规则已补齐；直接拆改动面大，现有业务端口暂时守住边界 | 新增 Redis 能力或公共接口继续膨胀 |

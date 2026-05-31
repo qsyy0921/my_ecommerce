@@ -206,7 +206,7 @@ DEAD -> INIT
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
 - 没有 RocketMQ consumer group、DLQ、lag、重试和真实 broker 消费幂等验证。
 
-因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope、Outbox 和专业 MQ key/tag/partition key 契约已经完成，后续应评估是否实现 RocketMQ/Kafka adapter 最小 profile，并补真实 broker 下的 consumer group、DLQ、lag 和堆积恢复验证。
+因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope、Outbox 和专业 MQ key/tag/partition key 契约已经完成；本轮已评估 RocketMQ/Kafka adapter 最小 profile，结论是当前单机环境暂不接入具体 MQ 客户端。后续应先补 Outbox 查询台账和告警；等有真实 MQ 环境或明确演示需求时，再实现 adapter 并补真实 broker 下的 consumer group、DLQ、lag 和堆积恢复验证。
 
 ## 面试说法
 
