@@ -348,6 +348,11 @@
   - 本次结论：当前问题不是没记录，而是记录得越完整，主次越容易被拉平；局部文档都有优先级判断，但全局缺少统一的“当前前 5 个问题”视图。
   - 验收：新增 `docs/sdd/2026-05-31-priority-flattening-risk-audit.md`，后续继续审核时优先考虑做统一排序收敛，而不是默认给每个问题同样的篇幅和正式程度。
 
+- [x] 收敛当前前 5 个残留风险并维护 Done/TODO/Open Items。
+  - 目标：把最近几轮分散的审计结论收敛成统一风险排序，并显式维护已完成、下一步、所有未完成任务三类清单。
+  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。
+  - 验收：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，并同步 `README.md`、`tasks.md`、`interview-baguwen.md`。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
