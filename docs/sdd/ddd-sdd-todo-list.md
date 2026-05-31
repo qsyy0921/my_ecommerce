@@ -318,6 +318,11 @@
   - 本次结论：`IRedisService` / `RedissonService` 仍是最典型的通用基础设施总线风险；`SeckillService` 仍保留本地 `Semaphore`、本地订单号生成和锁单前置编排；`AbstractOrderService` 仍感知营销类型分支；`ReconcileCaseOperationSupport` 继续承担后台运营动作聚合。
   - 验收：新增 `docs/sdd/2026-05-31-gateway-and-domain-orchestration-audit.md`，后续新增需求先检查是否又要往通用 Redis 接口或少量领域服务里继续塞技术决策和业务分支。
 
+- [x] 审计拼团锁单等待策略和装配层边界。
+  - 目标：继续确认拼团主链路里是否还存在比“大类风险”更具体的同步等待残留，并区分真正的问题点和仍然合理的 app 装配层。
+  - 本次结论：`TradeLockOrderService` 仍保留固定 5 次、每次 50ms 的阻塞轮询等待，是当前拼团主链路最具体的技术残留；现有单测覆盖了正确性，但没有单独固化等待超时语义；`DomainServiceConfig` 当前仍是合理的 app 装配点，`LoginController` 仍是传统轻量入口但优先级较低。
+  - 验收：新增 `docs/sdd/2026-05-31-lock-idempotency-and-assembly-boundary-audit.md`，后续如果继续治理拼团主链路，优先先补等待超时测试，再决定是否重构等待策略。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
