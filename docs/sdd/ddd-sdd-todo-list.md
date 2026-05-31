@@ -323,6 +323,11 @@
   - 本次结论：`TradeLockOrderService` 仍保留固定 5 次、每次 50ms 的阻塞轮询等待，是当前拼团主链路最具体的技术残留；现有单测覆盖了正确性，但没有单独固化等待超时语义；`DomainServiceConfig` 当前仍是合理的 app 装配点，`LoginController` 仍是传统轻量入口但优先级较低。
   - 验收：新增 `docs/sdd/2026-05-31-lock-idempotency-and-assembly-boundary-audit.md`，后续如果继续治理拼团主链路，优先先补等待超时测试，再决定是否重构等待策略。
 
+- [x] 审计架构守护体系本身的维护风险。
+  - 目标：确认当前 DDD 守护是否已经开始出现新的“大而全”测试热点，避免守护代码本身变成维护负担。
+  - 本次结论：`DomainPurityTest` 已经演进成 2000 多行的大型字符串规则清单，是当前守护体系最明确的维护热点；`check-domain-purity.ps1` 和 JUnit 架构测试之间存在“粗筛 vs 精细守护”的职责落差，但边界没有被明确表达。
+  - 验收：新增 `docs/sdd/2026-05-31-architecture-guard-hotspot-audit.md`，后续新增守护规则时优先判断是否能用更稳定的契约或文件边界表达，而不是继续无节制追加字符串规则。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
