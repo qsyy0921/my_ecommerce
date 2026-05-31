@@ -108,11 +108,14 @@ docs/sdd/tasks.md
 ```text
 docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md
 docs/sdd/2026-05-31-current-verification-baseline.md
+docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md
 docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md
 docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md
 ```
 
 后续每轮改动必须同步维护 Done List、TODO List 和所有未完成任务清单，并按 `scripts/verify-current-baseline.ps1` 选择对应验证 profile。
+
+当前前 5 风险清单已在 Outbox 完成后刷新：秒杀消息链路的下一步不再是补 Outbox，而是补专业 MQ adapter 契约、Outbox 状态台账/告警和真实容量证明。
 
 配套交付物：
 

@@ -28,6 +28,8 @@
 - `tasks.md`：当前 SDD 任务状态。
 - `ddd-sdd-todo-list.md`：DDD + SDD 后续治理约束。
 
+当前前 5 风险入口已经在秒杀订单 Outbox 完成后刷新；继续审核时先看该入口，再决定是否需要进入专业 MQ adapter、Outbox 运维台账或真实容量验证。
+
 ### 交易主链路
 
 - `2026-05-31-group-buy-lock-wait-timeout-test.md`：拼团锁单等待超时语义测试。

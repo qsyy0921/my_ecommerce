@@ -64,7 +64,7 @@ flowchart LR
 
 如果面试官继续追问“那现在还差什么”，建议按当前前 5 个残留风险回答：
 
-- 秒杀生产化消息链路和容量证明：当前 Redis Stream 分片、pending-list、人工补偿和批量落库已经能支撑本机演示，但它不是大促终局方案；本机压测也不能证明真实生产容量。
+- 秒杀生产化消息链路和容量证明：当前 Redis Stream 分片、pending-list、人工补偿、Envelope、Outbox 和批量落库已经能支撑本机演示，但它不是大促终局方案；下一步缺的是专业 MQ adapter 的 producer/consumer 契约、Outbox 状态台账/告警和真实生产容量证明。
 - Redis 通用基础设施接口过宽：`IRedisService` / `RedissonService` 仍像一个技术总线，当前已经补了新增能力准入规则；后续新增 Redis 能力时必须优先设计业务语义端口，避免继续往公共接口堆方法。
 - 拼团锁单幂等等待：`TradeLockOrderService` 里还有固定 5 次、每次 50ms 的阻塞轮询等待，这不是功能 bug，但高并发竞争时会带来线程占用和 RT 抖动；当前已经补了等待 5 次后抛 `E0010` 的单元测试，后续再评估是否重构等待策略。
 - 对账、售后和支付仍是最小闭环：当前有差错单、重放、操作日志、支付流水和退款流水，但还没有完整权限审批、SLA、运营报表、完整售后和多支付渠道治理。
@@ -1011,6 +1011,7 @@ MQ：
 
 ## 十一、维护记录
 
+- 2026-05-31：刷新当前前 5 风险和面试口径，明确 Outbox 已完成后，秒杀消息链路下一步收敛为专业 MQ adapter 契约、Outbox 状态台账/告警和真实容量证明。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，收敛当前前 5 个残留风险、Done List、TODO List 和所有未完成任务清单，并同步“当前仍存在的问题”面试口径。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`，审计秒杀订单消息接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，后续按消息 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明分阶段落地。
 - 2026-05-31：新增 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`，实现秒杀订单创建消息 Envelope 和契约测试，后续专业 MQ 演进的主要缺口收敛为 Outbox 代码闭环、producer/consumer adapter 和真实容量验证。

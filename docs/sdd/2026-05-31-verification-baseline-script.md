@@ -39,12 +39,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 - [x] 审计验证基线脚本化必要性。
   - 文件：`docs/sdd/2026-05-31-verification-baseline-script.md`
   - 验证：`git diff --check`
-  - 提交：本轮提交
+  - 提交：`0fe4ca8`
 
 - [x] 新增本地验证 profile runner。
   - 文件：`scripts/verify-current-baseline.ps1`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：本轮提交
+  - 提交：`0fe4ca8`
 
 - [x] 同步当前 SDD 清单入口。
   - 文件：`docs/sdd/README.md`、`docs/sdd/tasks.md`、`docs/sdd/ddd-sdd-todo-list.md`、`docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`、`docs/sdd/2026-05-31-current-verification-baseline.md`
@@ -54,12 +54,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 - [x] 把秒杀 Envelope 契约测试纳入 `seckill` profile。
   - 文件：`scripts/verify-current-baseline.ps1`、`docs/sdd/2026-05-31-current-verification-baseline.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：本轮提交
+  - 提交：`9186d8f`
 
 - [x] 把秒杀 Outbox 重试契约测试纳入 `seckill` profile。
   - 文件：`scripts/verify-current-baseline.ps1`、`docs/sdd/2026-05-31-current-verification-baseline.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：本轮提交
+  - 提交：`bf9ebc0`
 
 ## TODO List
 
@@ -67,6 +67,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
   - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
   - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
   - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+
+- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+  - 原因：Outbox 已经具备投递和重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门积压和 DEAD 增长告警。
+  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
+  - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
 
 ## 所有未完成任务清单
 

@@ -95,22 +95,22 @@ flowchart TD
 - [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
   - 文件：`docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：本轮提交
+  - 提交：`e6f61c9`
 
 - [x] 明确本轮不直接接入 RocketMQ adapter。
   - 文件：`docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`
   - 验证：当前代码无 RocketMQ/Kafka/Pulsar 依赖，`ISeckillOrderMessagePort` 已隔离锁单主流程。
-  - 提交：本轮提交
+  - 提交：`e6f61c9`
 
 - [x] 补齐秒杀订单创建消息 Envelope 和契约测试。
   - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderMessagePort.java`、`SeckillOrderCreateBufferWorker.java`、`SeckillOrderCreateListener.java`、`SeckillOrderCreateMessageContractTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：本轮提交
+  - 提交：`9186d8f`
 
 - [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
   - 文件：`SeckillOrderOutboxPort.java`、`SeckillOrderOutboxPublishSupport.java`、`SeckillOrderOutboxRetrySupport.java`、`SeckillOrderOutboxRetryJob.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxRetrySupportUnitTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：本轮提交
+  - 提交：`bf9ebc0`
 
 ## TODO List
 

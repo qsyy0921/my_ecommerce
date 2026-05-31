@@ -65,14 +65,17 @@
 - [x] 审计秒杀专业 MQ 最小可切换边界。
   - 结果：明确当前只具备锁单主流程可切换基础，还没有真正落地 RocketMQ/Kafka adapter。
   - 验收：`docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md` 已记录 Envelope、Outbox、Consumer 契约和生产容量证明缺口。
+  - 提交：`e6f61c9`
 
 - [x] 定义秒杀订单创建消息 Envelope 并补契约测试。
   - 结果：秒杀订单创建消息从裸 `SeckillOrderEntity` JSON 升级为稳定 `SeckillOrderCreateMessageEntity` Envelope，并兼容历史裸订单 JSON。
   - 验收：`SeckillOrderCreateMessageContractTest` 覆盖 schema、messageId、routeKey、JSON round trip 和旧消息兼容。
+  - 提交：`9186d8f`
 
 - [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
   - 结果：发布端先写 `seckill_order_outbox`，Outbox 写成功后即时投递失败由定时任务和人工接口补偿；Outbox 写失败才让锁单链路回滚资格。
   - 验收：`SeckillOrderOutboxRetrySupportUnitTest` 覆盖 sent、dead 和人工重放，`seckill` profile 通过 24 个测试。
+  - 提交：`bf9ebc0`
 
 ## TODO List
 
@@ -80,6 +83,11 @@
   - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
   - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
   - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+
+- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+  - 原因：Outbox 已经具备投递和重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门积压和 DEAD 增长告警。
+  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则。
+  - 验收：能查询 Outbox 状态明细，指标和告警能发现失败积压。
 
 ## 所有未完成任务清单
 
@@ -253,6 +261,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-domain-purity.
 
 ## 本轮判断
 
-本轮改变了秒杀专业 MQ 演进口径：Envelope 和 Outbox 代码闭环已完成，下一步风险收敛到专业 MQ adapter、consumer 契约和真实容量证明。因此需要同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
+当前秒杀专业 MQ 演进口径已经更新：Envelope 和 Outbox 代码闭环已完成，下一步风险收敛到专业 MQ adapter、consumer 契约、Outbox 状态台账/告警和真实容量证明。因此需要持续同步 `interview-baguwen.md`、当前风险地图和 SDD 任务清单。
 
 当前权威清单仍以 `2026-05-31-current-top-risk-map-and-open-items.md` 为准；本文件提供可复制 Prompt 和验证命令基线。

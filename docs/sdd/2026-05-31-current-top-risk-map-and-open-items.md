@@ -32,6 +32,18 @@
 - `docs/sdd/ddd-sdd-todo-list.md`
 - `docs/interview-baguwen.md`
 
+## 本轮刷新结论
+
+Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补齐秒杀订单 Outbox 落库、即时投递、失败重试、DEAD 隔离、定时任务、人工重放入口和单元测试。
+
+因此当前第 1 风险不再是“有没有 Outbox”，而是更具体的三件事：
+
+1. 专业 MQ adapter 的 producer/consumer 契约还没有形成可执行测试。
+2. Outbox 有重试闭环，但 INIT/FAILED/DEAD 查询台账、指标和告警还没有运维化。
+3. 本机环境仍不能证明生产容量。
+
+本轮不修改业务代码，只收敛当前风险地图、提交号、TODO List、所有未完成任务清单和面试口径。
+
 ## 当前前 5 个残留风险
 
 ### 1. 秒杀生产化消息链路和容量证明仍未完成
@@ -169,17 +181,17 @@
 - [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界。
   - 文件：`docs/sdd/2026-05-31-seckill-professional-mq-switch-boundary.md`、`docs/sdd/mq-evolution.md`、`docs/interview-baguwen.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：本轮提交
+  - 提交：`e6f61c9`
 
 - [x] 定义秒杀订单创建消息 Envelope 并补契约测试。
   - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderMessagePort.java`、`SeckillOrderCreateBufferWorker.java`、`SeckillOrderCreateListener.java`、`SeckillOrderCreateMessageContractTest.java`、`docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：本轮提交
+  - 提交：`9186d8f`
 
 - [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机。
   - 文件：`ISeckillOrderOutboxPort.java`、`SeckillOrderOutboxEntity.java`、`SeckillOrderOutboxPort.java`、`SeckillOrderOutboxPublishSupport.java`、`SeckillOrderOutboxRetrySupport.java`、`SeckillOrderOutboxRetryJob.java`、`seckill_order_outbox_mapper.xml`、`SeckillOrderOutboxRetrySupportUnitTest.java`、`docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：本轮提交
+  - 提交：`bf9ebc0`
 
 ## TODO List
 
@@ -187,6 +199,16 @@
   - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
   - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
   - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+
+- [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
+  - 原因：当前 Outbox 有自动重试和人工重放，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门的 Outbox 积压和 DEAD 增长告警。
+  - 范围：运维查询接口、响应 DTO、Micrometer 指标、Prometheus 告警规则；不扩大到完整前端后台。
+  - 验收：能按状态查询 Outbox 明细，指标能暴露 INIT/FAILED/DEAD 数量和重试耗时，告警规则能发现 DEAD 增长。
+
+- [ ] P1：继续同步八股文和现态清单的细粒度短板。
+  - 原因：专业 MQ、Outbox、生产容量这些边界容易被讲成“已经全部完成”，需要持续把工程现态和面试说法保持一致。
+  - 范围：`docs/interview-baguwen.md`、当前风险地图、SDD README 入口。
+  - 验收：面试口径明确区分“已完成 Envelope/Outbox”和“未完成专业 MQ adapter/真实容量证明”。
 
 ## 所有未完成任务清单
 
@@ -203,9 +225,9 @@
 | 完整售后体系 | 未开始 | 业务边界 | P1 | 不能包装成完整电商售后 | 会引入部分退款、拒绝退款、履约后退款等新模型 | 明确建设售后子系统 |
 | 完整支付中台能力 | 未开始 | 业务边界 | P2 | `mock/alipay` 适合演示，不等于支付中台 | 当前项目目标是交易营销，不是支付平台 | 接入更多支付渠道或账单文件 |
 | `DomainPurityTest` 结构拆分 | 暂不处理 | 测试缺口 / 文档治理 | P2 | 架构守护可能继续变成大型文本快照测试 | 规则分层已评估，当前测试仍能有效挡回归，直接拆分收益不高 | 新增大量同类守护规则，或该测试继续显著膨胀 |
-| 八股文档细粒度短板同步 | 进行中 | 面试口径 | P1 | 面试材料可能把“锁单主流程可替换”误讲成“专业 MQ 已落地” | 本轮同步专业 MQ 最小边界口径 | 每次新增 MQ 边界或主链路结论 |
+| 八股文档细粒度短板同步 | 进行中 | 面试口径 | P1 | 面试材料可能把“锁单主流程可替换”误讲成“专业 MQ 已落地” | 本轮已刷新专业 MQ 和 Outbox 边界，后续仍需随每次主链路变化同步 | 每次新增 MQ 边界、Outbox 能力或主链路结论 |
 
-## 本轮判断
+## 当前判断
 
 当前最值得优先做的不是再新增单点审计，而是维护这份风险地图。
 
@@ -218,12 +240,12 @@
 
 ## 验收
 
-- 本轮新增当前前 5 风险排序。
-- 本轮新增 Done List、TODO List 和所有未完成任务清单。
-- 本轮新增当前目标 Prompt 和验证基线。
-- 本轮新增当前验证基线脚本化入口。
-- 本轮新增秒杀专业 MQ 最小可切换边界审计。
-- 本轮新增秒杀订单创建消息 Envelope 契约实现和测试。
-- 本轮新增秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
-- 本轮同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
-- 本轮细化专业 MQ 面试口径，同步 `interview-baguwen.md`。
+- 当前现态已包含前 5 风险排序。
+- 当前现态已包含 Done List、TODO List 和所有未完成任务清单。
+- 当前现态已包含目标 Prompt 和验证基线。
+- 当前现态已包含验证基线脚本化入口。
+- 当前现态已包含秒杀专业 MQ 最小可切换边界审计。
+- 当前现态已包含秒杀订单创建消息 Envelope 契约实现和测试。
+- 当前现态已包含秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
+- 当前现态已同步 `README.md`、`tasks.md`、`ddd-sdd-todo-list.md`。
+- 当前现态已同步专业 MQ 和 Outbox 面试口径到 `interview-baguwen.md`。
