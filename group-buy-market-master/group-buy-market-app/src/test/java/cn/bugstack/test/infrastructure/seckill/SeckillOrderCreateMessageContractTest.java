@@ -27,6 +27,15 @@ public class SeckillOrderCreateMessageContractTest {
     }
 
     @Test
+    public void professionalMqAdapterShouldUseStableKeyTagAndPartitionKey() {
+        SeckillOrderCreateMessageEntity message = SeckillOrderCreateMessageEntity.fromOrder(order());
+
+        Assert.assertEquals("200001:user_001:trade_001", message.stableMessageKey());
+        Assert.assertEquals("200001:user_001:trade_001", message.stablePartitionKey());
+        Assert.assertEquals(SeckillOrderCreateMessageEntity.EVENT_TYPE, message.stableEventTag());
+    }
+
+    @Test
     public void jsonRoundTripShouldRestoreOrderEntityWithoutChangingBusinessKey() {
         SeckillOrderEntity order = order();
         SeckillOrderCreateMessageEntity message = SeckillOrderCreateMessageEntity.fromOrder(order);
@@ -57,6 +66,9 @@ public class SeckillOrderCreateMessageContractTest {
         Assert.assertEquals("user_001", restored.getUserId());
         Assert.assertEquals("trade_001", restored.getOutTradeNo());
         Assert.assertEquals("200001:user_001:trade_001", parsed.stableRouteKey());
+        Assert.assertEquals("200001:user_001:trade_001", parsed.stableMessageKey());
+        Assert.assertEquals("200001:user_001:trade_001", parsed.stablePartitionKey());
+        Assert.assertEquals(SeckillOrderCreateMessageEntity.EVENT_TYPE, parsed.stableEventTag());
         Assert.assertEquals("200001:user_001:trade_001", restored.getSourceMessageId());
     }
 

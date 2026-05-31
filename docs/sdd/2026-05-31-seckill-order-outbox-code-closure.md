@@ -54,7 +54,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 验证结果：
 
-- `seckill` profile：24 tests passed。
+- 当前 `seckill` profile：25 tests passed。
 - `market-domain` profile：54 tests passed，domain purity check passed。
 
 ## Done List

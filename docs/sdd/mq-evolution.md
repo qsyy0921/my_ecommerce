@@ -90,6 +90,8 @@ Outbox --> Retry["投递重试 / 人工重放"]
 - `traceId`：串联入口、MQ、消费落库和补偿台。
 - `activityId + userId + outTradeNo`：消费幂等、结果查询和补偿重放的核心业务键。
 
+当前代码已通过 `stableMessageKey()`、`stablePartitionKey()`、`stableEventTag()` 固化专业 MQ adapter 的最小字段契约。RocketMQ/Kafka/Pulsar adapter 后续只能复用这些值，不能重新生成随机 message id 或直接发送裸订单 JSON。
+
 ## 路由策略
 
 当前 Redis Stream 分片和后续 RocketMQ 队列都使用相同路由语义：
@@ -149,9 +151,9 @@ DEAD -> INIT
 
 - 新增 `RocketMqSeckillOrderMessagePort` 或通过 Spring profile 替换当前 `SeckillOrderMessagePort`。
 - Topic：`seckill_order_create`。
-- Tag：`create`。
-- Key：`messageId`。
-- Queue selector：使用 `routeKey`。
+- Tag：`stableEventTag()`，当前为 `SECKILL_ORDER_CREATE`。
+- Key：`stableMessageKey()`，当前为 `activityId:userId:outTradeNo`。
+- Queue selector：使用 `stablePartitionKey()`。
 - 消费端继续复用 `ISeckillOrderCreatePort.createSeckillOrders(...)` 批量落库。
 
 第四阶段：灰度双写和影子消费。
@@ -183,7 +185,7 @@ DEAD -> INIT
 - Redis Stream 模式压测验证库存不变量。
 - Docker Compose 可启动 RocketMQ 基础组件：`docs/dev-ops/docker-compose-rocketmq.yml`。
 - SQL 已准备 `seckill_order_outbox` 表结构。
-- `SeckillOrderCreateMessageContractTest` 已覆盖 Envelope schema、messageId、routeKey、JSON round trip 和历史裸订单 JSON 兼容。
+- `SeckillOrderCreateMessageContractTest` 已覆盖 Envelope schema、messageId、routeKey、message key、event tag、partition key、JSON round trip 和历史裸订单 JSON 兼容。
 
 ## 当前最小可切换边界审计
 
@@ -195,16 +197,16 @@ DEAD -> INIT
 - `SeckillOrderLockPort` 不直接依赖 `EventPublisher`、`SeckillOrderCreateBuffer`、routing key 或 JSON 序列化。
 - Redis Stream、Redis Queue、本地队列和 RabbitMQ 的投递选择集中在基础设施 adapter。
 - `SeckillOrderCreateMessageEntity` 已提供独立消息 Envelope，消费端兼容历史裸订单 JSON。
-- `SeckillOrderCreateMessageContractTest` 已验证 schema、messageId、routeKey 和序列化兼容性。
+- `SeckillOrderCreateMessageContractTest` 已验证 schema、messageId、routeKey、message key、event tag、partition key 和序列化兼容性。
 - `seckill_order_outbox` 已落地代码端口、DAO、自动重试任务和人工重放入口。
 - `SeckillOrderOutboxRetrySupportUnitTest` 已验证投递成功、转 dead 和人工重放 dead 记录。
 
 未具备：
 
 - 没有 RocketMQ/Kafka/Pulsar 客户端依赖和 adapter。
-- 没有 RocketMQ consumer group、DLQ、lag、重试和消费幂等契约测试。
+- 没有 RocketMQ consumer group、DLQ、lag、重试和真实 broker 消费幂等验证。
 
-因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope 和 Outbox 已经完成，后续应先补 producer/consumer adapter 契约和消费幂等测试，再决定是否接入 RocketMQ/Kafka adapter。
+因此，下一步不应直接宣称“专业 MQ 已完成”。Envelope、Outbox 和专业 MQ key/tag/partition key 契约已经完成，后续应评估是否实现 RocketMQ/Kafka adapter 最小 profile，并补真实 broker 下的 consumer group、DLQ、lag 和堆积恢复验证。
 
 ## 面试说法
 

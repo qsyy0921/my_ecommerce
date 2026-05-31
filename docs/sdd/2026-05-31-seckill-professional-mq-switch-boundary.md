@@ -8,7 +8,7 @@
 - 是否需要本轮直接接入 RocketMQ/Kafka adapter。
 - 如果暂不接入，剩余最小缺口是什么。
 
-本文件先记录边界审计结论；后续同日已补齐第一步消息 Envelope 和契约测试，见 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`。
+本文件先记录边界审计结论；后续同日已补齐第一步消息 Envelope 和契约测试，见 `docs/sdd/2026-05-31-seckill-order-message-envelope-contract.md`。专业 MQ adapter 的 key/tag/partition key 契约已补到 `docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`。
 
 ## 当前代码证据
 
@@ -20,7 +20,7 @@
 - `SeckillOrderMessagePort` 当前集中承接 RabbitMQ、Redis Stream、Redis Queue、本地队列的投递选择。
 - `SeckillOrderCreateBufferWorker` 负责 Redis Stream/Queue/local queue 消费并批量调用 `ISeckillService#createSeckillOrders(...)`。
 - `DomainPurityTest` 已防止 `SeckillOrderLockPort` 重新直接依赖 `EventPublisher`、`SeckillOrderCreateBuffer`、routing key 和 JSON 序列化。
-- `SeckillOrderCreateMessageEntity` 已作为独立消息 Envelope，消费端兼容历史裸订单 JSON。
+- `SeckillOrderCreateMessageEntity` 已作为独立消息 Envelope，消费端兼容历史裸订单 JSON，并提供稳定 message key、event tag 和 partition key。
 - `seckill_order_outbox` 已补代码端口、DAO、自动重试任务和人工重放入口。
 
 结论：锁单主流程已经和具体消息中间件解耦。后续新增 RocketMQ adapter 不应该改锁单主流程。
@@ -29,9 +29,9 @@
 
 当前仍不能说“已经接入专业 MQ”，原因是：
 
-- 没有 RocketMQ/Kafka/Pulsar 客户端依赖，也没有对应 Producer/Consumer adapter。
+- 没有 RocketMQ/Kafka/Pulsar 客户端依赖，也没有对应 Producer/Consumer adapter 实现。
 - RabbitMQ 分支使用 `publishWithoutConfirm(...)`，适合当前快速异步投递，但不是秒杀订单创建生产终局；切 RocketMQ 时需要 producer confirm、send result、异常分类和 outbox 重试。
-- 当前消费端有 RabbitMQ listener 和 Redis Stream worker，但没有 RocketMQ consumer group、批量消费、重试/DLQ、消费幂等契约测试。
+- 当前消费端有 RabbitMQ listener 和 Redis Stream worker，但没有 RocketMQ consumer group、批量消费、重试/DLQ 和 broker lag 验证。
 - 当前本机 Docker 只有 RocketMQ compose 文件，不能证明生产容量、堆积恢复、broker 故障恢复或多副本能力。
 
 ## 本轮决策
@@ -68,7 +68,7 @@
 
 5. 契约测试先于生产切换。
    - Envelope 序列化兼容测试。
-   - messageId/routeKey 稳定性测试。
+   - messageId/routeKey/message key/tag/partition key 稳定性测试。
    - outbox 状态机测试。
    - consumer 幂等重放测试。
 
@@ -83,11 +83,12 @@ flowchart TD
     A["当前 Redis Stream / RabbitMQ 可用"] --> B["定义 SeckillOrderCreateMessage Envelope"]
     B --> C["补 Envelope + routeKey 契约测试"]
     C --> D["实现 seckill_order_outbox 代码端口"]
-    D --> E["实现 RocketMQ Producer Adapter"]
-    E --> F["实现 RocketMQ Consumer Adapter"]
-    F --> G["灰度双写 / 影子消费"]
-    G --> H["真实多机压测和故障演练"]
-    H --> I["主通道切 RocketMQ"]
+    D --> E["固化专业 MQ key/tag/partition key 契约"]
+    E --> F["实现 RocketMQ Producer Adapter"]
+    F --> G["实现 RocketMQ Consumer Adapter"]
+    G --> H["灰度双写 / 影子消费"]
+    H --> I["真实多机压测和故障演练"]
+    I --> J["主通道切 RocketMQ"]
 ```
 
 ## Done List
@@ -112,18 +113,23 @@ flowchart TD
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
   - 提交：`bf9ebc0`
 
+- [x] 固化专业 MQ adapter 的 producer/consumer key/tag/partition key 契约。
+  - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderCreateMessageContractTest.java`、`docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
+  - 提交：待提交
+
 ## TODO List
 
-- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
-  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
-  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
-  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+- [ ] P0：评估并决定是否实现 RocketMQ adapter 最小 profile。
+  - 原因：Envelope、Outbox 和专业 MQ key/tag/partition key 契约已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ；暂不直接声称生产容量完成。
+  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter，契约测试覆盖 producer message key/tag/partition key 和 consumer 幂等。
 
 ## 所有未完成任务清单
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| RocketMQ/Kafka/Pulsar adapter 实现 | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 仍不能包装成大促终局方案 | 契约已固化，但未引入具体 MQ 客户端和消费者 | 明确要做本机 profile 或具备专业 MQ 环境 |
 | 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
@@ -140,4 +146,4 @@ flowchart TD
 
 可以这样说：
 
-> 当前项目已经把秒杀下单消息抽成 `ISeckillOrderMessagePort`，把订单创建消息升级成稳定 Envelope，并补齐 `seckill_order_outbox` 投递状态机，所以锁单主流程不依赖 Redis Stream 或 RabbitMQ 的消息体结构。生产大促下我不会说 Redis Stream 是最终方案，下一步会先补 Producer/Consumer 契约、专业 MQ adapter 和监控，再把订单创建消息迁到 RocketMQ。现在项目具备“主流程、消息契约和可靠投递兜底可切换”的基础，但还没有真正落地专业 MQ adapter 和生产容量证明。
+> 当前项目已经把秒杀下单消息抽成 `ISeckillOrderMessagePort`，把订单创建消息升级成稳定 Envelope，并补齐 `seckill_order_outbox` 投递状态机；同时固化了专业 MQ 需要的 message key、event tag 和 partition key。生产大促下我不会说 Redis Stream 是最终方案，下一步才是评估或实现 RocketMQ/Kafka adapter、补监控和真实压测。现在项目具备“主流程、消息契约和可靠投递兜底可切换”的基础，但还没有真正落地专业 MQ adapter 和生产容量证明。

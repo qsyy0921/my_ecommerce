@@ -98,6 +98,18 @@ public class SeckillOrderCreateMessageEntity {
         return nonBlank(routeKey) ? routeKey : messageId(activityId, userId, outTradeNo);
     }
 
+    public String stableMessageKey() {
+        return nonBlank(messageId) ? messageId : messageId(activityId, userId, outTradeNo);
+    }
+
+    public String stablePartitionKey() {
+        return stableRouteKey();
+    }
+
+    public String stableEventTag() {
+        return nonBlank(eventType) ? eventType : EVENT_TYPE;
+    }
+
     public static String messageId(Long activityId, String userId, String outTradeNo) {
         return String.valueOf(activityId) + ":" + String.valueOf(userId) + ":" + String.valueOf(outTradeNo);
     }

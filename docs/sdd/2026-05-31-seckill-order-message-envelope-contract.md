@@ -19,6 +19,7 @@
 - `eventType = SECKILL_ORDER_CREATE`。
 - `messageId = activityId:userId:outTradeNo`，作为 producer、consumer、outbox、补偿台的统一幂等键。
 - `routeKey` 默认与 `messageId` 一致，后续 RocketMQ/Kafka 分区路由复用同一语义。
+- `stableMessageKey()`、`stablePartitionKey()`、`stableEventTag()` 已作为专业 MQ adapter 的最小可执行契约。
 - Envelope 可转换回 `SeckillOrderEntity`，消费端仍复用现有订单创建端口和批量落库逻辑。
 - 兼容旧 JSON：如果历史消息只有订单字段、没有 Envelope 字段，消费端仍可以解析并生成稳定幂等键。
 
@@ -41,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 验证结果：
 
-- `seckill` profile：21 tests passed。
+- 当前 `seckill` profile：25 tests passed。
 - `market-domain` profile：54 tests passed，domain purity check passed。
 
 ## Done List
@@ -64,14 +65,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 - [x] 后续已补齐 Outbox 代码闭环。
   - 文件：`docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md`
-  - 验收：`seckill` profile 通过 24 个测试。
+  - 验收：当前 `seckill` profile 通过 25 个测试。
+
+- [x] 后续已补专业 MQ adapter key/tag/partition key 契约测试。
+  - 文件：`docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
+  - 验收：`SeckillOrderCreateMessageContractTest` 覆盖 message key、partition key 和 event tag。
 
 ## TODO List
 
-- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
-  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
-  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
-  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+- [ ] P0：评估并决定是否实现 RocketMQ adapter 最小 profile。
+  - 原因：Envelope、Outbox 和专业 MQ key/tag/partition key 契约已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ；暂不直接声称生产容量完成。
+  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter。
 
 ## 所有未完成任务清单
 
@@ -85,4 +90,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 可以说：
 
-> 秒杀订单创建消息已经从裸 `SeckillOrderEntity` JSON 升级成稳定 Envelope，里面包含 schemaVersion、eventType、messageId、routeKey、traceId 和订单创建负载。这样后续从 Redis Stream 切到 RocketMQ/Kafka 时，锁单主流程和消费端不需要依赖领域实体的内部序列化结构。但我不会说专业 MQ 已经完成，因为还缺 Outbox 代码闭环、RocketMQ/Kafka adapter、真实多机压测和堆积恢复验证。
+> 秒杀订单创建消息已经从裸 `SeckillOrderEntity` JSON 升级成稳定 Envelope，里面包含 schemaVersion、eventType、messageId、routeKey、traceId 和订单创建负载，并且已经固化专业 MQ 需要的 message key、event tag 和 partition key。这样后续从 Redis Stream 切到 RocketMQ/Kafka 时，锁单主流程和消费端不需要依赖领域实体的内部序列化结构。但我不会说专业 MQ 已经完成，因为还缺 RocketMQ/Kafka adapter、真实多机压测和堆积恢复验证。

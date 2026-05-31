@@ -47,6 +47,7 @@
 - `2026-05-31-seckill-professional-mq-switch-boundary.md`：秒杀订单消息接入专业 MQ 的最小可切换边界审计。
 - `2026-05-31-seckill-order-message-envelope-contract.md`：秒杀订单创建消息 Envelope 契约和兼容性测试。
 - `2026-05-31-seckill-order-outbox-code-closure.md`：秒杀订单 Outbox 代码闭环、自动重试和人工重放入口。
+- `2026-05-31-seckill-professional-mq-adapter-contract.md`：专业 MQ adapter 的 message key、event tag、partition key 和 consumer 幂等契约。
 - `2026-05-30-rabbitmq-dlq-ops.md`：RabbitMQ DLQ 失败台账和人工处理入口。
 - `2026-05-30-mq-producer-outbox-retry.md`：MQ 生产者 confirm 失败补偿。
 
@@ -160,6 +161,7 @@
 - `2026-05-31-seckill-professional-mq-switch-boundary.md`：记录秒杀订单消息端口接入 RocketMQ/Kafka 这类专业 MQ 前必须先补的 Envelope、Outbox、Consumer 契约和监控边界。
 - `2026-05-31-seckill-order-message-envelope-contract.md`：记录秒杀订单创建消息从裸订单 JSON 升级为稳定 Envelope，覆盖 schema、messageId、routeKey、traceId 和旧消息兼容。
 - `2026-05-31-seckill-order-outbox-code-closure.md`：记录秒杀订单创建消息 Outbox 代码闭环，覆盖先落库、即时投递、失败重试、DEAD 隔离和人工重放。
+- `2026-05-31-seckill-professional-mq-adapter-contract.md`：记录专业 MQ adapter 的 producer/consumer 契约，覆盖 message key、event tag、partition key、消费幂等和后续 adapter 边界。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

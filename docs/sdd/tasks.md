@@ -176,6 +176,7 @@
 - [x] 审计秒杀订单消息端口接入专业 MQ 的最小可切换边界，明确当前具备锁单主流程可切换基础，后续按 Envelope、Outbox 代码、专业 MQ adapter、consumer 契约和生产容量证明分阶段推进。
 - [x] 定义秒杀订单创建消息 Envelope 并补契约测试，验证 schema、messageId、routeKey、JSON round trip 和历史裸订单 JSON 兼容。
 - [x] 补齐秒杀订单 Outbox 代码闭环和投递状态机，支持 INIT/SENT/FAILED/DEAD、定时重试和人工重放。
+- [x] 补齐专业 MQ adapter key/tag/partition key 契约设计和测试，后续 RocketMQ/Kafka/Pulsar adapter 必须复用稳定 message key、event tag 和 partition key。
 - [x] 拼团退款策略纯单元测试已补齐，覆盖未支付未成团、已支付未成团、已支付已成团、重复退款、非法状态退款和锁单库存恢复边界。
 - [x] 秒杀人工补偿 Stream 已补齐操作审计，新增 `ISeckillManualCompensationAuditPort`、`seckill_manual_compensation_log`、`manual_logs` 接口和补偿台操作记录展示。
 - [x] 售后状态机已扩展，覆盖部分退款、拒绝退款、履约后退款和重复退款拦截，并补充 `OrderStateMachineTest`。

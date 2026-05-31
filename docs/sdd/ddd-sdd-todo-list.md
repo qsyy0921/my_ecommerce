@@ -185,12 +185,17 @@
 - [x] 补秒杀订单 Outbox 代码闭环和投递状态机。
   - 目标：让 SQL 中已有的 `seckill_order_outbox` 真正具备 repository、投递任务、状态机、人工重放和幂等投递能力。
   - 本次完成：新增 `ISeckillOrderOutboxPort`、`SeckillOrderOutboxEntity`、`SeckillOrderOutboxPort`、`SeckillOrderOutboxPublishSupport`、`SeckillOrderOutboxRetrySupport`、`SeckillOrderOutboxRetryJob` 和 `retry_seckill_order_outbox` 运维入口。
-  - 验收：新增 `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md` 和 `SeckillOrderOutboxRetrySupportUnitTest`，`seckill` profile 通过 24 个测试。
+  - 验收：新增 `docs/sdd/2026-05-31-seckill-order-outbox-code-closure.md` 和 `SeckillOrderOutboxRetrySupportUnitTest`，当前 `seckill` profile 通过 25 个测试。
 
-- [ ] 补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+- [x] 补专业 MQ adapter 的 producer/consumer 契约设计和测试。
   - 目标：在真正引入 RocketMQ/Kafka/Pulsar adapter 前，先把 topic/tag/key/routeKey、consumer 幂等重放、DLQ/lag 指标和回滚路径写成稳定契约。
-  - 建议范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
-  - 验收：形成专业 MQ adapter 前置契约文档，避免把本机可启动 adapter 包装成生产容量证明。
+  - 本次完成：`SeckillOrderCreateMessageEntity` 新增 `stableMessageKey()`、`stablePartitionKey()`、`stableEventTag()`，并补 `SeckillOrderCreateMessageContractTest` 覆盖专业 MQ key/tag/partition key。
+  - 验收：形成 `docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`，避免把本机可启动 adapter 包装成生产容量证明。
+
+- [ ] 评估并决定是否实现 RocketMQ adapter 最小 profile。
+  - 目标：在契约已固化后，判断是否值得在本机引入 RocketMQ producer/consumer adapter；如果实现，必须作为可切换 profile，不作为生产容量证明。
+  - 建议范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ。
+  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter。
 
 - [ ] 补秒杀 Outbox 查询、状态台账和告警。
   - 目标：在已有自动重试和人工重放基础上，提供 INIT/FAILED/DEAD 查询视图、pending/dead 指标和告警规则。
@@ -375,7 +380,7 @@
 
 - [x] 收敛当前前 5 个残留风险并维护 Done/TODO/Open Items。
   - 目标：把最近几轮分散的审计结论收敛成统一风险排序，并显式维护已完成、下一步、所有未完成任务三类清单。
-  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 完成后，第 1 风险已进一步收敛为专业 MQ adapter 契约、Outbox 状态台账/告警和真实容量证明。
+  - 本次结论：当前前 5 风险分别是秒杀生产化消息链路和容量证明、Redis 通用接口过宽、拼团锁单阻塞等待、对账/售后/支付最小闭环、守护/文档/面试口径继续收敛。Outbox 和专业 MQ key/tag/partition key 契约完成后，第 1 风险已进一步收敛为具体 MQ adapter 实现、Outbox 状态台账/告警和真实容量证明。
   - 验收：新增 `docs/sdd/2026-05-31-current-top-risk-map-and-open-items.md`，并同步 `README.md`、`tasks.md`、`interview-baguwen.md`。
 
 - [x] 补齐拼团锁单等待超时语义测试。

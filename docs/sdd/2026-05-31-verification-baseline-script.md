@@ -61,12 +61,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
   - 提交：`bf9ebc0`
 
+- [x] 把专业 MQ key/tag/partition key 契约测试纳入 `seckill` profile。
+  - 文件：`SeckillOrderCreateMessageContractTest.java`
+  - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
+  - 提交：待提交
+
 ## TODO List
 
-- [ ] P0：补专业 MQ adapter 的 producer/consumer 契约设计和测试。
-  - 原因：Envelope 和 Outbox 已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
-  - 范围：`docs/sdd`、消息 adapter 边界、consumer 幂等契约测试；暂不直接声称生产容量完成。
-  - 验收：明确 adapter 切换条件、topic/tag/key/routeKey 规则、consumer 幂等重放契约和回滚路径。
+- [ ] P0：评估并决定是否实现 RocketMQ adapter 最小 profile。
+  - 原因：Envelope、Outbox 和专业 MQ key/tag/partition key 契约已完成，但还没有 RocketMQ/Kafka/Pulsar adapter，也没有 consumer group、DLQ、lag 和堆积恢复验证。
+  - 范围：基础设施 adapter、Spring profile/config、producer send result、consumer 幂等和 DLQ；暂不直接声称生产容量完成。
+  - 验收：形成“实现/暂不实现”的 SDD 决策；如实现，本机可按 profile 切换 adapter。
 
 - [ ] P1：补秒杀 Outbox 查询、状态台账和告警。
   - 原因：Outbox 已经具备投递和重试闭环，但运维侧还不能直接查询 INIT/FAILED/DEAD 明细，也没有专门积压和 DEAD 增长告警。
@@ -77,7 +82,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 | 任务名称 | 当前状态 | 所属类型 | 优先级 | 不完成的影响 | 当前为什么还没做 | 后续触发条件 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 秒杀专业 MQ adapter | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 缺真实 MQ 集群、多机压测和 producer/consumer adapter | Outbox 已完成；开始 RocketMQ/Kafka adapter 设计或接入时 |
+| RocketMQ/Kafka/Pulsar adapter 实现 | 未开始 | 生产边界 / 代码风险 | P0 | Redis Stream 容量和堆积能力不能包装成大促终局方案 | 契约已固化，但未引入具体 MQ 客户端和消费者 | 明确要做本机 profile 或具备专业 MQ 环境 |
 | 秒杀 Outbox 查询、状态台账和告警 | 未开始 | 业务边界 / 运维边界 | P1 | 目前有自动重试和手动重放，但没有专门查询接口、pending/dead 指标和告警展示 INIT/FAILED/DEAD 明细 | 本轮优先补投递闭环，避免扩大前端/运维范围 | 明确要完善补偿后台、运维页面或 Outbox 告警 |
 | 真实多实例容量验证 | 已阻塞 | 生产边界 | P0 | 本机 QPS 不能证明生产容量 | 只有当前单机环境 | 有独立 Linux 压测机、多服务实例和独立中间件节点 |
 | 拼团锁单等待策略重构 | 暂不处理 | 代码风险 | P1 | domain service 继续保留 `Thread.sleep` 技术等待 | 等待超时测试已补齐，但当前没有功能故障 | 压测暴露 RT 抖动，或继续增强锁单幂等策略 |
@@ -94,4 +99,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 
 本轮脚本化解决的是“验证命令容易漏跑”的工程效率问题，不改变 DDD 架构、不改变业务链路，也不改变面试口径。因此脚本化本身不需要同步 `interview-baguwen.md`。
 
-下一轮如果继续推进，应回到当前前 5 风险的第一项：秒杀生产化消息链路和容量证明。当前已完成最小切换边界审计、消息 Envelope 契约测试和 Outbox 代码闭环，下一步应补专业 MQ adapter 的 producer/consumer 契约设计和测试。
+下一轮如果继续推进，应回到当前前 5 风险的第一项：秒杀生产化消息链路和容量证明。当前已完成最小切换边界审计、消息 Envelope 契约测试、Outbox 代码闭环和专业 MQ key/tag/partition key 契约，下一步应评估是否实现 RocketMQ adapter 最小 profile；如果暂不接具体 MQ 客户端，则优先补 Outbox 查询、状态台账和告警。
