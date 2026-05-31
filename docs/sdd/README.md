@@ -23,6 +23,7 @@
 ### 现态与任务
 
 - `2026-05-31-current-top-risk-map-and-open-items.md`：当前前 5 个残留风险、Done List、TODO List、所有未完成任务清单。
+- `2026-05-31-current-verification-baseline.md`：当前目标 Prompt、验证分级、Done/TODO/所有未完成任务清单。
 - `tasks.md`：当前 SDD 任务状态。
 - `ddd-sdd-todo-list.md`：DDD + SDD 后续治理约束。
 
@@ -52,6 +53,7 @@
 
 ### 测试守护
 
+- `2026-05-31-current-verification-baseline.md`：当前推荐验证命令和触发条件。
 - `2026-05-31-architecture-guard-hotspot-audit.md`：架构守护体系维护风险。
 - `2026-05-31-domain-purity-guard-layering.md`：DomainPurityTest 规则分层评估。
 - `2026-05-30-ddd-architecture-test-guard.md`：DDD 架构测试和状态机测试。
@@ -146,6 +148,7 @@
 - `2026-05-31-redis-gateway-admission-rule.md`：记录 Redis 通用接口新增能力准入规则，要求新增 Redis 业务能力优先进入业务语义端口，避免继续扩张 `IRedisService` / `RedissonService` 技术总线。
 - `2026-05-31-sdd-readme-entry-grouping.md`：记录 `README.md` 按现态与任务、交易主链路、基础设施边界、业务完备度、测试守护、文档与面试口径分组治理。
 - `2026-05-31-domain-purity-guard-layering.md`：记录 `DomainPurityTest` 与 `check-domain-purity.ps1` 的规则分层，明确后续新增守护规则的准入顺序。
+- `2026-05-31-current-verification-baseline.md`：记录后续继续开发可复制的目标 Prompt、当前验证分级、Done List、TODO List 和所有未完成任务清单。
 - `2026-05-30-reconcile-controller-admin-support-split.md`：记录 `ReconcileCaseController` 拆出管理员认证、操作人解析、审计和请求预览支撑组件。
 - `2026-05-30-reconcile-api-dto-boundary.md`：记录对账查询接口从直接返回 domain entity 改为 API DTO。
 - `2026-05-30-reconcile-controller-usecase-support-split.md`：记录 `ReconcileCaseController` 继续拆出查询、处理、重放、账单导入和告警 webhook 用例支撑组件。

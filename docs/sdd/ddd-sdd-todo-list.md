@@ -373,6 +373,11 @@
   - 本次结论：暂不拆 `DomainPurityTest`，先明确 L0 粗筛、L1 稳定结构守护、L2 精细职责回流守护、L3 脆弱文本快照守护、L4 行为契约测试五层准入顺序。
   - 验收：新增 `docs/sdd/2026-05-31-domain-purity-guard-layering.md`，当前风险地图同步 Done/TODO/Open Items。
 
+- [x] 建立当前目标 Prompt 和验证基线。
+  - 目标：给后续 AI/人工继续开发一个明确的可复制 Prompt，并把编译、架构守护、领域测试、文档检查命令收敛到单一入口。
+  - 本次结论：后续每轮必须维护 Done List、TODO List 和所有未完成任务清单；文档变更、领域边界变更、拼团链路变更、秒杀链路变更、商城支付/对账变更分别选择不同验证级别。
+  - 验收：新增 `docs/sdd/2026-05-31-current-verification-baseline.md`，并同步 `README.md`、`tasks.md` 和当前风险地图。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
@@ -411,6 +416,8 @@
   - 本次完成：新增 `docs/sdd/2026-05-30-production-capacity-boundary.md`，明确本机能证明的内容、不能证明的内容和面试表达边界。
 
 ## 每次任务验收命令
+
+当前权威验证基线见 `docs/sdd/2026-05-31-current-verification-baseline.md`。下面命令保留为历史通用入口，后续应优先按验证基线中的 L0-L7 分级选择命令。
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-8.0.492.9-hotspot'
