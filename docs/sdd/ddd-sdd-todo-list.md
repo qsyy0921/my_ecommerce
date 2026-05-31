@@ -333,6 +333,11 @@
   - 本次结论：大量按日期命名的 SDD 文档记录了不同时间点的 `DomainPurityTest` 数量和“通过”表述，它们在各自提交时可能成立，但现在更像历史验证快照；当前权威验证基线更适合收敛到 `tasks.md` / `ddd-sdd-todo-list.md` 或后续单独基线文档。
   - 验收：新增 `docs/sdd/2026-05-31-documentation-evidence-drift-audit.md`，后续新增审计文档时优先减少重复的泛化验证表述，并逐步区分“当前状态”和“历史记录”。
 
+- [x] 审计八股文档与 SDD 结论的同步漂移。
+  - 目标：确认对外面试口径是否已经落后于最近几轮更细的 SDD 审计，避免形成“两套同时存在的工程叙事”。
+  - 本次结论：`interview-baguwen.md` 宏观边界判断仍然正确，但还没有完整吸收最近几轮更细的剩余问题，比如拼团阻塞轮询等待、架构守护体系热点、文档证据漂移、模型字符串协议和超宽 Redis 接口风险。
+  - 验收：新增 `docs/sdd/2026-05-31-interview-sync-drift-audit.md`，后续更新八股文档时要求亮点和短板一起同步，而不是只更新亮点。
+
 - [x] 拆分商城支付 Controller 技术细节。
   - 目标：避免 `AliPayController` 继续承担支付宝回调验签、主动查询、回调指标和用户订单列表 DTO 映射。
   - 实际拆分：`AlipayNotifySupport`、`ActivePayNotifySupport`、`OrderListResponseAssembler`。
