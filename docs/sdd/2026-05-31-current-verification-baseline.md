@@ -80,7 +80,7 @@
 - [x] 补专业 MQ adapter 的 producer/consumer 契约设计和测试。
   - 结果：`SeckillOrderCreateMessageEntity` 显式提供 `stableMessageKey()`、`stablePartitionKey()`、`stableEventTag()`，后续 RocketMQ/Kafka/Pulsar adapter 必须复用这些值。
   - 验收：`SeckillOrderCreateMessageContractTest` 覆盖专业 MQ key、tag、partition key 和历史裸订单 JSON 兼容。
-  - 提交：待提交
+  - 提交：`40e67db`
 
 ## TODO List
 

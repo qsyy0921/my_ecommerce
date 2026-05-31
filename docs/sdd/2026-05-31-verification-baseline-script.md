@@ -64,7 +64,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-basel
 - [x] 把专业 MQ key/tag/partition key 契约测试纳入 `seckill` profile。
   - 文件：`SeckillOrderCreateMessageContractTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 ## TODO List
 

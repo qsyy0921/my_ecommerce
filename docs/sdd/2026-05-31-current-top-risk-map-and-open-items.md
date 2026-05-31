@@ -197,7 +197,7 @@ Outbox 已经从“待补代码闭环”变成已完成证据：`bf9ebc0` 已补
 - [x] 补专业 MQ adapter 的 producer/consumer 契约设计和测试。
   - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderCreateMessageContractTest.java`、`docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 ## TODO List
 

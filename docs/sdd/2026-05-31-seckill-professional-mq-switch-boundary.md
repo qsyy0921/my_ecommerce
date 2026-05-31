@@ -116,7 +116,7 @@ flowchart TD
 - [x] 固化专业 MQ adapter 的 producer/consumer key/tag/partition key 契约。
   - 文件：`SeckillOrderCreateMessageEntity.java`、`SeckillOrderCreateMessageContractTest.java`、`docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`；`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName market-domain`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 ## TODO List
 

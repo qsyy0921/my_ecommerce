@@ -65,17 +65,17 @@ producer adapter 不允许：
 - [x] 固化专业 MQ producer 的 key/tag/partition key 契约。
   - 文件：`SeckillOrderCreateMessageEntity.java`
   - 验证：`SeckillOrderCreateMessageContractTest`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 - [x] 补专业 MQ adapter 消息契约测试。
   - 文件：`SeckillOrderCreateMessageContractTest.java`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName seckill`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 - [x] 记录专业 MQ producer/consumer 设计边界。
   - 文件：`docs/sdd/2026-05-31-seckill-professional-mq-adapter-contract.md`
   - 验证：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-current-baseline.ps1 -ProfileName docs-only`
-  - 提交：待提交
+  - 提交：`40e67db`
 
 ## TODO List
 
